@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="robots" content="noindex,nofollow">
+    <title>稼働報告 | v7.7.2 SECURED</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 1rem;
+        }
+
+        .input-dark {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            color: #fff;
+            padding: 0.75rem;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .input-dark:focus {
+            border-color: #6366f1;
+            outline: none;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.85rem 0.5rem;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 900;
+            transition: all 0.3s;
+            position: relative;
+            color: #64748b;
+        }
+
+        .tab-btn.active {
+            color: #6366f1;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: #6366f1;
+            border-radius: 10px;
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, #6366f1, #4338ca);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-weight: 900;
+            font-size: 15px;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .btn-premium:active {
+            opacity: 0.8;
+            transform: scale(0.98);
+        }
+
+        .log-item {
+            border-left: 3px solid #6366f1;
+            background: #1e293b;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        // 注意: GASをデプロイし直した後の正規のURLをここに貼る必要があります
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzWS5yzOOTXqYx7yWrN8mtOvsXIjfoI1JDnola4TuoRS5-KStUVRR7M9YOoRfMbJUjR9g/exec";
+        const APP_PASS = "nogawa";
+
+        function App() {
+            const [isLocked, setIsLocked] = useState(true);
+            const [passInput, setPassInput] = useState("");
+            const [user, setUser] = useState(null);
+            const [tempName, setTempName] = useState("");
+            const [activeTab, setActiveTab] = useState("log");
+            const [logs, setLogs] = useState([]);
+            const [logInput, setLogInput] = useState({ machine: "", detail: "" });
+            const [reportInput, setReportInput] = useState({ store: "", hours: "", medal: "", cash: "", memo: "" });
+            const [status, setStatus] = useState("");
+            const [submitting, setSubmitting] = useState(false);
+
+            useEffect(() => {
+                const passVerified = localStorage.getItem("p_v7") === APP_PASS;
+                if (passVerified) setIsLocked(false);
+
+                const saved = localStorage.getItem("u_v7");
+                if (saved) setUser(JSON.parse(saved));
+                const savedLogs = localStorage.getItem("l_v7");
+                if (savedLogs) setLogs(JSON.parse(savedLogs));
+                const savedRep = localStorage.getItem("r_v7");
+                if (savedRep) setReportInput(JSON.parse(savedRep));
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem("l_v7", JSON.stringify(logs));
+                localStorage.setItem("r_v7", JSON.stringify(reportInput));
+            }, [logs, reportInput]);
+
+            const verifyPass = (e) => {
+                e.preventDefault();
+                if (passInput === APP_PASS) {
+                    setIsLocked(false);
+                    localStorage.setItem("p_v7", APP_PASS);
+                } else {
+                    alert("合言葉が違います");
+                }
+            };
+
+            const handleLogin = (e) => {
+                if (e) e.preventDefault();
+                if (!tempName.trim()) return alert("名前を入力してください");
+                const u = { displayName: tempName.trim() };
+                setUser(u);
+                localStorage.setItem("u_v7", JSON.stringify(u));
+            };
+
+            const logout = () => {
+                if (confirm("名前を変更しますか？")) {
+                    setTempName(user.displayName);
+                    setUser(null);
+                    localStorage.removeItem("u_v7");
+                }
+            };
+
+            const parseHours = (raw) => {
+                if (!raw) return 0;
+                if (raw.includes("~") || raw.includes("-") || raw.includes("〜")) {
+                    const parts = raw.split(/[~-〜]/);
+                    const toMin = (s) => {
+                        if (!s) return 0;
+                        const [h, m] = s.trim().split(":").map(Number);
+                        return (h || 0) * 60 + (m || 0);
+                    };
+                    if (parts.length === 2) {
+                        const start = toMin(parts[0]);
+                        let end = toMin(parts[1]);
+                        if (end < start) end += 24 * 60;
+                        return Math.round((end - start) / 60 * 10) / 10;
+                    }
+                }
+                return parseFloat(String(raw).replace(/[hH時間]/g, "").replace(",", ".")) || 0;
+            };
+
+            const addLog = () => {
+                if (!logInput.machine || !logInput.detail) return;
+                setLogs([...logs, { ...logInput, id: Date.now() }]);
+                setLogInput({ machine: "", detail: "" });
+            };
+
+            const removeLog = (id) => setLogs(logs.filter(l => l.id !== id));
+
+            const submit = async () => {
+                if (logs.length === 0 || !reportInput.store) return alert("ログと店舗名を入力してください");
+                setSubmitting(true);
+                const logText = logs.map(l => `${l.machine} ${l.detail}`).join("\n");
+                const calculatedHours = parseHours(reportInput.hours);
+                const payload = {
+                    date: new Date().toLocaleDateString('ja-JP'),
+                    name: user.displayName,
+                    store: reportInput.store,
+                    details: logText,
+                    hours: calculatedHours,
+                    rawHours: reportInput.hours,
+                    medal: reportInput.medal,
+                    cash: reportInput.cash,
+                    memo: reportInput.memo
+                };
+                try {
+                    await fetch(`${GAS_URL}`, {
+                        method: "POST", mode: "no-cors",
+                        body: JSON.stringify({ action: "submitReport", data: payload })
+                    });
+                    setStatus("送信完了！お疲れ様でした。");
+                    setLogs([]); setReportInput({ store: "", hours: "", medal: "", cash: "", memo: "" });
+                    localStorage.removeItem("l_v7");
+                    localStorage.removeItem("r_v7");
+                    setActiveTab("log");
+                    setTimeout(() => setStatus(""), 5000);
+                } catch (e) { alert("送信エラー: " + e.message); }
+                finally { setSubmitting(false); }
+            };
+
+            if (isLocked) return (
+                <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-950">
+                    <div className="w-full max-w-xs space-y-6 animate-fadeIn">
+                        <div className="text-center">
+                            <h1 className="text-2xl font-black mb-1 italic text-indigo-500">PRIVATE SYSTEM</h1>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Entry Key Required</p>
+                        </div>
+                        <form onSubmit={verifyPass} className="card p-6 space-y-4 shadow-xl">
+                            <input
+                                type="password"
+                                value={passInput}
+                                onChange={e => setPassInput(e.target.value)}
+                                className="input-dark text-center font-bold tracking-widest"
+                                placeholder="合言葉を入力"
+                                autoFocus
+                            />
+                            <button type="submit" className="btn-premium">UNLOCK</button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            if (!user) return (
+                <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-900">
+                    <div className="w-full max-w-xs space-y-6 animate-fadeIn">
+                        <div className="text-center">
+                            <h1 className="text-3xl font-black mb-1 italic tracking-tighter">WORKER APP<span className="text-indigo-600">.</span></h1>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Login / 設定確認</p>
+                        </div>
+                        <div className="card p-6 space-y-4 shadow-xl">
+                            <input
+                                type="text"
+                                value={tempName}
+                                onChange={e => setTempName(e.target.value)}
+                                className="input-dark text-center font-bold"
+                                placeholder="あなたのお名前"
+                            />
+                            <button onClick={handleLogin} className="btn-premium">アプリを始める</button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900">
+                    <div className="p-4 flex justify-between items-center border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-0 z-20">
+                        <div className="text-lg font-black italic tracking-tighter">Go Work<span className="text-indigo-600">.</span></div>
+                        <div onClick={logout} className="text-[10px] font-black text-slate-400 bg-white/5 px-3 py-1.5 rounded-full active:bg-indigo-500/20 truncate max-w-[120px]">
+                            {user.displayName}
+                        </div>
+                    </div>
+
+                    <div className="flex border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-[57px] z-20">
+                        <button onClick={() => setActiveTab("log")} className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}>01 LOGS</button>
+                        <button onClick={() => setActiveTab("report")} className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`}>02 REPORT</button>
+                        <button onClick={() => setActiveTab("help")} className={`tab-btn ${activeTab === 'help' ? 'active' : ''}`}>03 HELP</button>
+                    </div>
+
+                    <div className="p-4 flex-1 space-y-5 pb-10">
+                        {status && (
+                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs font-bold animate-pulse">
+                                {status}
+                            </div>
+                        )}
+
+                        {activeTab === 'log' && (
+                            <div className="space-y-6 animate-fadeIn">
+                                <section className="card p-4 space-y-3">
+                                    <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest px-1">Quick Add</div>
+                                    <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark font-bold py-2" placeholder="機種名 (例: 北斗)" />
+                                    <div className="flex gap-2">
+                                        <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark py-2" placeholder="G数・リセ等" />
+                                        <button onClick={addLog} className="bg-indigo-600 w-12 h-10 rounded-lg font-black text-xl">+</button>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <div className="flex justify-between items-center px-1">
+                                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">History / {logs.length}</div>
+                                        {logs.length > 0 && <button onClick={() => confirm("削除しますか？") && setLogs([])} className="text-[8px] font-bold text-slate-600">CLEAR</button>}
+                                    </div>
+                                    <div className="space-y-2">
+                                        {logs.length === 0 && <div className="py-12 text-center text-slate-700 text-xs font-black italic opacity-30 tracking-tighter uppercase">No logs registered</div>}
+                                        {[...logs].reverse().map(l => (
+                                            <div key={l.id} className="log-item flex justify-between items-center">
+                                                <div className="min-w-0 flex-1 pr-2">
+                                                    <div className="font-black text-xs text-indigo-100 truncate">{l.machine}</div>
+                                                    <div className="text-[10px] text-slate-500 font-bold truncate">{l.detail}</div>
+                                                </div>
+                                                <button onClick={() => removeLog(l.id)} className="text-slate-600 w-8 h-8 flex items-center justify-center text-xl active:text-rose-500">×</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            </div>
+                        )}
+
+                        {activeTab === 'report' && (
+                            <div className="space-y-5 animate-fadeIn">
+                                <section className="card p-5 space-y-5">
+                                    <div>
+                                        <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">Store</label>
+                                        <input value={reportInput.store} onChange={e => setReportInput({ ...reportInput, store: e.target.value })} className="input-dark font-bold" placeholder="店舗名" />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">Hours</label>
+                                            <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-2" placeholder="8:40~21:10" />
+                                            <div className="text-[8px] text-slate-600 mt-1 font-bold">CALC: {parseHours(reportInput.hours)}h</div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">Medals</label>
+                                            <input type="number" value={reportInput.medal} onChange={e => setReportInput({ ...reportInput, medal: e.target.value })} className="input-dark py-2" placeholder="枚数" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">Cash (Investment)</label>
+                                        <input type="number" value={reportInput.cash} onChange={e => setReportInput({ ...reportInput, cash: e.target.value })} className="input-dark" placeholder="円" />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">Memo / Tips</label>
+                                        <textarea value={reportInput.memo} onChange={e => setReportInput({ ...reportInput, memo: e.target.value })} className="input-dark h-24 text-xs leading-relaxed" placeholder="今日の環境や立ち回りなど..."></textarea>
+                                    </div>
+                                </section>
+
+                                <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg ${submitting ? 'opacity-50' : ''}`}>
+                                    {submitting ? 'SENDING...' : 'REPORT SUBMIT'}
+                                </button>
+                            </div>
+                        )}
+
+                        {activeTab === 'help' && (
+                            <div className="space-y-5 animate-fadeIn text-slate-400 text-xs leading-relaxed">
+                                <div className="card p-5 space-y-4">
+                                    <h3 className="text-indigo-400 font-black flex items-center gap-2 uppercase tracking-widest text-[10px]">Manual / 使い方</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="font-bold text-indigo-100 mb-1">01 ログの記録</p>
+                                            <p className="opacity-70 text-[11px]">台を打ち始めた時や終了時に、機種名と状況をメモしてください。</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-indigo-100 mb-1">合言葉の変更</p>
+                                            <p className="opacity-70 text-[11px]">セキュリティ保護が有効です。一度認証すれば一定期間は入力不要です。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="card p-5 space-y-3 text-center">
+                                    <button onClick={logout} className="text-indigo-400 font-bold underline">ログイン名を変更する</button>
+                                    <div className="pt-2">
+                                        <button onClick={() => { localStorage.removeItem("p_v7"); window.location.reload(); }} className="text-rose-500 font-bold underline opacity-50">システムを再ロックする</button>
+                                    </div>
+                                </div>
+                                <div className="text-center opacity-20 font-black text-[9px] uppercase tracking-[0.3em]">System Hosted on GitHub | v7.7.2</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
