@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="robots" content="noindex,nofollow">
-    <title>管理者ダッシュボード | v7.7.6 FINAL</title>
+    <title>管理者ダッシュボード | v7.7.7 FINAL</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -85,17 +85,16 @@
             border-radius: 10px;
         }
 
-        /* Disable Spin Buttons */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            appearance: none;
-            margin: 0;
+        /* 100% Spin Button Removal */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none !important;
+            margin: 0 !important;
         }
 
-        input[type=number] {
-            -moz-appearance: textfield;
-            appearance: none;
+        input[type="number"] {
+            -moz-appearance: textfield !important;
+            appearance: none !important;
         }
 
         .input-ev {
@@ -114,26 +113,26 @@
         .input-ev:focus {
             border-color: #0076FF;
             background: #ffffff;
-            box-shadow: 0 4px 12px rgba(0, 118, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 118, 255, 0.1);
         }
 
         .modal-overlay {
             background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
         }
 
         .shadow-3xl {
-            box-shadow: 0 32px 64px -12px rgba(15, 23, 42, 0.15);
+            box-shadow: 0 32px 64px -12px rgba(15, 23, 42, 0.12);
         }
 
         .animate-fadeIn {
-            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(8px);
             }
 
             to {
@@ -147,7 +146,7 @@
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useMemo } = React;
         const GAS_URL = "https://script.google.com/macros/s/AKfycbz1PCMXJ_IYDjnU5HU_KQbm6Vcxp1-iYdaVR-9I7rCtflg2snUYR2UJm74U1YlXZE8u4w/exec";
         const APP_PASS = "nogawa";
 
@@ -180,7 +179,7 @@
 
             const loadAll = async () => {
                 setLoading(true);
-                setSyncInfo({ status: "SYNCING", message: "データ取得中..." });
+                setSyncInfo({ status: "SYNCING", message: "SYCHRONIZING..." });
                 try {
                     const [repRes, dictRes] = await Promise.all([
                         fetch(`${GAS_URL}?action=getPendingReports`),
@@ -191,13 +190,16 @@
                     setReports(repData || []);
                     setDictionary(dictData.dictionary || []);
                     window.HOKUTO_MASTER = dictData.data;
-                    const sheet1Count = dictData.data["設定１相当"] ? Object.keys(dictData.data["設定１相当"]).length : 0;
-                    const sheet2Count = dictData.data["優良店"] ? Object.keys(dictData.data["優良店"]).length : 0;
-                    setSyncInfo({ status: "SUCCESS", message: `完了: 未承認 ${repData.length}件 / マスタ ${sheet1Count + sheet2Count}台` });
+                    const s1Count = Object.keys(dictData.data["設定１相当"]).length;
+                    const pmCount = Object.keys(dictData.data["優良店"]).length;
+                    setSyncInfo({ status: "SUCCESS", message: `DONE: REPORTS ${repData.length} / MASTER ${s1Count + pmCount}` });
                 } catch (e) {
-                    console.error(e); setSyncInfo({ status: "ERROR", message: "通信エラー: " + e.message });
+                    console.error(e); setSyncInfo({ status: "ERROR", message: "FAILED: " + e.message });
                 } finally { setLoading(false); }
             };
+
+            // 名寄せロジック (全角半角、記号除去)
+            const normalize = (s) => (s || "").toString().replace(/[！-～]/g, m => String.fromCharCode(m.charCodeAt(0) - 0xFEE0)).replace(/[ー－—―]/g, "-").replace(/[\s　±枚]/g, "").toLowerCase();
 
             const handleAnalyze = (report, mode = evMode) => {
                 if (!report || !window.HOKUTO_MASTER) return;
@@ -208,25 +210,35 @@
                     if (!line.trim()) return null;
                     let match = { text: line.trim(), ev: 0, machine: "", color: "bg-slate-400" };
 
-                    // 1. 機種特定 (完全マスター版ロジック)
-                    dictionary.forEach(d => {
+                    // 1. 辞書マッチング
+                    const foundDict = dictionary.find(d => {
                         const keywords = (d.キーワード || "").split(",").map(k => k.trim()).filter(Boolean);
-                        if (keywords.some(k => line.includes(k))) {
-                            match.machine = d.機種名;
-                            match.color = d.色コード;
-
-                            // 2. 期待値計算 (マスタから厳密・または柔軟にヒットさせる)
-                            const mData = master[d.機種名] || {};
-                            const numbers = line.match(/\d+/g) || [];
-
-                            let foundEv = 0;
-                            numbers.forEach(numStr => {
-                                const val = parseInt(numStr);
-                                if (mData[val] !== undefined) foundEv = mData[val];
-                            });
-                            match.ev = foundEv;
-                        }
+                        return keywords.some(k => line.includes(k));
                     });
+
+                    if (foundDict) {
+                        match.machine = foundDict.機種名;
+                        match.color = foundDict.色コード;
+
+                        // 2. マスタ紐付け (完全一致 or 名寄せ一致)
+                        let mData = master[foundDict.機種名];
+                        if (!mData) {
+                            const normDict = normalize(foundDict.機種名);
+                            const masterKeys = Object.keys(master);
+                            const closest = masterKeys.find(k => normalize(k) === normDict || normalize(k).includes(normDict) || normDict.includes(normalize(k)));
+                            if (closest) mData = master[closest];
+                        }
+
+                        if (mData) {
+                            const numbers = line.match(/\d+/g) || [];
+                            // 数字が複数ある場合、マスタに存在するものを優先
+                            let foundValues = numbers.map(n => parseInt(n)).filter(v => mData[v] !== undefined);
+                            if (foundValues.length > 0) {
+                                // 基本的に大きい数字（G数）を優先、ただし北斗等の場合はG数っぽいものを選択
+                                match.ev = mData[Math.max(...foundValues)];
+                            }
+                        }
+                    }
                     return match;
                 }).filter(Boolean);
 
@@ -236,16 +248,16 @@
 
             const parseMemoDetails = (memo) => {
                 if (!memo) return { text: "", medal: 0, cash: 0 };
-                // 形式: [メダル:123 / 現金:456] を優先抽出
-                const m = memo.match(/\[メダル:(-?\d+)\s*\/\s*現金:(-?\d+)\]/);
-                if (m) {
-                    return {
-                        text: memo.replace(m[0], "").trim(),
-                        medal: parseInt(m[1]) || 0,
-                        cash: parseInt(m[2]) || 0
-                    };
-                }
-                return { text: memo.trim(), medal: 0, cash: 0 };
+                // 極めて柔軟な抽出（メダル:数字 / 現金:数字）
+                const medalMatch = memo.match(/メダル[:：]\s*(-?\d+)/);
+                const cashMatch = memo.match(/現金[:：]\s*(-?\d+)/);
+                const tagMatch = memo.match(/\[.*\]/);
+
+                return {
+                    text: tagMatch ? memo.replace(tagMatch[0], "").trim() : memo.trim(),
+                    medal: medalMatch ? parseInt(medalMatch[1]) : 0,
+                    cash: cashMatch ? parseInt(cashMatch[1]) : 0
+                };
             };
 
             const onApprove = async () => {
@@ -283,7 +295,7 @@
             if (isLocked) return (
                 <div className="flex items-center justify-center min-h-screen bg-slate-950 p-6">
                     <div className="w-full max-w-sm space-y-8 animate-fadeIn text-center">
-                        <h1 className="text-4xl font-black italic text-[#0076FF] tracking-tighter">ADMIN TERMINAL</h1>
+                        <h1 className="text-4xl font-black italic text-[#0076FF] tracking-tighter uppercase">Admin Dash</h1>
                         <form onSubmit={verifyPass} className="bg-slate-900 p-8 lg:p-10 rounded-[2.5rem] border border-white/5 shadow-2xl space-y-6">
                             <input type="password" value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-slate-800 border-none rounded-2xl py-4 px-6 text-white text-center font-black tracking-widest outline-none focus:ring-2 ring-[#0076FF]" placeholder="PASSWORD" autoFocus />
                             <button type="submit" className="w-full bg-[#0076FF] py-4 rounded-2xl text-white font-black hover:opacity-90 shadow-lg shadow-[#0076FF22]">AUTHENTICATE</button>
@@ -300,9 +312,9 @@
                     </div>
 
                     <div className={`sidebar custom-scroll flex flex-col ${isSidebarOpen ? 'open' : ''}`}>
-                        <div className="p-8 border-b border-white/5 bg-slate-900/40">
+                        <div className="p-8 border-b border-white/5">
                             <h1 className="text-2xl font-black text-white italic tracking-tighter">承認待ちリスト</h1>
-                            <p className="text-[10px] text-slate-500 font-bold mt-2 uppercase tracking-widest opacity-50">Operational Console</p>
+                            <p className="text-[10px] text-slate-500 font-bold mt-2 uppercase tracking-widest opacity-50">Operational System</p>
                         </div>
                         <div className="p-6 border-b border-white/5 bg-slate-900/60">
                             <div className="mb-4">
@@ -328,7 +340,7 @@
                             ))}
                         </div>
                         <div className="p-6 border-t border-white/5 bg-slate-900/40 flex gap-3">
-                            <button onClick={loadAll} className="flex-1 bg-white/5 py-4 rounded-xl text-white text-[10px] font-extrabold tracking-widest hover:bg-white/10 transition-colors">SYNC DATA</button>
+                            <button onClick={loadAll} className="flex-1 bg-white/5 py-4 rounded-xl text-white text-[10px] font-extrabold tracking-widest hover:bg-white/10 transition-colors">SYNC</button>
                             <button onClick={() => setShowSettings(true)} className="w-14 bg-white/5 rounded-xl text-white text-lg hover:bg-white/10 transition-colors">⚙</button>
                         </div>
                     </div>
@@ -341,9 +353,9 @@
                                 <div className="bg-slate-900 rounded-[2.5rem] p-10 lg:p-14 text-white shadow-3xl relative overflow-hidden">
                                     <p className="text-xl lg:text-3xl font-black italic tracking-tight whitespace-pre-wrap leading-tight mb-8 relative z-10">{selectedReport.稼働内容 || selectedReport.details}</p>
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 relative z-10 border-t border-white/10 pt-10 mt-6">
-                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Operator</div><div className="text-sm font-black text-slate-100">{selectedReport.報告者}</div></div>
-                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Store</div><div className="text-sm font-black text-slate-100">{selectedReport.店舗名}</div></div>
-                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Date</div><div className="text-sm font-black text-slate-100">{selectedReport.日付}</div></div>
+                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Operator</div><div className="text-sm font-black">{selectedReport.報告者}</div></div>
+                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Store</div><div className="text-sm font-black">{selectedReport.店舗名}</div></div>
+                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Date</div><div className="text-sm font-black">{selectedReport.日付}</div></div>
                                         <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Time</div><div className="text-sm font-black text-[#0076FF]">{selectedReport.稼働時間}h</div></div>
                                     </div>
                                     <div className="absolute top-0 right-0 w-80 h-80 bg-[#0076FF11] rounded-full -mr-40 -mt-40 blur-3xl"></div>
@@ -355,18 +367,18 @@
                                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Financial Analysis</h3>
                                             <div className="grid grid-cols-2 gap-5">
                                                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-2">P-Tokens (メダル)</div>
+                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-2">メダル (回収)</div>
                                                     <div className="text-2xl font-black text-slate-900">{parseMemoDetails(selectedReport.備考).medal.toLocaleString()} <span className="text-xs font-bold text-slate-400">枚</span></div>
                                                 </div>
                                                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-2">Cash (投資)</div>
+                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-2">現金 (投資)</div>
                                                     <div className="text-2xl font-black text-slate-900">{parseMemoDetails(selectedReport.備考).cash.toLocaleString()} <span className="text-xs font-bold text-slate-400">円</span></div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="space-y-6">
-                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Memo / Insights</h3>
-                                            <div className="bg-slate-50 p-7 rounded-3xl text-xs font-medium text-slate-600 min-h-[120px] whitespace-pre-wrap leading-relaxed border border-slate-100">{parseMemoDetails(selectedReport.備考).text || "No memo data provided."}</div>
+                                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Memo / Note</h3>
+                                            <div className="bg-slate-50 p-7 rounded-3xl text-xs font-medium text-slate-600 min-h-[120px] whitespace-pre-wrap leading-relaxed border border-slate-100">{parseMemoDetails(selectedReport.備考).text || "No memo available."}</div>
                                         </div>
                                     </div>
 
@@ -375,7 +387,7 @@
                                             <h3 className="text-2xl font-black italic tracking-tighter">Analysis Matrix</h3>
                                             <button onClick={addManualLog} className="mt-3 text-[9px] font-black bg-[#0076FF11] text-[#0076FF] px-4 py-1.5 rounded-full uppercase hover:bg-[#0076FF22] transition-colors border border-[#0076FF22] shadow-sm">+ 手動で台を追加</button>
                                         </div>
-                                        <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
+                                        <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
                                             {["設定１相当", "優良店"].map(m => (
                                                 <button key={m} onClick={() => { setEvMode(m); handleAnalyze(selectedReport, m); }} className={`px-6 py-2.5 text-[9px] font-black rounded-xl transition-all ${evMode === m ? 'bg-white shadow-lg text-[#0076FF]' : 'text-slate-400 hover:text-slate-600'}`}>{m}</button>
                                             ))}
@@ -392,15 +404,14 @@
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-6">
-                                                    <div className="relative">
-                                                        <input
-                                                            type="number"
-                                                            value={log.ev === 0 ? "" : log.ev}
-                                                            onChange={e => { const n = [...logs]; n[i].ev = parseInt(e.target.value) || 0; setLogs(n); }}
-                                                            className="input-ev"
-                                                            placeholder="0"
-                                                        />
-                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        value={log.ev === 0 ? "" : log.ev}
+                                                        onChange={e => { const n = [...logs]; n[i].ev = parseInt(e.target.value) || 0; setLogs(n); }}
+                                                        className="input-ev"
+                                                        placeholder="0"
+                                                        inputMode="numeric"
+                                                    />
                                                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">JPY</span>
                                                     <button onClick={() => setLogs(logs.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-rose-600 text-2xl transition-colors">✕</button>
                                                 </div>
@@ -410,7 +421,7 @@
 
                                     <div className="bg-[#0076FF] p-10 lg:p-14 rounded-[3.5rem] text-white flex flex-col lg:flex-row justify-between items-center gap-8 shadow-3xl">
                                         <div className="text-center lg:text-left">
-                                            <div className="text-[10px] font-black opacity-50 mb-2 uppercase tracking-[0.3em]">Aggregate EV Projection</div>
+                                            <div className="text-[10px] font-black opacity-50 mb-2 uppercase tracking-[0.3em]">Aggregate Total (EV)</div>
                                             <div className="text-6xl font-black italic tracking-tighter">{logs.reduce((s, l) => s + l.ev, 0).toLocaleString()} <span className="text-xl font-bold opacity-30 ml-2">円</span></div>
                                         </div>
                                         <button onClick={onApprove} className="w-full lg:w-auto bg-white text-[#0076FF] px-14 py-6 rounded-[2rem] font-black shadow-2xl hover:bg-slate-50 transition-all uppercase tracking-[0.2em] text-[10px] active:scale-95">承認して完了保存</button>
@@ -419,8 +430,8 @@
                             </div>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-slate-200 font-black italic select-none">
-                                <div className="text-6xl lg:text-8xl opacity-30">管理者アプリ</div>
-                                <div className="text-[11px] tracking-[1em] opacity-30 mt-6 uppercase">IDLE: SELECT REPORT</div>
+                                <div className="text-6xl lg:text-8xl opacity-30 uppercase tracking-tighter">管理者アプリ</div>
+                                <div className="text-[11px] tracking-[1em] opacity-30 mt-6 uppercase">IDLE: SELECT DATA</div>
                             </div>
                         )}
                     </div>
@@ -429,24 +440,24 @@
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 modal-overlay" onClick={() => setShowSettings(false)}>
                             <div className="bg-white rounded-[3rem] w-full max-w-3xl p-10 lg:p-14 flex flex-col max-h-[85vh] shadow-3xl animate-fadeIn" onClick={e => e.stopPropagation()}>
                                 <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-3xl font-black italic tracking-tighter text-slate-900 underline decoration-[#0076FF] decoration-4 underline-offset-8">Dictionary Config</h2>
+                                    <h2 className="text-3xl font-black italic tracking-tighter text-slate-900">Dictionary Settings</h2>
                                     <div className="flex gap-4">
-                                        <button onClick={() => setDictionary([...dictionary, { 機種名: "新機種", キーワード: "キーワード", 色コード: "bg-slate-600", 備考: "" }])} className="px-6 py-3 bg-slate-100 rounded-2xl text-[10px] font-black hover:bg-slate-200 transition-colors">＋ 新規台を追加</button>
+                                        <button onClick={() => setDictionary([...dictionary, { 機種名: "新機種", キーワード: "キーワード", 色コード: "bg-slate-600", 備考: "" }])} className="px-6 py-3 bg-slate-100 rounded-2xl text-[10px] font-black">＋ 追加</button>
                                         <button onClick={async () => {
                                             setIsSavingDict(true);
-                                            try { await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveDictionary", data: dictionary }) }); alert("設定を保存しました！"); }
+                                            try { await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveDictionary", data: dictionary }) }); alert("Saved!"); }
                                             catch (e) { alert(e.message); } finally { setIsSavingDict(false); }
-                                        }} disabled={isSavingDict} className="px-8 py-3 bg-[#0076FF] text-white rounded-2xl text-[10px] font-black shadow-lg shadow-[#0076FF33]">{isSavingDict ? '保存中...' : '設定を保存'}</button>
+                                        }} disabled={isSavingDict} className="px-8 py-3 bg-[#0076FF] text-white rounded-2xl text-[10px] font-black shadow-lg shadow-[#0076FF33]">{isSavingDict ? '...' : '保存'}</button>
                                     </div>
                                 </div>
-                                <div className="flex-1 overflow-y-auto custom-scroll space-y-5 pr-2">
+                                <div className="flex-1 overflow-y-auto custom-scroll space-y-5">
                                     {dictionary.map((m, i) => (
                                         <div key={i} className="p-7 rounded-[2rem] border border-slate-100 bg-slate-50 flex flex-col lg:flex-row gap-6 lg:items-end">
                                             <div className="grid grid-cols-2 gap-5 flex-1">
                                                 <div><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Machine Name</label><input value={m.機種名} onChange={e => { const n = [...dictionary]; n[i].機種名 = e.target.value; setDictionary(n); }} className="w-full bg-transparent border-b border-slate-200 py-1.5 text-sm font-black text-slate-800 outline-none focus:border-[#0076FF]" /></div>
-                                                <div><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Mapping Keyword</label><input value={m.キーワード} onChange={e => { const n = [...dictionary]; n[i].キーワード = e.target.value; setDictionary(n); }} className="w-full bg-transparent border-b border-slate-200 py-1.5 text-sm font-black text-slate-800 outline-none focus:border-[#0076FF]" /></div>
+                                                <div><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Keyword</label><input value={m.キーワード} onChange={e => { const n = [...dictionary]; n[i].キーワード = e.target.value; setDictionary(n); }} className="w-full bg-transparent border-b border-slate-200 py-1.5 text-sm font-black text-slate-800 outline-none focus:border-[#0076FF]" /></div>
                                             </div>
-                                            <button onClick={() => setDictionary(dictionary.filter((_, idx) => idx !== i))} className="text-rose-500 text-[10px] font-extrabold hover:underline px-2 py-1">削除</button>
+                                            <button onClick={() => setDictionary(dictionary.filter((_, idx) => idx !== i))} className="text-rose-500 text-[10px] font-extrabold hover:underline">削除</button>
                                         </div>
                                     ))}
                                 </div>
