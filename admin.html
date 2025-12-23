@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="robots" content="noindex,nofollow">
-    <title>管理者アプリ | v7.8.1 FINAL</title>
+    <title>管理者アプリ | v7.8.2 FINAL</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -122,7 +122,6 @@
             const [dictionary, setDictionary] = useState([]);
             const [loading, setLoading] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-            const [showSettings, setShowSettings] = useState(false);
             const [showDebug, setShowDebug] = useState(false);
 
             useEffect(() => {
@@ -151,7 +150,7 @@
                 const allKeys = Object.keys(obj);
                 for (let ak of allKeys) {
                     if (ak.trim() === "" || ak === "undefined") {
-                        if (typeof obj[ak] === 'string' && obj[ak].includes("メダル")) return obj[ak];
+                        if (typeof obj[ak] === 'string' && (obj[ak].includes("メダル") || obj[ak].includes("現金"))) return obj[ak];
                     }
                 }
                 return "";
@@ -182,11 +181,11 @@
                         if (val >= start && val <= end) return mData[key];
                     }
                     if (key.includes("以上")) {
-                        const start = parseInt(key.replace(/\D/g, ""));
+                        const start = parseInt(key.replace(/[^-0-9]/g, ""));
                         if (val >= start) return mData[key];
                     }
                     if (key.includes("未満")) {
-                        const end = parseInt(key.replace(/\D/g, ""));
+                        const end = parseInt(key.replace(/[^-0-9]/g, ""));
                         if (val < end) return mData[key];
                     }
                 }
@@ -202,21 +201,50 @@
                 const results = lines.map(line => {
                     if (!line.trim()) return null;
                     let match = { text: line.trim(), ev: 0, machine: "", color: "bg-slate-400", source: "" };
+
+                    // 1. 辞書から機種を特定
                     const foundDict = dictionary.find(d => {
                         const keywords = (d.キーワード || "").split(",").map(k => k.trim()).filter(Boolean);
                         return keywords.some(k => line.includes(k));
                     });
+
                     if (foundDict) {
                         match.machine = foundDict.機種名;
                         match.color = foundDict.色コード;
-                        let mKey = Object.keys(master).find(k => normalize(k) === normalize(foundDict.機種名) || normalize(k).includes(normalize(foundDict.機種名)) || normalize(foundDict.機種名).includes(normalize(k)));
-                        if (mKey) {
-                            match.source = mKey;
-                            const mData = master[mKey];
-                            const numbers = line.replace(/\D/g, " ").trim().split(/\s+/).map(n => parseInt(n));
-                            for (let num of numbers) {
-                                const foundEv = matchEvInRange(num, mData);
-                                if (foundEv !== 0) { match.ev = foundEv; break; }
+
+                        // 2. リセット判別
+                        const isReset = line.includes("リセ") || line.includes("リセット") || line.includes("設定変更") || line.includes("変更後");
+
+                        // 3. マスタから最適なシートを選択
+                        const dictNorm = normalize(foundDict.機種名);
+                        const matchingSheets = Object.keys(master).filter(k => {
+                            const kNorm = normalize(k);
+                            return kNorm.includes(dictNorm) || dictNorm.includes(kNorm);
+                        });
+
+                        let bestSheetKey = "";
+                        if (isReset) {
+                            bestSheetKey = matchingSheets.find(k => k.includes("設定変更") || k.includes("リセ") || k.includes("変更後")) || matchingSheets[0];
+                        } else {
+                            bestSheetKey = matchingSheets.find(k => !k.includes("設定変更") && !k.includes("リセ") && !k.includes("変更後")) || matchingSheets[0];
+                        }
+
+                        if (bestSheetKey) {
+                            match.source = bestSheetKey;
+                            const mData = master[bestSheetKey];
+
+                            // 4. 数値の抽出 (符号・カッコ対応)
+                            // "536-423" -> [536, -423], "(+230" -> [230]
+                            const numbers = line.replace(/[()（）]/g, " ").match(/[+-]?\d+/g) || [];
+
+                            // 全ての数値をマスタに当てはめて、最初に見つかった期待値を採用
+                            for (let numStr of numbers) {
+                                const val = parseInt(numStr);
+                                const foundEv = matchEvInRange(val, mData);
+                                if (foundEv !== 0) {
+                                    match.ev = foundEv;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -246,10 +274,10 @@
 
             if (isLocked) return (
                 <div className="flex items-center justify-center min-h-screen bg-slate-950 p-6">
-                    <div className="w-full max-w-sm text-center space-y-8 animate-fadeIn">
-                        <h1 className="text-4xl font-black italic text-[#0076FF] tracking-tighter uppercase">Admin Dash</h1>
-                        <form onSubmit={(e) => { e.preventDefault(); if (passInput === APP_PASS) { setIsLocked(false); localStorage.setItem("ap_v7", APP_PASS); loadAll(); } else { alert("Failed"); } }} className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/5 space-y-6">
-                            <input type="password" value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-slate-800 border-none rounded-2xl py-4 text-center text-white font-black tracking-widest outline-none focus:ring-2 ring-[#0076FF]" placeholder="PASSWORD" autoFocus />
+                    <div className="w-full max-w-sm text-center animate-fadeIn space-y-8">
+                        <h1 className="text-4xl font-black italic text-[#0076FF] tracking-tighter uppercase">Admin Console</h1>
+                        <form onSubmit={(e) => { e.preventDefault(); if (passInput === APP_PASS) { setIsLocked(false); localStorage.setItem("ap_v7", APP_PASS); loadAll(); } else { alert("Error"); } }} className="bg-slate-900 p-8 rounded-[2.5rem] border border-white/5 space-y-6">
+                            <input type="password" value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-slate-800 border-none rounded-2xl py-4 text-center text-white font-black outline-none focus:ring-2 ring-[#0076FF]" placeholder="PASSWORD" autoFocus />
                             <button type="submit" className="w-full bg-[#0076FF] py-4 rounded-2xl text-white font-black shadow-lg shadow-[#0076FF22]">AUTHENTICATE</button>
                         </form>
                     </div>
@@ -266,36 +294,29 @@
                     <div className={`sidebar flex flex-col ${isSidebarOpen ? 'open' : ''}`}>
                         <div className="p-8 border-b border-white/5">
                             <h1 className="text-2xl font-black text-white italic">承認待ちリスト</h1>
-                            <p className="text-[10px] text-slate-500 font-bold mt-2 uppercase tracking-widest opacity-50">Operational Console</p>
+                            <p className="text-[10px] text-slate-500 font-bold mt-2 uppercase tracking-widest opacity-50">Operational System</p>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scroll p-4 space-y-2">
                             {reports.map(r => (
                                 <div key={r.ID} onClick={() => { handleAnalyze(r); setIsSidebarOpen(false); }} className={`p-5 rounded-[1.5rem] cursor-pointer transition-all ${selectedId === r.ID ? 'bg-[#0076FF] text-white' : 'hover:bg-white/5 text-slate-400'}`}>
-                                    <div className="text-[9px] font-black opacity-40 uppercase mb-1">{r.日付 || "DATE"} • {r.報告者}</div>
+                                    <div className="text-[9px] font-black opacity-40 mb-1">{r.日付 || "DATE"} • {r.報告者}</div>
                                     <div className="font-black text-xs truncate">{r.店舗名}</div>
                                 </div>
                             ))}
                         </div>
                         <div className="p-6 border-t border-white/5 flex flex-col gap-2">
                             <button onClick={loadAll} className="w-full bg-white/5 py-4 rounded-xl text-white text-[10px] font-black tracking-widest hover:bg-white/10">SYNC DATA</button>
-                            <div className="flex gap-2">
-                                <button onClick={() => setShowSettings(!showSettings)} className="flex-1 bg-white/5 py-3 rounded-xl text-white text-[10px] font-black">DICTIONARY</button>
-                                <button onClick={() => setShowDebug(!showDebug)} className={`p-3 rounded-xl text-[10px] font-black ${showDebug ? 'bg-orange-600 text-white' : 'bg-white/5 text-white'}`}>DEBUG</button>
-                            </div>
+                            <button onClick={() => setShowDebug(!showDebug)} className={`w-full py-3 rounded-xl text-[10px] font-black ${showDebug ? 'bg-orange-600 text-white' : 'bg-white/5 text-white'}`}>DEBUG TOOL</button>
                         </div>
                     </div>
 
                     <div className="main custom-scroll overflow-y-auto">
                         {showDebug && (
-                            <div className="mb-6 p-6 bg-orange-50 border-2 border-orange-100 rounded-[2.5rem] text-[10px] font-mono animate-fadeIn overflow-hidden space-y-4">
-                                <div className="flex justify-between items-center text-orange-900 font-black"><span>RAW DATA INSPECTOR</span><button onClick={() => setShowDebug(false)}>✕</button></div>
-                                <div className="space-y-4">
-                                    <div className="bg-white/50 p-4 rounded-2xl overflow-x-auto"><div className="mb-2 font-black text-orange-800 underline">Selected JSON:</div><pre>{JSON.stringify(selectedReport, null, 2)}</pre></div>
-                                    <div className="bg-white/50 p-4 rounded-2xl overflow-x-auto">
-                                        <div className="mb-2 font-black text-orange-800 underline">Master Keys ({evMode}):</div>
-                                        <div className="flex flex-wrap gap-2">{window.HOKUTO_MASTER && window.HOKUTO_MASTER[evMode] && Object.keys(window.HOKUTO_MASTER[evMode]).map(k => <span key={k} className="bg-orange-200/50 px-2 py-1 rounded">{k}</span>)}</div>
-                                    </div>
-                                </div>
+                            <div className="mb-6 p-6 bg-orange-50 border-2 border-orange-100 rounded-[2.5rem] text-[10px] space-y-4 font-mono animate-fadeIn overflow-hidden">
+                                <div className="flex justify-between items-center text-orange-900 font-extrabold"><span>DEBUG INSPECTOR</span><button onClick={() => setShowDebug(false)}>✕</button></div>
+                                <div className="bg-white/50 p-4 rounded-2xl overflow-x-auto"><pre>{JSON.stringify(selectedReport, null, 2)}</pre></div>
+                                <div className="text-orange-900 underline font-black">Loaded Master Sheets ({evMode}):</div>
+                                <div className="flex flex-wrap gap-2">{window.HOKUTO_MASTER && window.HOKUTO_MASTER[evMode] && Object.keys(window.HOKUTO_MASTER[evMode]).map(k => <span key={k} className="bg-white/80 px-2 py-1 rounded border border-orange-200">{k}</span>)}</div>
                             </div>
                         )}
 
@@ -329,7 +350,7 @@
                                         </div>
                                         <div className="space-y-6">
                                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Report Note</h3>
-                                            <div className="bg-slate-50 p-6 rounded-3xl text-sm font-medium text-slate-600 min-h-[100px] border border-slate-100">{parseFinance(selectedReport).text || "メモなし"}</div>
+                                            <div className="bg-slate-50 p-7 rounded-3xl text-sm font-medium text-slate-600 min-h-[100px] border border-slate-100">{parseFinance(selectedReport).text || "メモなし"}</div>
                                         </div>
                                     </div>
 
@@ -342,15 +363,15 @@
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-5">
                                         {logs.map((log, i) => (
-                                            <div key={i} className="bg-slate-50 p-6 lg:p-8 rounded-[2rem] border border-slate-100 flex flex-col lg:flex-row justify-between items-center gap-6 animate-fadeIn">
+                                            <div key={i} className="bg-slate-50 p-7 lg:p-10 rounded-[2.5rem] border border-slate-100 flex flex-col lg:flex-row justify-between items-center gap-6 animate-fadeIn">
                                                 <div className="flex-1 space-y-2 w-full">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={`text-[8px] font-black px-3 py-1.5 rounded-lg text-white shadow-sm shrink-0 ${log.color || 'bg-slate-400'}`}>{log.machine}</span>
-                                                        <span className="text-sm font-black text-slate-800">{log.text}</span>
+                                                    <div className="flex items-center gap-4">
+                                                        <span className={`text-[8px] font-black px-4 py-2 rounded-xl text-white shadow-sm shrink-0 ${log.color || 'bg-slate-400'}`}>{log.machine}</span>
+                                                        <span className="text-base font-black text-slate-800">{log.text}</span>
                                                     </div>
-                                                    {log.source && <div className="text-[8px] font-black text-[#0076FF] italic opacity-50 ml-1">Matched Source: {log.source}</div>}
+                                                    {log.source && <div className="text-[9px] font-black text-[#0076FF] italic opacity-60 ml-2">Matched Key: {log.source}</div>}
                                                 </div>
                                                 <div className="flex items-center gap-4 shrink-0">
                                                     <input type="number" inputMode="numeric" value={log.ev === 0 ? "" : log.ev} onChange={e => { const n = [...logs]; n[i].ev = parseInt(e.target.value) || 0; setLogs(n); }} className="input-ev" placeholder="0" />
@@ -360,17 +381,20 @@
                                         ))}
                                     </div>
 
-                                    <div className="bg-[#0076FF] p-10 lg:p-14 rounded-[3.5rem] text-white flex flex-col lg:flex-row justify-between items-center gap-8 shadow-2xl">
+                                    <div className="bg-[#0076FF] p-10 lg:p-14 rounded-[4rem] text-white flex flex-col lg:flex-row justify-between items-center gap-8 shadow-2xl">
                                         <div className="text-center lg:text-left">
-                                            <div className="text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest">Aggregate Expected Value</div>
-                                            <div className="text-6xl font-black italic tracking-tighter">{logs.reduce((s, l) => s + l.ev, 0).toLocaleString()} <span className="text-xl font-bold opacity-30 ml-2">円</span></div>
+                                            <div className="text-[10px] font-black opacity-50 mb-1 uppercase tracking-widest underline decoration-white/20 underline-offset-4">Total Aggregate EV</div>
+                                            <div className="text-7xl font-black italic tracking-tighter">{logs.reduce((s, l) => s + l.ev, 0).toLocaleString()} <span className="text-xl font-bold opacity-30 ml-2">円</span></div>
                                         </div>
-                                        <button onClick={onApprove} className="w-full lg:w-auto bg-white text-[#0076FF] px-14 py-6 rounded-[2.5rem] font-black shadow-lg hover:bg-slate-50 active:scale-95 transition-all text-xs tracking-widest uppercase">Approve & Save</button>
+                                        <button onClick={onApprove} className="w-full lg:w-auto bg-white text-[#0076FF] px-16 py-6 rounded-[2.5rem] font-black shadow-xl hover:bg-slate-50 active:scale-95 transition-all text-xs tracking-widest uppercase">Save Execution</button>
                                     </div>
                                 </div>
                             </div>
                         ) : (
-                            <div className="h-full flex items-center justify-center text-slate-200 text-6xl lg:text-8xl font-black italic uppercase select-none opacity-20">管理者アプリ</div>
+                            <div className="h-full flex flex-col items-center justify-center text-slate-200 text-6xl lg:text-8xl font-black italic uppercase select-none opacity-20 text-center p-10">
+                                <div>Admin App</div>
+                                <div className="text-[11px] tracking-[1.5em] mt-8 opacity-50">Select Data to Proceed</div>
+                            </div>
                         )}
                     </div>
                 </div>
