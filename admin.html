@@ -251,14 +251,20 @@
                 if (mData === undefined || mData === null) return 0;
                 const gKeys = Object.keys(mData).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
                 if (gKeys.length === 0) return 0;
+                
+                // 1G単位の線形補間ロジック
                 if (mData[val] !== undefined) return mData[val];
                 if (val <= gKeys[0]) return mData[gKeys[0]];
                 if (val >= gKeys[gKeys.length - 1]) return mData[gKeys[gKeys.length - 1]];
-                const lower = [...gKeys].reverse().find(k => k < val);
-                const upper = gKeys.find(k => k > val);
+                
+                const lower = [...gKeys].reverse().find(k => k <= val);
+                const upper = gKeys.find(k => k >= val);
+                
                 if (lower !== undefined && upper !== undefined) {
                     const lowEv = mData[lower];
                     const upEv = mData[upper];
+                    if (lower === upper) return lowEv;
+                    // y = y0 + (x - x0) * (y1 - y0) / (x1 - x0)
                     const ev = lowEv + (upEv - lowEv) * (val - lower) / (upper - lower);
                     return Math.round(ev);
                 }
@@ -286,18 +292,48 @@
                         let dVal = numbers[1] ? parseInt(numbers[1]) : null;
                         const sheetNames = Object.keys(master);
                         let bestKey = "";
-                        if (isReset) bestKey = sheetNames.find(k => /設定変更|リセ|変更後/.test(k));
-                        else if (dVal !== null) {
-                            bestKey = sheetNames.find(k => {
-                                const p = k.match(/([+-]?\d+)～([+-]?\d+)/);
-                                if (p) return dVal >= parseInt(p[1]) && dVal <= parseInt(p[2]);
-                                if (k.includes("未満") && dVal < parseInt(k.replace(/[^-0-9]/g, ""))) return true;
-                                if (k.includes("以上") && dVal >= parseInt(k.replace(/[^-0-9]/g, ""))) return true;
-                                return false;
-                            });
+
+                        // 記号の正規化 (～, 〜, ~)
+                        const normalize = (s) => s.replace(/[～〜]/g, "~");
+
+                        if (isReset) {
+                            bestKey = sheetNames.find(k => /設定変更|リセ|変更後/.test(k));
+                        } else if (dVal !== null) {
+                            // 最も具体的な範囲（幅が狭いシート）を優先
+                            const matches = sheetNames.map(k => {
+                                const nk = normalize(k);
+                                const rangeMatch = nk.match(/([+-]?\d+)~([+-]?\d+)/);
+                                if (rangeMatch) {
+                                    const s = parseInt(rangeMatch[1]);
+                                    const e = parseInt(rangeMatch[2]);
+                                    if (dVal >= s && dVal <= e) return { key: k, width: Math.abs(e - s) };
+                                }
+                                if (nk.includes("未満")) {
+                                    const limit = parseInt(nk.replace(/[^-0-9]/g, ""));
+                                    if (dVal < limit) return { key: k, width: 99999 };
+                                }
+                                if (nk.includes("以上")) {
+                                    const limit = parseInt(nk.replace(/[^-0-9]/g, ""));
+                                    if (dVal >= limit) return { key: k, width: 99999 };
+                                }
+                                return null;
+                            }).filter(Boolean);
+
+                            if (matches.length > 0) {
+                                matches.sort((a, b) => a.width - b.width);
+                                bestKey = matches[0].key;
+                            }
                         }
-                        if (!bestKey) bestKey = sheetNames.find(k => /0～|±0|±0～|\+100～/.test(k));
-                        if (bestKey) { match.source = bestKey; match.ev = matchEvInRange(gCount, master[bestKey]); }
+                        
+                        // フォールバック: 0G付近の基本シート
+                        if (!bestKey) {
+                            bestKey = sheetNames.find(k => /0~|\+0|±0|0～/.test(normalize(k)));
+                        }
+
+                        if (bestKey) { 
+                            match.source = bestKey; 
+                            match.ev = matchEvInRange(gCount, master[bestKey]); 
+                        }
                     }
                     return match;
                 }).filter(Boolean);
