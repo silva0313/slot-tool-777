@@ -14,19 +14,20 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+            background-color: #000000;
+            color: #0076FF;
             overflow-x: hidden;
         }
 
         .sidebar {
-            background: #0f172a;
+            background: #000000;
             width: 320px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 50;
             height: 100vh;
             position: fixed;
             left: -320px;
+            border-right: 1px solid #0076FF33;
         }
 
         .sidebar.open {
@@ -39,13 +40,13 @@
             min-height: 100vh;
             width: 100%;
             transition: margin-left 0.3s;
+            background-color: #000000;
         }
 
         @media (min-width: 1024px) {
             .sidebar {
                 left: 0;
                 position: sticky;
-                border-right: 1px solid rgba(255, 255, 255, 0.05);
             }
 
             .mobile-header {
@@ -66,42 +67,48 @@
             left: 0;
             right: 0;
             height: 4rem;
-            background: #0f172a;
+            background: #000000;
             z-index: 40;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 1.5rem;
+            border-bottom: 1px solid #0076FF33;
         }
 
         .custom-scroll::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
+            width: 4px;
+            height: 4px;
         }
 
         .custom-scroll::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+            background: #0076FF66;
             border-radius: 10px;
         }
 
         .input-ev {
-            background: #f1f5f9;
-            border: none;
+            background: #111111;
+            border: 1px solid #0076FF44;
             font-weight: 900;
-            border-radius: 1rem;
-            padding: 1rem;
-            width: 100px;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            width: 90px;
             text-align: center;
-            color: #4338ca;
+            color: #0076FF;
+            outline: none;
+        }
+
+        .input-ev:focus {
+            border-color: #0076FF;
         }
 
         .modal-overlay {
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(10px);
         }
 
         .shadow-3xl {
-            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.14);
+            box-shadow: 0 32px 64px -12px rgba(0, 118, 255, 0.1);
         }
 
         .animate-fadeIn {
@@ -111,13 +118,42 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: scale(0.98);
+                transform: translateY(10px);
             }
 
             to {
                 opacity: 1;
-                transform: scale(1);
+                transform: translateY(0);
             }
+        }
+
+        /* Tailwind override for Blue Theme */
+        .bg-indigo-600 {
+            background-color: #0076FF !important;
+        }
+
+        .text-indigo-600 {
+            color: #0076FF !important;
+        }
+
+        .text-indigo-500 {
+            color: #0076FF !important;
+        }
+
+        .bg-indigo-500 {
+            background-color: #0076FF !important;
+        }
+
+        .border-indigo-500 {
+            border-color: #0076FF !important;
+        }
+
+        .bg-indigo-50 {
+            background-color: #0076FF11 !important;
+        }
+
+        .text-indigo-700 {
+            color: #0076FF !important;
         }
     </style>
 </head>
@@ -158,7 +194,7 @@
 
             const loadAll = async () => {
                 setLoading(true);
-                setSyncInfo({ status: "SYNCING", message: "通信中..." });
+                setSyncInfo({ status: "SYNCING", message: "SYNCING..." });
                 try {
                     const [repRes, dictRes] = await Promise.all([
                         fetch(`${GAS_URL}?action=getPendingReports`),
@@ -170,9 +206,9 @@
                     setDictionary(dictData.dictionary || []);
                     window.HOKUTO_MASTER = dictData.data;
                     const sheetCount = Object.keys(dictData.data["設定１相当"]).length + Object.keys(dictData.data["優良店"]).length;
-                    setSyncInfo({ status: "SUCCESS", message: `完了: 報告${repData.length}件 / マスタ${sheetCount}件` });
+                    setSyncInfo({ status: "SUCCESS", message: `DONE: REPORTS ${repData.length} / MASTER ${sheetCount}` });
                 } catch (e) {
-                    console.error(e); setSyncInfo({ status: "ERROR", message: "同期失敗: " + e.message });
+                    console.error(e); setSyncInfo({ status: "ERROR", message: "FAILED: " + e.message });
                 } finally { setLoading(false); }
             };
 
@@ -182,7 +218,7 @@
                 const lines = (report.稼働内容 || report.details || "").split("\n");
 
                 const results = lines.map(line => {
-                    let match = { text: line.trim(), ev: 0, machine: "", color: "bg-slate-400" };
+                    let match = { text: line.trim(), ev: 0, machine: "", color: "bg-slate-800" };
                     if (!line.trim()) return null;
 
                     dictionary.forEach(d => {
@@ -240,172 +276,172 @@
             };
 
             const addManualLog = () => {
-                setLogs([...logs, { text: "手動追加", ev: 0, machine: "", color: "bg-slate-400" }]);
+                setLogs([...logs, { text: "手動追加", ev: 0, machine: "", color: "bg-slate-800" }]);
             };
 
             const selectedReport = reports.find(r => r.ID === selectedId);
 
             if (isLocked) return (
-                <div className="flex items-center justify-center min-h-screen bg-slate-950 p-6">
+                <div className="flex items-center justify-center min-h-screen bg-black p-6">
                     <div className="w-full max-w-sm space-y-8 animate-fadeIn">
                         <div className="text-center">
-                            <h1 className="text-3xl font-black italic text-indigo-500 tracking-tighter">ADMIN TERMINAL</h1>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2">Access Control Gate</p>
+                            <h1 className="text-3xl font-black italic text-[#0076FF] tracking-tighter">ADMIN TERMINAL</h1>
+                            <p className="text-[10px] text-[#0076FF] opacity-50 font-black uppercase tracking-[0.3em] mt-2">Access Control Gate</p>
                         </div>
-                        <form onSubmit={verifyPass} className="bg-slate-900 p-8 rounded-[2rem] border border-white/5 shadow-3xl space-y-6">
-                            <input type="password" value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-slate-800 border-none rounded-2xl py-4 px-6 text-white text-center font-black tracking-widest outline-none focus:ring-2 ring-indigo-500" placeholder="合言葉" autoFocus />
-                            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl text-white font-black transition-all shadow-xl">AUTHENTICATE</button>
+                        <form onSubmit={verifyPass} className="bg-black p-8 rounded-[2rem] border border-[#0076FF] border-opacity-30 shadow-3xl space-y-6">
+                            <input type="password" value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-[#111111] border border-[#0076FF33] rounded-2xl py-4 px-6 text-[#0076FF] text-center font-black tracking-widest outline-none focus:border-[#0076FF]" placeholder="PASSWORD" autoFocus />
+                            <button type="submit" className="w-full bg-[#0076FF] hover:opacity-80 py-4 rounded-2xl text-black font-black transition-all shadow-xl">AUTHENTICATE</button>
                         </form>
                     </div>
                 </div>
             );
 
             return (
-                <div className="flex h-screen overflow-hidden">
+                <div className="flex h-screen overflow-hidden bg-black">
                     <div className="mobile-header">
-                        <div className="text-xl font-black italic text-white flex items-center gap-2">Admin<span className="text-indigo-500">.</span> {loading && <div className="w-2 h-2 bg-indigo-500 rounded-full animate-ping"></div>}</div>
-                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-white p-2 text-2xl">☰</button>
+                        <div className="text-xl font-black italic text-[#0076FF] flex items-center gap-2">承認待ちリスト {loading && <div className="w-2 h-2 bg-[#0076FF] rounded-full animate-ping"></div>}</div>
+                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-[#0076FF] p-2 text-2xl">☰</button>
                     </div>
 
                     <div className={`sidebar custom-scroll flex flex-col ${isSidebarOpen ? 'open' : ''}`}>
-                        <div className="p-8 border-b border-white/5">
-                            <h1 className="text-3xl font-black text-white italic tracking-tighter">DATA CENTER<span className="text-indigo-500">.</span></h1>
-                            <p className="text-[10px] text-slate-500 font-black mt-2 uppercase tracking-widest">System Architecture v7.7.2</p>
+                        <div className="p-8 border-b border-[#0076FF11]">
+                            <h1 className="text-2xl font-black text-[#0076FF] italic tracking-tighter">承認待ちリスト</h1>
+                            <p className="text-[10px] text-[#0076FF] opacity-40 font-black mt-2 uppercase tracking-widest leading-none">Management Console</p>
                         </div>
-                        <div className="p-6 border-b border-white/5 bg-slate-900/50">
+                        <div className="p-6 border-b border-[#0076FF11]">
                             <div className="flex justify-between items-center mb-4">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pending</span>
-                                <span className="bg-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{reports.length}</span>
+                                <span className="text-[10px] font-black text-[#0076FF] opacity-50 uppercase tracking-widest">Reports</span>
+                                <span className="bg-[#0076FF] text-black text-[10px] font-black px-2 py-0.5 rounded-full">{reports.length}</span>
                             </div>
                             {syncInfo.message && (
-                                <div className={`mb-4 p-2 rounded-lg text-[8px] font-black text-center border ${syncInfo.status === 'ERROR' ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
+                                <div className={`mb-4 p-2 rounded-lg text-[8px] font-black text-center border bg-[#0076FF05] border-[#0076FF22] text-[#0076FF]`}>
                                     {syncInfo.message}
                                 </div>
                             )}
-                            <button onClick={onDeleteSelected} disabled={selectedIds.length === 0} className={`w-full py-3 rounded-xl text-xs font-black transition-all ${selectedIds.length > 0 ? 'bg-rose-500 text-white shadow-lg' : 'bg-slate-800 text-slate-600 opacity-50'}`}>DELETE ({selectedIds.length})</button>
+                            <button onClick={onDeleteSelected} disabled={selectedIds.length === 0} className={`w-full py-3 rounded-xl text-xs font-black transition-all ${selectedIds.length > 0 ? 'bg-rose-600 text-white shadow-lg' : 'bg-[#111111] text-[#0076FF22] border border-[#0076FF11]'}`}>DELETE ({selectedIds.length})</button>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scroll p-4 space-y-2">
                             {reports.map(r => (
-                                <div key={r.ID} onClick={() => { handleAnalyze(r); setIsSidebarOpen(false); }} className={`group p-4 rounded-2xl cursor-pointer transition-all ${selectedId === r.ID ? 'bg-indigo-600 text-white shadow-2xl scale-[1.02]' : 'hover:bg-white/5 text-slate-400'}`}>
+                                <div key={r.ID} onClick={() => { handleAnalyze(r); setIsSidebarOpen(false); }} className={`group p-4 rounded-2xl cursor-pointer transition-all ${selectedId === r.ID ? 'bg-[#0076FF] text-black shadow-2xl scale-[1.02]' : 'hover:bg-[#0076FF11] text-[#0076FF] opacity-60'}`}>
                                     <div className="flex items-center gap-3">
-                                        <input type="checkbox" checked={selectedIds.includes(r.ID)} onChange={() => setSelectedIds(prev => prev.includes(r.ID) ? prev.filter(i => i !== r.ID) : [...prev, r.ID])} onClick={e => e.stopPropagation()} className="w-4 h-4 rounded border-slate-700 bg-transparent text-indigo-500" />
+                                        <input type="checkbox" checked={selectedIds.includes(r.ID)} onChange={() => setSelectedIds(prev => prev.includes(r.ID) ? prev.filter(i => i !== r.ID) : [...prev, r.ID])} onClick={e => e.stopPropagation()} className="w-4 h-4 rounded border-[#0076FF44] bg-transparent text-[#0076FF]" />
                                         <div className="min-w-0 flex-1">
-                                            <div className="text-[9px] font-black opacity-50 uppercase">{r.日付} • {r.報告者}</div>
+                                            <div className={`text-[9px] font-black uppercase ${selectedId === r.ID ? 'opacity-60' : 'opacity-40'}`}>{r.日付} • {r.報告者}</div>
                                             <div className="font-black text-xs truncate">{r.店舗名}</div>
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="p-6 border-t border-white/5 flex gap-3">
-                            <button onClick={loadAll} className="flex-1 bg-white/5 py-4 rounded-xl text-white text-[10px] font-black tracking-widest">SYNC</button>
-                            <button onClick={() => setShowSettings(true)} className="w-14 bg-white/5 rounded-xl text-white text-lg">⚙</button>
+                        <div className="p-6 border-t border-[#0076FF11] flex gap-3">
+                            <button onClick={loadAll} className="flex-1 bg-[#0076FF11] py-4 rounded-xl text-[#0076FF] text-[10px] font-black tracking-widest border border-[#0076FF33]">SYNC</button>
+                            <button onClick={() => setShowSettings(true)} className="w-14 bg-[#0076FF11] rounded-xl text-[#0076FF] text-lg border border-[#0076FF33]">⚙</button>
                         </div>
                     </div>
 
-                    {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"></div>}
+                    {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/80 z-40 lg:hidden backdrop-blur-sm"></div>}
 
                     <div className="main custom-scroll overflow-y-auto">
                         {selectedReport ? (
                             <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-20">
-                                <div className="bg-slate-900 rounded-[2rem] p-8 lg:p-12 text-white shadow-3xl relative overflow-hidden">
+                                <div className="bg-[#111111] border border-[#0076FF22] rounded-[2rem] p-8 lg:p-12 text-[#0076FF] shadow-3xl relative overflow-hidden">
                                     <p className="text-xl lg:text-2xl font-bold whitespace-pre-wrap leading-tight mb-8 relative z-10">{selectedReport.稼働内容 || selectedReport.details}</p>
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 relative z-10 border-t border-white/10 pt-8 mt-4">
-                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Worker</div><div className="text-sm font-black">{selectedReport.報告者}</div></div>
-                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Store</div><div className="text-sm font-black">{selectedReport.店舗名}</div></div>
-                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Date</div><div className="text-sm font-black">{selectedReport.日付}</div></div>
-                                        <div><div className="text-[9px] font-black text-slate-500 uppercase mb-1">Hours</div><div className="text-sm font-black text-indigo-400">{selectedReport.稼働時間}h</div></div>
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 relative z-10 border-t border-[#0076FF22] pt-8 mt-4">
+                                        <div><div className="text-[9px] font-black opacity-50 uppercase mb-1">Worker</div><div className="text-sm font-black">{selectedReport.報告者}</div></div>
+                                        <div><div className="text-[9px] font-black opacity-50 uppercase mb-1">Store</div><div className="text-sm font-black">{selectedReport.店舗名}</div></div>
+                                        <div><div className="text-[9px] font-black opacity-50 uppercase mb-1">Date</div><div className="text-sm font-black">{selectedReport.日付}</div></div>
+                                        <div><div className="text-[9px] font-black opacity-50 uppercase mb-1">Hours</div><div className="text-sm font-black opacity-100">{selectedReport.稼働時間}h</div></div>
                                     </div>
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#0076FF11] rounded-full -mr-32 -mt-32 blur-3xl"></div>
                                 </div>
 
-                                <div className="bg-white rounded-[2rem] p-8 lg:p-12 shadow-2xl space-y-8 border border-slate-100">
-                                    <div className="grid lg:grid-cols-2 gap-8 pb-8 border-b border-slate-100">
+                                <div className="bg-black rounded-[2rem] p-8 lg:p-12 shadow-2xl space-y-8 border border-[#0076FF11]">
+                                    <div className="grid lg:grid-cols-2 gap-8 pb-8 border-b border-[#0076FF11]">
                                         <div className="space-y-4">
-                                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Financial Details</h3>
+                                            <h3 className="text-xs font-black opacity-50 uppercase tracking-widest">Financial Details</h3>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="bg-slate-50 p-4 rounded-2xl">
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-1">メダル (回収)</div>
-                                                    <div className="text-lg font-black text-slate-900">{parseMemoDetails(selectedReport.備考).medal.toLocaleString()} 枚</div>
+                                                <div className="bg-[#111111] p-4 rounded-2xl border border-[#0076FF11]">
+                                                    <div className="text-[8px] font-black opacity-40 uppercase mb-1">メダル (回収)</div>
+                                                    <div className="text-lg font-black">{parseMemoDetails(selectedReport.備考).medal.toLocaleString()} 枚</div>
                                                 </div>
-                                                <div className="bg-slate-50 p-4 rounded-2xl">
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-1">現金 (投資)</div>
-                                                    <div className="text-lg font-black text-slate-900">{parseMemoDetails(selectedReport.備考).cash.toLocaleString()} 円</div>
+                                                <div className="bg-[#111111] p-4 rounded-2xl border border-[#0076FF11]">
+                                                    <div className="text-[8px] font-black opacity-40 uppercase mb-1">現金 (投資)</div>
+                                                    <div className="text-lg font-black">{parseMemoDetails(selectedReport.備考).cash.toLocaleString()} 円</div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="space-y-4">
-                                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Memo / Note</h3>
-                                            <div className="bg-slate-50 p-5 rounded-2xl text-xs leading-relaxed text-slate-600 min-h-[100px] whitespace-pre-wrap">{parseMemoDetails(selectedReport.備考).text || "メモなし"}</div>
+                                            <h3 className="text-xs font-black opacity-50 uppercase tracking-widest">Memo / Note</h3>
+                                            <div className="bg-[#111111] p-5 rounded-2xl text-xs leading-relaxed opacity-80 min-h-[100px] border border-[#0076FF11] whitespace-pre-wrap">{parseMemoDetails(selectedReport.備考).text || "メモなし"}</div>
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-between items-center pb-6 border-b">
-                                        <div><h3 className="text-xl font-black italic">Analysis Results</h3><button onClick={addManualLog} className="mt-2 text-[9px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full uppercase hover:bg-indigo-100">+ 台を手動追加</button></div>
-                                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                                    <div className="flex justify-between items-center pb-6 border-b border-[#0076FF11]">
+                                        <div><h3 className="text-xl font-black italic">Analysis Results</h3><button onClick={addManualLog} className="mt-2 text-[9px] font-black bg-[#0076FF11] text-[#0076FF] px-3 py-1 rounded-full uppercase hover:bg-[#0076FF22] transition-colors border border-[#0076FF33]">+ 台を手動追加</button></div>
+                                        <div className="flex bg-[#111111] p-1 rounded-xl border border-[#0076FF11]">
                                             {["設定１相当", "優良店"].map(m => (
-                                                <button key={m} onClick={() => { setEvMode(m); handleAnalyze(selectedReport, m); }} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${evMode === m ? 'bg-white shadow-md text-indigo-600' : 'text-slate-400'}`}>{m}</button>
+                                                <button key={m} onClick={() => { setEvMode(m); handleAnalyze(selectedReport, m); }} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${evMode === m ? 'bg-[#0076FF] text-black shadow-md' : 'text-[#0076FF] opacity-40'}`}>{m}</button>
                                             ))}
                                         </div>
                                     </div>
 
                                     <div className="space-y-4">
                                         {logs.map((log, i) => (
-                                            <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col lg:flex-row justify-between lg:items-center gap-4 animate-fadeIn">
+                                            <div key={i} className="bg-[#111111] p-6 rounded-2xl border border-[#0076FF11] flex flex-col lg:flex-row justify-between lg:items-center gap-4 animate-fadeIn">
                                                 <div className="flex-1 space-y-2">
                                                     <div className="flex gap-2">
-                                                        <input value={log.machine} onChange={e => { const n = [...logs]; n[i].machine = e.target.value; setLogs(n); }} className={`text-[8px] font-black px-2 py-1 rounded-md text-white border-none outline-none ${log.color || 'bg-slate-400'}`} placeholder="機種名" />
-                                                        <input value={log.text} onChange={e => { const n = [...logs]; n[i].text = e.target.value; setLogs(n); }} className="text-xs font-bold text-slate-700 bg-transparent border-b border-transparent focus:border-slate-300 outline-none flex-1" />
+                                                        <input value={log.machine} onChange={e => { const n = [...logs]; n[i].machine = e.target.value; setLogs(n); }} className={`text-[8px] font-black px-2 py-1 rounded-md text-white border-none outline-none ${log.color || 'bg-slate-700'}`} placeholder="機種名" />
+                                                        <input value={log.text} onChange={e => { const n = [...logs]; n[i].text = e.target.value; setLogs(n); }} className="text-xs font-bold text-[#0076FF] bg-transparent border-b border-[#0076FF22] focus:border-[#0076FF] outline-none flex-1" />
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">
                                                     <input type="number" value={log.ev} onChange={e => { const n = [...logs]; n[i].ev = parseInt(e.target.value) || 0; setLogs(n); }} className="input-ev" />
-                                                    <span className="text-[9px] font-black text-slate-300 uppercase">Yen</span>
-                                                    <button onClick={() => setLogs(logs.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-rose-500 text-lg">✕</button>
+                                                    <span className="text-[9px] font-black opacity-30 uppercase">Yen</span>
+                                                    <button onClick={() => setLogs(logs.filter((_, idx) => idx !== i))} className="text-[#0076FF] opacity-30 hover:opacity-100 text-lg">✕</button>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
 
-                                    <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white flex flex-col lg:flex-row justify-between items-center gap-6 shadow-3xl">
+                                    <div className="bg-[#0076FF] p-8 rounded-[2.5rem] text-black flex flex-col lg:flex-row justify-between items-center gap-6 shadow-3xl">
                                         <div className="text-center lg:text-left">
-                                            <div className="text-[9px] font-black opacity-40 mb-1 uppercase tracking-widest">Combined Total (EV)</div>
-                                            <div className="text-5xl font-black">{logs.reduce((s, l) => s + l.ev, 0).toLocaleString()} <span className="text-base opacity-30">円</span></div>
+                                            <div className="text-[9px] font-black opacity-60 mb-1 uppercase tracking-widest">Combined Total (EV)</div>
+                                            <div className="text-5xl font-black">{logs.reduce((s, l) => s + l.ev, 0).toLocaleString()} <span className="text-base opacity-60 ml-1">円</span></div>
                                         </div>
-                                        <button onClick={onApprove} className="w-full lg:w-auto bg-white text-indigo-700 px-12 py-5 rounded-2xl font-black shadow-lg">承認して保存</button>
+                                        <button onClick={onApprove} className="w-full lg:w-auto bg-black text-[#0076FF] px-12 py-5 rounded-2xl font-black shadow-lg hover:bg-zinc-900 transition-colors">承認して保存</button>
                                     </div>
                                 </div>
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-200 font-black italic select-none">
-                                <div className="text-5xl lg:text-7xl">DATA CENTER</div>
-                                <div className="text-[10px] tracking-[0.8em] opacity-40 mt-4 uppercase">NO SELECTION</div>
+                            <div className="h-full flex flex-col items-center justify-center text-[#0076FF] font-black italic select-none">
+                                <div className="text-5xl lg:text-7xl opacity-20">管理者アプリ</div>
+                                <div className="text-[10px] tracking-[0.8em] opacity-10 mt-4 uppercase">NO SELECTION</div>
                             </div>
                         )}
                     </div>
 
                     {showSettings && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" onClick={() => setShowSettings(false)}>
-                            <div className="bg-white rounded-[2rem] w-full max-w-3xl p-8 lg:p-12 flex flex-col max-h-[85vh] shadow-3xl" onClick={e => e.stopPropagation()}>
+                            <div className="bg-black border border-[#0076FF33] rounded-[2rem] w-full max-w-3xl p-8 lg:p-12 flex flex-col max-h-[85vh] shadow-3xl" onClick={e => e.stopPropagation()}>
                                 <div className="flex justify-between items-center mb-8">
                                     <h2 className="text-2xl font-black italic">Settings</h2>
                                     <div className="flex gap-3">
-                                        <button onClick={() => setDictionary([...dictionary, { 機種名: "新機種", キーワード: "キーワード", 色コード: "bg-slate-600", 備考: "" }])} className="px-4 py-2 bg-slate-100 rounded-xl text-[9px] font-black">＋ 追加</button>
+                                        <button onClick={() => setDictionary([...dictionary, { 機種名: "新機種", キーワード: "キーワード", 色コード: "bg-slate-700", 備考: "" }])} className="px-4 py-2 bg-[#0076FF11] rounded-xl text-[9px] font-black text-[#0076FF] border border-[#0076FF33]">＋ 追加</button>
                                         <button onClick={async () => {
                                             setIsSavingDict(true);
                                             try { await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveDictionary", data: dictionary }) }); alert("Saved!"); }
                                             catch (e) { alert(e.message); } finally { setIsSavingDict(false); }
-                                        }} disabled={isSavingDict} className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black">{isSavingDict ? '...' : '保存'}</button>
+                                        }} disabled={isSavingDict} className="px-6 py-2 bg-[#0076FF] text-black rounded-xl text-[9px] font-black">{isSavingDict ? '...' : '保存'}</button>
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scroll space-y-4">
                                     {dictionary.map((m, i) => (
-                                        <div key={i} className="p-5 rounded-2xl border border-slate-100 flex flex-col lg:flex-row gap-4 lg:items-end">
+                                        <div key={i} className="p-5 rounded-2xl border border-[#0076FF11] bg-[#111111] flex flex-col lg:flex-row gap-4 lg:items-end">
                                             <div className="grid grid-cols-2 gap-4 flex-1">
-                                                <div><label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Name</label><input value={m.機種名} onChange={e => { const n = [...dictionary]; n[i].機種名 = e.target.value; setDictionary(n); }} className="w-full border-b border-slate-200 py-1 text-xs font-bold outline-none" /></div>
-                                                <div><label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Keyword</label><input value={m.キーワード} onChange={e => { const n = [...dictionary]; n[i].キーワード = e.target.value; setDictionary(n); }} className="w-full border-b border-slate-200 py-1 text-xs font-bold outline-none" /></div>
+                                                <div><label className="text-[8px] font-black opacity-40 uppercase tracking-widest block mb-1">Name</label><input value={m.機種名} onChange={e => { const n = [...dictionary]; n[i].機種名 = e.target.value; setDictionary(n); }} className="w-full bg-transparent border-b border-[#0076FF22] py-1 text-[#0076FF] text-xs font-bold outline-none focus:border-[#0076FF]" /></div>
+                                                <div><label className="text-[8px] font-black opacity-40 uppercase tracking-widest block mb-1">Keyword</label><input value={m.キーワード} onChange={e => { const n = [...dictionary]; n[i].キーワード = e.target.value; setDictionary(n); }} className="w-full bg-transparent border-b border-[#0076FF22] py-1 text-[#0076FF] text-xs font-bold outline-none focus:border-[#0076FF]" /></div>
                                             </div>
-                                            <button onClick={() => setDictionary(dictionary.filter((_, idx) => idx !== i))} className="text-rose-500 text-xs font-black">削除</button>
+                                            <button onClick={() => setDictionary(dictionary.filter((_, idx) => idx !== i))} className="text-rose-600 text-xs font-black">削除</button>
                                         </div>
                                     ))}
                                 </div>
