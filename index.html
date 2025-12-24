@@ -114,8 +114,7 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        // 注意: GASをデプロイし直した後の正規のURLをここに貼る必要があります
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzWS5yzOOTXqYx7yWrN8mtOvsXIjfoI1JDnola4TuoRS5-KStUVRR7M9YOoRfMbJUjR9g/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzb2yxwCPwN10T2cO6suWKtRa5RO11QxmUJRUN2DrDy5Jt76cFwF61LlggpZoEubP6T9Q/exec";
         const APP_PASS = "nogawa";
 
         function App() {
@@ -366,27 +365,51 @@
                         )}
 
                         {activeTab === 'help' && (
-                            <div className="space-y-5 animate-fadeIn text-slate-400 text-xs leading-relaxed">
-                                <div className="card p-5 space-y-4">
-                                    <h3 className="text-indigo-400 font-black flex items-center gap-2 uppercase tracking-widest text-[10px]">Manual / 使い方</h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="font-bold text-indigo-100 mb-1">01 ログの記録</p>
-                                            <p className="opacity-70 text-[11px]">台を打ち始めた時や終了時に、機種名と状況をメモしてください。</p>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-indigo-100 mb-1">合言葉の変更</p>
-                                            <p className="opacity-70 text-[11px]">セキュリティ保護が有効です。一度認証すれば一定期間は入力不要です。</p>
-                                        </div>
+                            <div className="space-y-6 animate-fadeIn text-slate-400 text-xs leading-relaxed pb-10">
+                                <div className="card p-6 space-y-6">
+                                    <h3 className="text-indigo-400 font-black flex items-center gap-2 uppercase tracking-widest text-[11px] border-b border-white/5 pb-3">Manual / 使いかたガイド</h3>
+
+                                    <div className="space-y-6">
+                                        <section>
+                                            <p className="font-black text-indigo-100 mb-2 flex items-center gap-2">
+                                                <span className="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]">1</span>
+                                                稼働ログ（1番目のタブ）
+                                            </p>
+                                            <p className="opacity-70 text-[11px] pl-7">
+                                                「いま何を打っているか」をリアルタイムで記録します。<br />
+                                                機種名と状況（G数や状態）を入力して「＋」を押すと、下の履歴に溜まっていきます。1日の終わりにまとめて報告できるので、台移動のたびに記録しておくと便利です。
+                                            </p>
+                                        </section>
+
+                                        <section>
+                                            <p className="font-black text-indigo-100 mb-2 flex items-center gap-2">
+                                                <span className="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]">2</span>
+                                                本日の報告（2番目のタブ）
+                                            </p>
+                                            <p className="opacity-70 text-[11px] pl-7">
+                                                1日の稼働が終わったらここから報告を送信します。<br />
+                                                店舗名、稼働時間、最終枚数、投資金額を入力してください。メモ欄には、その日の気づきなどを自由に書いてOKです。入力後、一番下の「REPORT SUBMIT」を押せば完了です！
+                                            </p>
+                                        </section>
+
+                                        <section className="bg-slate-900/50 p-4 rounded-xl space-y-3 border border-indigo-500/10">
+                                            <p className="font-black text-rose-400 mb-1 flex items-center gap-2 text-[10px] uppercase tracking-widest">
+                                                ⚠️ 重要事項・規約
+                                            </p>
+                                            <ul className="text-[10px] space-y-2 opacity-80 list-disc pl-4">
+                                                <li><strong className="text-slate-200">秘密保持:</strong> 本ツールはチーム専用の極秘ツールです。外部へのURL共有や、画面のスクリーンショット公開、システムの流用は固く禁じます。</li>
+                                                <li><strong className="text-slate-200">データ保護:</strong> 入力されたデータは運営目的以外に使用されることはありません。</li>
+                                                <li><strong className="text-slate-200">権利の帰属:</strong> 本ツールの著作権および一切の権利は「矢萩 (Yahagi)」に帰属します。無断での複製・改変・譲渡は禁止されています。</li>
+                                            </ul>
+                                        </section>
                                     </div>
                                 </div>
-                                <div className="card p-5 space-y-3 text-center">
-                                    <button onClick={logout} className="text-indigo-400 font-bold underline">ログイン名を変更する</button>
-                                    <div className="pt-2">
-                                        <button onClick={() => { localStorage.removeItem("p_v7"); window.location.reload(); }} className="text-rose-500 font-bold underline opacity-50">システムを再ロックする</button>
-                                    </div>
+
+                                <div className="card p-5 text-center">
+                                    <button onClick={logout} className="text-indigo-400 font-bold underline text-[11px]">ログイン名（報告者名）を変更する</button>
                                 </div>
-                                <div className="text-center opacity-20 font-black text-[9px] uppercase tracking-[0.3em]">System Hosted on GitHub | v7.7.2</div>
+
+                                <div className="text-center opacity-20 font-black text-[9px] uppercase tracking-[0.3em] pt-4">Internal System Hosted on GitHub | v7.8.12</div>
                             </div>
                         )}
                     </div>
