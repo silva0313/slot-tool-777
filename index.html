@@ -134,6 +134,15 @@
             const [myShifts, setMyShifts] = useState([]); // 自分のシフト
             const [selectedDates, setSelectedDates] = useState([]); // 選択中の日付
             const [shiftLoading, setShiftLoading] = useState(false);
+            const [modal, setModal] = useState({ show: false, title: "", message: "", type: "alert", onConfirm: null });
+
+            const showConfirm = (title, message, onConfirm) => {
+                setModal({ show: true, title, message, type: "confirm", onConfirm });
+            };
+
+            const showAlert = (title, message) => {
+                setModal({ show: true, title, message, type: "alert", onConfirm: null });
+            };
 
             useEffect(() => {
                 const passVerified = localStorage.getItem("p_v7") === APP_PASS;
@@ -158,21 +167,22 @@
                     setIsLocked(false);
                     localStorage.setItem("p_v7", APP_PASS);
                 } else {
-                    alert("合言葉が違います");
+                    showAlert("認証エラー", "合言葉が正しくありません。");
                 }
             };
 
             const handleLogin = (e) => {
                 if (e) e.preventDefault();
-                if (!tempName.trim()) return alert("名前を入力してください");
-                if (!confirm(`名前を「${tempName.trim()}」で確定します。一度決めた名前は自分では変更できません（管理者への申請が必要）。よろしいですか？`)) return;
-                const u = { displayName: tempName.trim() };
-                setUser(u);
-                localStorage.setItem("u_v7", JSON.stringify(u));
+                if (!tempName.trim()) return showAlert("入力エラー", "有効な名前を入力してください");
+                showConfirm("ログイン名の確定", `名前を「${tempName.trim()}」で確定します。一度決めた名前は変更できません。よろしいですか？`, () => {
+                    const u = { displayName: tempName.trim() };
+                    setUser(u);
+                    localStorage.setItem("u_v7", JSON.stringify(u));
+                });
             };
 
             const logout = () => {
-                alert("セキュリティ保護のため、ログイン名の変更は禁止されています。変更が必要な場合は管理者に連絡してください。");
+                showAlert("システム通知", "セキュリティ保護のため、ログイン名の変更は現在許可されていません。");
             };
 
             const fetchStrategy = async () => {
@@ -182,7 +192,7 @@
                     const res = await fetch(`${GAS_URL}?action=getStrategyData&name=${encodeURIComponent(user.displayName)}`);
                     const data = await res.json();
                     if (data.status === "blocked") {
-                        alert("アクセス権限がありません。");
+                        showAlert("アクセス制限", "現在、お客様のアカウントには閲覧権限が付与されておりません。");
                         setActiveTab("log");
                     } else {
                         setStrategies(data);
@@ -202,7 +212,7 @@
             };
 
             const handleShiftSubmit = async () => {
-                if (selectedDates.length === 0) return alert("日付を選択してください");
+                if (selectedDates.length === 0) return showAlert("申請エラー", "日付が選択されていません。");
                 setSubmitting(true);
                 try {
                     await fetch(GAS_URL, {
@@ -210,9 +220,9 @@
                         body: JSON.stringify({ action: "submitShift", data: { name: user.displayName, dates: selectedDates } })
                     });
                     setSelectedDates([]);
-                    alert("シフトを申請しました。リストに反映されるまで数分かかる場合があります。");
+                    showAlert("申請完了", "シフトの申請を受け付けました。管理者の承認後に反映されます。");
                     fetchShifts();
-                } catch (e) { alert(e.message); }
+                } catch (e) { showAlert("送信エラー", e.message); }
                 finally { setSubmitting(false); }
             };
 
@@ -248,36 +258,37 @@
             const removeLog = (id) => setLogs(logs.filter(l => l.id !== id));
 
             const submit = async () => {
-                if (!confirm(`送信すると現在のログ（${logs.length}件）は全て削除されます。\n本当に送信してもよろしいですか？`)) return;
-                if (logs.length === 0 || !reportInput.store) return alert("ログと店舗名を入力してください");
+                showConfirm("報告送信の確認", `現在のログ（${logs.length}件）を含む全てのデータを送信します。送信後はログ履歴がリセットされますが、よろしいですか？`, async () => {
+                    if (logs.length === 0 || !reportInput.store) return showAlert("不備があります", "ログ履歴、または店舗名が入力されておりません。");
 
-                setSubmitting(true);
-                const logText = logs.map(l => `${l.machine} ${l.detail}`).join("\n");
-                const calculatedHours = parseHours(reportInput.hours);
-                const payload = {
-                    date: new Date().toLocaleDateString('ja-JP'),
-                    name: user.displayName,
-                    store: reportInput.store,
-                    details: logText,
-                    hours: calculatedHours,
-                    rawHours: reportInput.hours,
-                    medal: reportInput.medal,
-                    cash: reportInput.cash,
-                    memo: reportInput.memo + (reportInput.salary ? `\n[本日給料: ${reportInput.salary}円]` : "") + (reportInput.remainingCash ? `\n[残投資金: ${reportInput.remainingCash}円]` : "")
-                };
-                try {
-                    await fetch(`${GAS_URL}`, {
-                        method: "POST", mode: "no-cors",
-                        body: JSON.stringify({ action: "submitReport", data: payload })
-                    });
-                    setStatus("送信完了！お疲れ様でした。");
-                    setLogs([]); setReportInput({ store: "", hours: "", medal: "", cash: "", memo: "", salary: "", remainingCash: "" });
-                    localStorage.removeItem("l_v7");
-                    localStorage.removeItem("r_v7");
-                    setActiveTab("log");
-                    setTimeout(() => setStatus(""), 5000);
-                } catch (e) { alert("送信エラー: " + e.message); }
-                finally { setSubmitting(false); }
+                    setSubmitting(true);
+                    const logText = logs.map(l => `${l.machine} ${l.detail}`).join("\n");
+                    const calculatedHours = parseHours(reportInput.hours);
+                    const payload = {
+                        date: new Date().toLocaleDateString('ja-JP'),
+                        name: user.displayName,
+                        store: reportInput.store,
+                        details: logText,
+                        hours: calculatedHours,
+                        rawHours: reportInput.hours,
+                        medal: reportInput.medal,
+                        cash: reportInput.cash,
+                        memo: reportInput.memo + (reportInput.salary ? `\n[本日給料: ${reportInput.salary}円]` : "") + (reportInput.remainingCash ? `\n[残投資金: ${reportInput.remainingCash}円]` : "")
+                    };
+                    try {
+                        await fetch(`${GAS_URL}`, {
+                            method: "POST", mode: "no-cors",
+                            body: JSON.stringify({ action: "submitReport", data: payload })
+                        });
+                        setStatus("正常に送信されました。本日もお疲れ様でした。");
+                        setLogs([]); setReportInput({ store: "", hours: "", medal: "", cash: "", memo: "", salary: "", remainingCash: "" });
+                        localStorage.removeItem("l_v7");
+                        localStorage.removeItem("r_v7");
+                        setActiveTab("log");
+                        setTimeout(() => setStatus(""), 5000);
+                    } catch (e) { showAlert("通信エラー", e.message); }
+                    finally { setSubmitting(false); }
+                });
             };
 
             if (isLocked) return (
@@ -324,261 +335,293 @@
             );
 
             return (
-                <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900">
-                    <div className="p-4 flex justify-between items-center border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-0 z-20">
-                        <div className="text-lg font-black italic tracking-tighter">稼働まとめ<span className="text-indigo-600">.</span></div>
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => location.reload(true)} className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all">最新に更新</button>
-                            <div onClick={logout} className="text-[10px] font-black text-slate-400 bg-white/5 px-3 py-1.5 rounded-full active:bg-indigo-500/20 truncate max-w-[100px]">
-                                {user.displayName}
+                <>
+                    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900">
+                        <div className="p-4 flex justify-between items-center border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-0 z-20">
+                            <div className="text-lg font-black italic tracking-tighter">稼働まとめ<span className="text-indigo-600">.</span></div>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => location.reload(true)} className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all">最新に更新</button>
+                                <div onClick={logout} className="text-[10px] font-black text-slate-400 bg-white/5 px-3 py-1.5 rounded-full active:bg-indigo-500/20 truncate max-w-[100px]">
+                                    {user.displayName}
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="flex border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-[57px] z-20 overflow-x-auto whitespace-nowrap">
-                        <button onClick={() => setActiveTab("log")} className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}>01 報告送信</button>
-                        <button onClick={() => { setActiveTab("strategy"); fetchStrategy(); }} className={`tab-btn ${activeTab === 'strategy' ? 'active' : ''}`}>02 狙い目</button>
-                        <button onClick={() => { setActiveTab("shift"); fetchShifts(); }} className={`tab-btn ${activeTab === 'shift' ? 'active' : ''}`}>03 シフト</button>
-                        <button onClick={() => setActiveTab("help")} className={`tab-btn ${activeTab === 'help' ? 'active' : ''}`}>04 HELP</button>
-                    </div>
+                        <div className="flex border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-[57px] z-20 overflow-x-auto whitespace-nowrap">
+                            <button onClick={() => setActiveTab("log")} className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}>01 報告送信</button>
+                            <button onClick={() => { setActiveTab("strategy"); fetchStrategy(); }} className={`tab-btn ${activeTab === 'strategy' ? 'active' : ''}`}>02 狙い目</button>
+                            <button onClick={() => { setActiveTab("shift"); fetchShifts(); }} className={`tab-btn ${activeTab === 'shift' ? 'active' : ''}`}>03 シフト</button>
+                            <button onClick={() => setActiveTab("help")} className={`tab-btn ${activeTab === 'help' ? 'active' : ''}`}>04 HELP</button>
+                        </div>
 
-                    <div className="p-4 flex-1 space-y-5 pb-10">
-                        {status && (
-                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs font-bold animate-pulse">
-                                {status}
-                            </div>
-                        )}
-
-                        {activeTab === 'log' && (
-                            <div className="space-y-6 animate-fadeIn">
-                                <section className="card p-4 space-y-4 shadow-xl border-indigo-500/10">
-                                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">台移動・稼働ログ入力</div>
-                                    <div className="space-y-3">
-                                        <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark font-bold py-3 text-base" placeholder="機種名 (例: 北斗)" />
-                                        <div className="flex gap-2">
-                                            <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark py-3" placeholder="G数・リセ・状況など" />
-                                            <button onClick={addLog} className="bg-indigo-600 w-14 h-12 rounded-xl font-black text-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-all">+</button>
-                                        </div>
-                                    </div>
-                                    <p className="text-[9px] text-slate-500 font-bold px-1 italic">※台を移動するたびに、ここに「北斗 650～」のようにメモしてください。</p>
-                                </section>
-
-                                <section className="space-y-3">
-                                    <div className="flex justify-between items-center px-1">
-                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">現在のログ履歴 / {logs.length}件</div>
-                                        {logs.length > 0 && <button onClick={() => confirm("全てのログを削除しますか？") && setLogs([])} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">全削除</button>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        {logs.length === 0 ? (
-                                            <div className="py-16 text-center card bg-slate-800/20 border-dashed">
-                                                <div className="text-3xl mb-2 opacity-20">📝</div>
-                                                <div className="text-slate-600 text-[10px] font-black uppercase tracking-widest leading-relaxed">まだログがありません<br />上の入力欄から追加してください</div>
-                                            </div>
-                                        ) : (
-                                            [...logs].reverse().map(l => (
-                                                <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-indigo-500 shadow-sm animate-fadeIn">
-                                                    <div className="min-w-0 flex-1 pr-4">
-                                                        <div className="font-black text-sm text-indigo-100 truncate">{l.machine}</div>
-                                                        <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
-                                                    </div>
-                                                    <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-10 h-10 flex items-center justify-center text-2xl transition-colors">×</button>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </section>
-
-                                <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10">
-                                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">詳細情報の入力</div>
-                                    <div>
-                                        <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">店舗名</label>
-                                        <input value={reportInput.store} onChange={e => setReportInput({ ...reportInput, store: e.target.value })} className="input-dark font-bold text-base" placeholder="例: マルハン〇〇店" />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">稼働時間</label>
-                                            <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-2" placeholder="8:40~21:10" />
-                                            <div className="text-[8px] text-slate-600 mt-1 font-bold italic">計算結果: {parseHours(reportInput.hours)}h</div>
-                                        </div>
-                                        <div>
-                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">最終メダル枚数</label>
-                                            <input type="number" value={reportInput.medal} onChange={e => setReportInput({ ...reportInput, medal: e.target.value })} className="input-dark py-2 font-bold" placeholder="枚数" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">本日投資 (円)</label>
-                                            <input type="number" value={reportInput.cash} onChange={e => setReportInput({ ...reportInput, cash: e.target.value })} className="input-dark font-bold" placeholder="例: 20000" />
-                                            <p className="text-[8px] text-slate-500 mt-1">※現金投資した場合のみ</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-2 px-1">本日の給料</label>
-                                            <input type="number" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-bold border-emerald-500/20" placeholder="例: 10000" />
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
-                                        <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-2 px-1">引いた後の残投資金 (財布の残高)</label>
-                                        <input type="number" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-lg border-indigo-500/30" placeholder="例: 20000" />
-                                        <p className="text-[8px] text-slate-500 mt-1.5 font-bold italic">※給料を引いた後の、手元にある現金の合計を入力してください。</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">メモ・備考</label>
-                                        <textarea value={reportInput.memo} onChange={e => setReportInput({ ...reportInput, memo: e.target.value })} className="input-dark h-24 text-xs leading-relaxed" placeholder="今日の環境や立ち回りなど..."></textarea>
-                                    </div>
-                                </section>
-
-                                <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg ${submitting ? 'opacity-50' : ''}`}>
-                                    {submitting ? '送信中...' : '報告を送信して終了する'}
-                                </button>
-                                <p className="text-[10px] text-slate-600 text-center font-bold pb-10">※送信すると上のログ履歴はリセットされます</p>
-                            </div>
-                        )}
-
-                        {activeTab === 'strategy' && (
-                            <div className="space-y-6 animate-fadeIn pb-10">
-                                <div className="card p-4 sticky top-[108px] z-10 bg-slate-800 shadow-xl border-indigo-500/20">
-                                    <input
-                                        type="text"
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        className="input-dark bg-slate-950 font-bold"
-                                        placeholder="機種名で検索..."
-                                    />
+                        <div className="p-4 flex-1 space-y-5 pb-10">
+                            {status && (
+                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs font-bold animate-pulse">
+                                    {status}
                                 </div>
+                            )}
 
-                                <div className="space-y-4">
-                                    {strategyLoading ? (
-                                        <div className="py-20 text-center text-indigo-400 font-black animate-pulse uppercase tracking-[0.2em] text-xs">Loading Strategy...</div>
-                                    ) : strategies.filter(s => {
-                                        const term = search.toLowerCase();
-                                        const nameMatch = s.機種名.toLowerCase().includes(term);
-                                        const keywordMatch = (s.keywords || "").toLowerCase().split(/[,，、]/).some(k => k.trim().includes(term));
-                                        return nameMatch || keywordMatch;
-                                    }).length > 0 ? (
-                                        strategies.filter(s => {
+                            {activeTab === 'log' && (
+                                <div className="space-y-6 animate-fadeIn">
+                                    <section className="card p-4 space-y-4 shadow-xl border-indigo-500/10">
+                                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">台移動・稼働ログ入力</div>
+                                        <div className="space-y-3">
+                                            <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark font-bold py-3 text-base" placeholder="機種名 (例: 北斗)" />
+                                            <div className="flex gap-2">
+                                                <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark py-3" placeholder="G数・リセ・状況など" />
+                                                <button onClick={addLog} className="bg-indigo-600 w-14 h-12 rounded-xl font-black text-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-all">+</button>
+                                            </div>
+                                        </div>
+                                        <p className="text-[9px] text-slate-500 font-bold px-1 italic">※台を移動するたびに、ここに「北斗 650～」のようにメモしてください。</p>
+                                    </section>
+
+                                    <section className="space-y-3">
+                                        <div className="flex justify-between items-center px-1">
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">現在のログ履歴 / {logs.length}件</div>
+                                            {logs.length > 0 && <button onClick={() => showConfirm("ログのリセット", "現在記録されている全てのログを削除します。よろしいですか？", () => setLogs([]))} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">全削除</button>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            {logs.length === 0 ? (
+                                                <div className="py-16 text-center card bg-slate-800/20 border-dashed">
+                                                    <div className="text-3xl mb-2 opacity-20">📝</div>
+                                                    <div className="text-slate-600 text-[10px] font-black uppercase tracking-widest leading-relaxed">まだログがありません<br />上の入力欄から追加してください</div>
+                                                </div>
+                                            ) : (
+                                                [...logs].reverse().map(l => (
+                                                    <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-indigo-500 shadow-sm animate-fadeIn">
+                                                        <div className="min-w-0 flex-1 pr-4">
+                                                            <div className="font-black text-sm text-indigo-100 truncate">{l.machine}</div>
+                                                            <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
+                                                        </div>
+                                                        <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-10 h-10 flex items-center justify-center text-2xl transition-colors">×</button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </section>
+
+                                    <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10">
+                                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">詳細情報の入力</div>
+                                        <div>
+                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">店舗名</label>
+                                            <input value={reportInput.store} onChange={e => setReportInput({ ...reportInput, store: e.target.value })} className="input-dark font-bold text-base" placeholder="例: マルハン〇〇店" />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">稼働時間</label>
+                                                <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-2" placeholder="8:40~21:10" />
+                                                <div className="text-[8px] text-slate-600 mt-1 font-bold italic">計算結果: {parseHours(reportInput.hours)}h</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">最終メダル枚数</label>
+                                                <input type="number" value={reportInput.medal} onChange={e => setReportInput({ ...reportInput, medal: e.target.value })} className="input-dark py-2 font-bold" placeholder="枚数" />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">本日投資 (円)</label>
+                                                <input type="number" value={reportInput.cash} onChange={e => setReportInput({ ...reportInput, cash: e.target.value })} className="input-dark font-bold" placeholder="例: 20000" />
+                                                <p className="text-[8px] text-slate-500 mt-1">※現金投資した場合のみ</p>
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-2 px-1">本日の給料</label>
+                                                <input type="number" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-bold border-emerald-500/20" placeholder="例: 10000" />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
+                                            <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-2 px-1">引いた後の残投資金 (財布の残高)</label>
+                                            <input type="number" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-lg border-indigo-500/30" placeholder="例: 20000" />
+                                            <p className="text-[8px] text-slate-500 mt-1.5 font-bold italic">※給料を引いた後の、手元にある現金の合計を入力してください。</p>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">メモ・備考</label>
+                                            <textarea value={reportInput.memo} onChange={e => setReportInput({ ...reportInput, memo: e.target.value })} className="input-dark h-24 text-xs leading-relaxed" placeholder="今日の環境や立ち回りなど..."></textarea>
+                                        </div>
+                                    </section>
+
+                                    <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg ${submitting ? 'opacity-50' : ''}`}>
+                                        {submitting ? '送信中...' : '報告を送信して終了する'}
+                                    </button>
+                                    <p className="text-[10px] text-slate-600 text-center font-bold pb-10">※送信すると上のログ履歴はリセットされます</p>
+                                </div>
+                            )}
+
+                            {activeTab === 'strategy' && (
+                                <div className="space-y-6 animate-fadeIn pb-10">
+                                    <div className="card p-4 sticky top-[108px] z-10 bg-slate-800 shadow-xl border-indigo-500/20">
+                                        <input
+                                            type="text"
+                                            value={search}
+                                            onChange={e => setSearch(e.target.value)}
+                                            className="input-dark bg-slate-950 font-bold"
+                                            placeholder="機種名で検索..."
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {strategyLoading ? (
+                                            <div className="py-20 text-center text-indigo-400 font-black animate-pulse uppercase tracking-[0.2em] text-xs">Loading Strategy...</div>
+                                        ) : strategies.filter(s => {
                                             const term = search.toLowerCase();
                                             const nameMatch = s.機種名.toLowerCase().includes(term);
                                             const keywordMatch = (s.keywords || "").toLowerCase().split(/[,，、]/).some(k => k.trim().includes(term));
                                             return nameMatch || keywordMatch;
-                                        }).map((s, i) => (
-                                            <div key={i} className="card p-5 space-y-3 bg-slate-800/50 border-white/5 hover:border-indigo-500/20 transition-all">
-                                                <div className="text-sm font-black text-indigo-100 flex justify-between items-center">
-                                                    {s.機種名}
-                                                    {s.URL && (
-                                                        <a href={s.URL} target="_blank" className="text-[9px] font-black bg-indigo-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">解析サイト</a>
-                                                    )}
-                                                </div>
-                                                <p className="text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap">{s.狙い目}</p>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="py-20 text-center">
-                                            <div className="text-4xl mb-4 opacity-20">🔍</div>
-                                            <p className="text-slate-500 font-black italic uppercase text-xs tracking-widest">No matching results</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'shift' && (
-                            <div className="space-y-6 animate-fadeIn pb-10">
-                                <section className="card p-5 space-y-4">
-                                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">シフト申請（今後2週間分）</div>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {[...Array(14)].map((_, i) => {
-                                            const d = new Date(); d.setDate(d.getDate() + i);
-                                            const dStr = d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
-                                            const iso = d.toISOString().split('T')[0];
-                                            const isSelected = selectedDates.includes(iso);
-                                            return (
-                                                <div key={i} onClick={() => toggleDate(iso)} className={`p-2 rounded-xl text-center cursor-pointer transition-all border ${isSelected ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-800 border-white/5 text-slate-400'}`}>
-                                                    <div className="text-[8px] font-bold opacity-60 leading-none mb-1">{dStr.split(' ')[1]}</div>
-                                                    <div className="text-xs font-black leading-none">{dStr.split('(')[0]}</div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <button onClick={handleShiftSubmit} disabled={submitting || selectedDates.length === 0} className={`btn-premium py-3 text-xs ${submitting || selectedDates.length === 0 ? 'opacity-30' : ''}`}>
-                                        {submitting ? 'SENDING...' : '選択した日付を申請'}
-                                    </button>
-                                </section>
-
-                                <section className="space-y-3">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">確定済みシフト</div>
-                                    <div className="card p-4 space-y-2">
-                                        {shiftLoading ? <div className="text-center py-4 text-[10px] text-indigo-400 animate-pulse">読み込み中...</div> :
-                                            myShifts.length === 0 ? <div className="text-center py-8 text-slate-600 text-[10px] font-bold italic uppercase opacity-40">No confirmed shifts</div> :
-                                                myShifts.sort((a, b) => new Date(a.date) - new Date(b.date)).map((s, i) => (
-                                                    <div key={i} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                                                        <div className="text-xs font-black text-white">{new Date(s.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'long' })}</div>
-                                                        <div className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md uppercase tracking-tighter">Confirmed</div>
+                                        }).length > 0 ? (
+                                            strategies.filter(s => {
+                                                const term = search.toLowerCase();
+                                                const nameMatch = s.機種名.toLowerCase().includes(term);
+                                                const keywordMatch = (s.keywords || "").toLowerCase().split(/[,，、]/).some(k => k.trim().includes(term));
+                                                return nameMatch || keywordMatch;
+                                            }).map((s, i) => (
+                                                <div key={i} className="card p-5 space-y-3 bg-slate-800/50 border-white/5 hover:border-indigo-500/20 transition-all">
+                                                    <div className="text-sm font-black text-indigo-100 flex justify-between items-center">
+                                                        {s.機種名}
+                                                        {s.URL && (
+                                                            <a href={s.URL} target="_blank" className="text-[9px] font-black bg-indigo-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">解析サイト</a>
+                                                        )}
                                                     </div>
-                                                ))}
-                                    </div>
-                                </section>
-                                <p className="text-[10px] text-slate-500 italic text-center px-4 leading-relaxed">※入力したシフトは管理者のカレンダーに反映されます。<br />※一度申請した内容の変更は管理者に連絡してください。</p>
-                            </div>
-                        )}
-
-                        {activeTab === 'help' && (
-                            <div className="space-y-6 animate-fadeIn text-slate-400 text-xs leading-relaxed pb-10">
-                                <div className="card p-6 space-y-8">
-                                    <h3 className="text-indigo-400 font-black flex items-center gap-2 uppercase tracking-widest text-[13px] border-b border-white/5 pb-4">
-                                        <span className="text-2xl">📖</span> 小学生でもわかる使い方ガイド
-                                    </h3>
-
-                                    <div className="space-y-8">
-                                        <section className="space-y-3">
-                                            <div className="flex items-center gap-3">
-                                                <span className="bg-indigo-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg shadow-indigo-500/30">1</span>
-                                                <p className="font-black text-indigo-100 text-base">打ったらすぐにメモする！</p>
+                                                    <p className="text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap">{s.狙い目}</p>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="py-20 text-center">
+                                                <div className="text-4xl mb-4 opacity-20">🔍</div>
+                                                <p className="text-slate-500 font-black italic uppercase text-xs tracking-widest">No matching results</p>
                                             </div>
-                                            <div className="opacity-80 text-[12px] pl-10 space-y-2">
-                                                <p>台を移動したり、新しい台を打ち始めたら、１番目のタブで<strong className="text-white text-sm">「機種名」</strong>と<strong className="text-white text-sm">「ゲーム数」</strong>を入れて「＋」ボタンを押すだけ！</p>
-                                                <p className="bg-slate-900 p-3 rounded-lg border border-white/5 italic">例： 北斗の拳　720G～</p>
-                                                <p>これを繰り返すと、下にどんどん貯まっていくよ。忘れないうちにすぐ書くのがコツ！</p>
-                                            </div>
-                                        </section>
-
-                                        <section className="space-y-3">
-                                            <div className="flex items-center gap-3">
-                                                <span className="bg-indigo-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg shadow-indigo-500/30">2</span>
-                                                <p className="font-black text-indigo-100 text-base">最後にまとめて「報告」！</p>
-                                            </div>
-                                            <div className="opacity-80 text-[12px] pl-10 space-y-2">
-                                                <p>１日の稼働が全部終わったら、貯まったログの下にある<strong className="text-indigo-400">「次に進む」</strong>ボタンを押してね。</p>
-                                                <p>そこでお店の名前、メダルの枚数、今日使った現金、そして<strong className="text-emerald-400 font-black">「今日受け取った給料」</strong>を入力して、最後に送信ボタンを押せば完了！</p>
-                                            </div>
-                                        </section>
-
-                                        <section className="bg-rose-500/5 p-5 rounded-2xl space-y-3 border border-rose-500/20">
-                                            <p className="font-black text-rose-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-widest">
-                                                <span className="text-lg">⚠️</span> 大事なやくそく
-                                            </p>
-                                            <ul className="text-[11px] space-y-2 opacity-90 list-disc pl-5">
-                                                <li><strong className="text-white">送信ボタンは１回だけ！</strong> 送信すると貯めてたログは消えちゃうから、全部入力してから最後に押してね。</li>
-                                                <li><strong className="text-white">画面がおかしい時は？</strong> 右上の<strong className="text-indigo-400">「最新に更新」</strong>ボタンを押すと直るよ。貯めてたログは消えないから安心してね！</li>
-                                                <li><strong className="text-white">外に見せない！</strong> このアプリの中身を友達に見せたり、スクリーンショットをSNSに載せるのは絶対にダメだよ。</li>
-                                            </ul>
-                                        </section>
+                                        )}
                                     </div>
                                 </div>
+                            )}
 
-                                <div className="card p-5 text-center bg-slate-800/50">
-                                    <p className="text-[10px] text-slate-500 mb-3 font-bold uppercase tracking-tighter">名前の変更が必要な場合</p>
-                                    <button onClick={logout} className="text-indigo-400 font-bold underline text-[12px] active:text-indigo-300">ここを押して管理者に連絡</button>
+                            {activeTab === 'shift' && (
+                                <div className="space-y-6 animate-fadeIn pb-10">
+                                    <section className="card p-5 space-y-4">
+                                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">シフト申請（今後2週間分）</div>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {[...Array(14)].map((_, i) => {
+                                                const d = new Date(); d.setDate(d.getDate() + i);
+                                                const dStr = d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+                                                const iso = d.toISOString().split('T')[0];
+                                                const isSelected = selectedDates.includes(iso);
+                                                return (
+                                                    <div key={i} onClick={() => toggleDate(iso)} className={`p-2 rounded-xl text-center cursor-pointer transition-all border ${isSelected ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-800 border-white/5 text-slate-400'}`}>
+                                                        <div className="text-[8px] font-bold opacity-60 leading-none mb-1">{dStr.split(' ')[1]}</div>
+                                                        <div className="text-xs font-black leading-none">{dStr.split('(')[0]}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <button onClick={handleShiftSubmit} disabled={submitting || selectedDates.length === 0} className={`btn-premium py-3 text-xs ${submitting || selectedDates.length === 0 ? 'opacity-30' : ''}`}>
+                                            {submitting ? 'SENDING...' : '選択した日付を申請'}
+                                        </button>
+                                    </section>
+
+                                    <section className="space-y-3">
+                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">確定済みシフト</div>
+                                        <div className="card p-4 space-y-2">
+                                            {shiftLoading ? <div className="text-center py-4 text-[10px] text-indigo-400 animate-pulse">読み込み中...</div> :
+                                                myShifts.length === 0 ? <div className="text-center py-8 text-slate-600 text-[10px] font-bold italic uppercase opacity-40">No confirmed shifts</div> :
+                                                    myShifts.sort((a, b) => new Date(a.date) - new Date(b.date)).map((s, i) => (
+                                                        <div key={i} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                                            <div className="text-xs font-black text-white">{new Date(s.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'long' })}</div>
+                                                            <div className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md uppercase tracking-tighter">Confirmed</div>
+                                                        </div>
+                                                    ))}
+                                        </div>
+                                    </section>
+                                    <p className="text-[10px] text-slate-500 italic text-center px-4 leading-relaxed">※入力したシフトは管理者のカレンダーに反映されます。<br />※一度申請した内容の変更は管理者に連絡してください。</p>
                                 </div>
+                            )}
 
-                                <div className="text-center opacity-30 font-black text-[9px] uppercase tracking-[0.3em] pt-4">Internal System Worker Final | v7.9.1</div>
-                            </div>
-                        )}
+                            {activeTab === 'help' && (
+                                <div className="space-y-6 animate-fadeIn text-slate-400 text-xs leading-relaxed pb-10">
+                                    <div className="card p-6 lg:p-10 space-y-10">
+                                        <h3 className="text-indigo-400 font-extrabold flex items-center gap-3 uppercase tracking-[0.2em] text-[15px] border-b border-white/5 pb-6">
+                                            <span className="text-2xl text-white">SYSTEM GUIDE</span>
+                                            <span className="text-xs font-medium opacity-50">運用マニュアル</span>
+                                        </h3>
+
+                                        <div className="space-y-12">
+                                            <section className="space-y-4">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">01</div>
+                                                    <div className="space-y-2">
+                                                        <h4 className="font-black text-white text-base">リアルタイムでの稼働ログ記録</h4>
+                                                        <p className="opacity-80 text-[12px] leading-6">
+                                                            本システムは、正確な収支・期待値分析を行うため、<strong className="text-indigo-300">台移動直後のログ入力を原則</strong>としています。新しい遊技台を打つ際は、まず「報告送信」タブの入力欄に「機種名」および「ゲーム数・状況」を入力し、追加ボタンで履歴へ保存してください。
+                                                        </p>
+                                                        <div className="bg-slate-950/40 p-4 rounded-xl border border-white/5 italic text-[11px]">
+                                                            入力例： スマスロ北斗の拳　720G～
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </section>
+
+                                            <section className="space-y-4">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">02</div>
+                                                    <div className="space-y-2">
+                                                        <h4 className="font-black text-white text-base">業務終了時の詳細報告と送信</h4>
+                                                        <p className="opacity-80 text-[12px] leading-6">
+                                                            一日の業務（稼働）が全て終了した際、蓄積されたログの下部にある「詳細情報の入力」欄を確認し、必要事項を記入してください。
+                                                        </p>
+                                                        <ul className="text-[11px] space-y-2 pt-2 text-slate-300">
+                                                            <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日投資:</strong> 遊技に要した総現金投資額。</span></li>
+                                                            <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日の給料:</strong> 業務終了時に受け取った給料額。</span></li>
+                                                            <li className="flex gap-2"><span>・</span><span><strong className="text-white">残投資金:</strong> 給料受取後、現在手元に残っている現金額（財布の残高）。</span></li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </section>
+
+                                            <section className="bg-rose-500/5 p-6 rounded-3xl space-y-4 border border-rose-500/20">
+                                                <p className="font-bold text-rose-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-widest">
+                                                    <span className="text-sm">●</span> セキュリティおよび注意事項
+                                                </p>
+                                                <div className="text-[11px] space-y-4 opacity-90 leading-relaxed">
+                                                    <p>
+                                                        送信ボタンは、すべての入力内容に誤りがないことを確認した上で実行してください。送信完了と同時に、端末に保存されているログ履歴は自動的に初期化されます。
+                                                    </p>
+                                                    <p>
+                                                        表示上の不具合が発生した場合や、最新のマスタデータを反映させたい場合は、画面右上の<strong className="text-indigo-400">「最新に更新」</strong>ボタンを利用してリロードを行ってください。
+                                                    </p>
+                                                    <p className="text-rose-300/80">
+                                                        ※本アプリは機密情報を含みます。第三者への開示、スクリーンショットのSNS投稿等は厳禁です。
+                                                    </p>
+                                                </div>
+                                            </section>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center opacity-30 font-black text-[9px] uppercase tracking-[0.3em] pt-4">Internal System Worker Security Level: AA+ | v7.13.0</div>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
+
+                    {modal.show && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+                            <div className="bg-slate-900 border border-white/10 rounded-[2rem] w-full max-w-xs shadow-2xl overflow-hidden">
+                                <div className="p-8 space-y-4">
+                                    <div className="text-center space-y-2">
+                                        <h3 className="text-indigo-400 font-black uppercase text-[10px] tracking-widest">{modal.title}</h3>
+                                        <p className="text-sm text-slate-200 font-bold leading-relaxed whitespace-pre-wrap">{modal.message}</p>
+                                    </div>
+                                </div>
+                                <div className="flex border-t border-white/5">
+                                    {modal.type === 'confirm' && (
+                                        <button onClick={() => setModal({ ...modal, show: false })} className="flex-1 py-5 text-xs font-black text-slate-500 hover:bg-white/5 transition-all">CANCEL</button>
+                                    )}
+                                    <button onClick={() => { setModal({ ...modal, show: false }); if (modal.onConfirm) modal.onConfirm(); }} className="flex-1 py-5 text-xs font-black text-indigo-400 hover:bg-white/5 transition-all outline-none">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
             );
         }
 
