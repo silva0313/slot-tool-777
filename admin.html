@@ -534,12 +534,17 @@
                         if (foundDict) {
                             match.machine = foundDict.機種名; match.color = foundDict.色コード;
 
-                            // 厳格な数値抽出（単位と符号を最優先）
-                            const gMatch = line.match(/(\d+)\s*[Gg]/);   // G数
-                            const sMatch = line.match(/([+-]?\d+)\s*[枚枚]/); // 差枚（単位あり）
-                            const signedMatch = line.match(/([+-]\d+)/); // 明示的な符号あり
-                            const allNums = (line.match(/-?\d+/g) || []).map(Number);
-                            const isReset = /リセ|リセット|設定変更|変更後/.test(line);
+                            // 符号の正規化（全角や特殊記号を半角に統一）
+                            const normLine = line
+                                .replace(/[＋]/g, "+")
+                                .replace(/[－ー―ー−−‐-]/g, "-"); // 各種ハイフン・マイナスを半角マイナスに統合
+
+                            // 厳格な数値抽出（正規化後のテキストを使用）
+                            const gMatch = normLine.match(/(\d+)\s*[Gg]/);   // G数
+                            const sMatch = normLine.match(/([+-]?\d+)\s*[枚枚]/); // 差枚（単位あり）
+                            const signedMatch = normLine.match(/([+-]\d+)/); // 明示的な符号あり
+                            const allNums = (normLine.match(/-?\d+/g) || []).map(Number);
+                            const isReset = /リセ|リセット|設定変更|変更後/.test(normLine);
 
                             let gCount = 0;
                             let diff = NaN;
@@ -736,14 +741,33 @@
                         {editData && reports.find(r => r.ID === selectedId) ? (
                             <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-20">
                                 <div className="bg-slate-900 rounded-[2.5rem] p-10 lg:p-14 text-white shadow-xl relative overflow-hidden">
-                                    <textarea value={editData.details} onChange={e => setEditData({ ...editData, details: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm font-bold text-white min-h-[150px] outline-none focus:border-[#0076FF]" />
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 border-t border-white/10 pt-8 mt-4 uppercase text-[9px] font-black text-slate-500">
-                                        <div><div>Operator</div><div className="text-sm font-black text-white">{editData.報告者}</div></div>
-                                        <div><div>Store</div><input value={editData.店舗名 || ""} onChange={e => setEditData({ ...editData, 店舗名: e.target.value })} className="bg-transparent border-b border-white/20 w-full text-sm font-black text-white outline-none" /></div>
-                                        <div><div>Date</div><div className="text-sm font-black text-white">{editData.日付}</div></div>
-                                        <div><div>Time (h)</div><input value={(editData.稼働時間 !== undefined && editData.稼働時間 !== "") ? editData.稼働時間 : "0"} onChange={e => setEditData({ ...editData, 稼働時間: e.target.value })} className="bg-transparent border-b border-white/20 w-full text-sm font-black text-[#0076FF] outline-none" /></div>
+                                    <div className="flex flex-col gap-8">
+                                        <div>
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">打った台リスト</div>
+                                            <div className="flex flex-wrap gap-3">
+                                                {[...new Set(logs.map(l => l.machine).filter(Boolean))].length > 0 ? (
+                                                    [...new Set(logs.map(l => l.machine).filter(Boolean))].map((m, i) => (
+                                                        <span key={i} className="px-5 py-2.5 bg-white/10 border border-white/5 rounded-2xl text-xs font-black italic tracking-tight">{m}</span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-slate-600 text-xs font-bold italic">解析データなし</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-10 border-t border-white/5 pt-8 uppercase text-[9px] font-black text-slate-500">
+                                            <div>
+                                                <div className="mb-1 opacity-50">報告者 / Operator</div>
+                                                <div className="text-base font-black text-white italic tracking-tighter">{editData.報告者}</div>
+                                            </div>
+                                            <div>
+                                                <div className="mb-1 opacity-50">送信日時 / Submitted</div>
+                                                <div className="text-base font-black text-white italic tracking-tighter">{editData.日付}</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="mt-8 flex justify-end"><button onClick={handleSaveEdit} className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest">データのみ保存</button></div>
+                                    <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+                                        <div className="text-8xl font-black italic">REPORT</div>
+                                    </div>
                                 </div>
                                 <div className="bg-white rounded-[2.5rem] p-10 lg:p-14 shadow-xl border border-slate-100 space-y-10">
                                     <div className="space-y-8 border-b border-slate-100 pb-10">
@@ -793,7 +817,12 @@
                                             <h3 className="text-xl font-black italic">北斗</h3>
                                             <p className="text-[9px] font-bold text-amber-600 uppercase">※おすすめ週間のみ優良店に変更してください</p>
                                         </div>
-                                        <div className="flex gap-2">{["設定１相当", "優良店"].map(m => (<button key={m} onClick={() => { setEvMode(m); handleAnalyze(reports.find(r => r.ID === selectedId), m); }} className={`px-6 py-2.5 text-[9px] font-black rounded-2xl ${evMode === m ? 'bg-white shadow text-[#0076FF]' : 'text-slate-400'}`}>{m}</button>))}</div>
+                                        <div className="flex gap-4 items-center">
+                                            <button onClick={handleSaveEdit} className="px-6 py-2.5 bg-white border border-slate-200 text-[#0076FF] text-[9px] font-black rounded-2xl shadow-sm hover:bg-slate-50 transition-all uppercase tracking-widest">変更内容を一時保存</button>
+                                            <div className="flex gap-2 bg-slate-200/50 p-1 rounded-2xl">
+                                                {["設定１相当", "優良店"].map(m => (<button key={m} onClick={() => { setEvMode(m); handleAnalyze(reports.find(r => r.ID === selectedId), m); }} className={`px-5 py-2 text-[9px] font-black rounded-xl ${evMode === m ? 'bg-white shadow text-[#0076FF]' : 'text-slate-400'}`}>{m}</button>))}
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="space-y-5">
                                         {logs.map((log, i) => (
