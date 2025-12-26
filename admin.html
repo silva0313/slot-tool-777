@@ -548,35 +548,9 @@
 
                         if (foundDict) {
                             match.machine = foundDict.機種名; match.color = foundDict.色コード;
-                            const numMatches = line.match(/[+-]?\d+/g) || [];
+                            const numbers = (line.match(/\d+/g) || []).map(Number);
                             const isReset = /リセ|リセット|設定変更|変更後/.test(line);
-
-                            // 差枚とゲーム数の抽出ロジックを抜本強化（枚、Gの単位を優先）
-                            let samaiCandidate = null;
-                            let gCandidate = null;
-
-                            // 1. 単位付きの数値を優先抽出
-                            const gMatch = line.match(/(\d+)\s*[Gg]/);
-                            if (gMatch) gCandidate = parseInt(gMatch[1]);
-                            const sMatch = line.match(/([+-]?\d+)\s*[枚枚]/);
-                            if (sMatch) samaiCandidate = parseInt(sMatch[1]);
-
-                            // 2. 単位がない場合は numMatches から推定
-                            if (gCandidate === null || samaiCandidate === null) {
-                                if (numMatches.length >= 2) {
-                                    if (gCandidate === null) gCandidate = parseInt(numMatches[0]);
-                                    if (samaiCandidate === null) samaiCandidate = parseInt(numMatches[1]);
-                                } else if (numMatches.length === 1) {
-                                    const v = numMatches[0];
-                                    if (v.startsWith("+") || v.startsWith("-")) {
-                                        if (samaiCandidate === null) samaiCandidate = parseInt(v);
-                                    } else {
-                                        if (gCandidate === null) gCandidate = parseInt(v);
-                                    }
-                                }
-                            }
-                            gCount = gCandidate || 0;
-                            samai = samaiCandidate; // NULLの可能性を維持して範囲判定へ
+                            let gCount = numbers[0] || 0;
 
                             if (match.machine === "スマスロ北斗の拳") {
                                 const sheets = Object.keys(master);
@@ -584,26 +558,8 @@
                                 if (isReset) {
                                     selected = sheets.find(k => k.includes("リセ") || k.includes("設定変更") || k.includes("変更後"));
                                 } else {
-                                    // 差枚数(samai)に基づく厳密な判定
-                                    for (const sName of sheets) {
-                                        const clean = sName.replace(/[～〜]/g, "~");
-                                        const range = clean.match(/([+-]?\d+)\s*~\s*([+-]?\d+)/);
-                                        if (range && samai !== null) {
-                                            const v1 = parseInt(range[1]);
-                                            const v2 = parseInt(range[2]);
-                                            if (samai >= Math.min(v1, v2) && samai <= Math.max(v1, v2)) { selected = sName; break; }
-                                        }
-                                        if (clean.includes("以上") && samai !== null) {
-                                            const v = parseInt(clean.replace(/[^-0-9]/g, ""));
-                                            if (!isNaN(v) && samai >= v) { if (!selected || !selected.includes("~")) selected = sName; }
-                                        }
-                                        if (clean.includes("未満") && samai !== null) {
-                                            const v = parseInt(clean.replace(/[^-0-9]/g, ""));
-                                            if (!isNaN(v) && samai < v) { if (!selected || !selected.includes("~")) selected = sName; }
-                                        }
-                                    }
+                                    selected = sheets.find(k => k.includes("通常") || k.includes("基本") || k.includes("0~") || k.includes("±0")) || sheets[0];
                                 }
-                                if (!selected) selected = sheets.find(k => k.includes("通常") || k.includes("基本") || k.includes("0~") || k.includes("±0")) || sheets[0];
                                 if (selected) {
                                     match.source = selected;
                                     match.ev = matchEvInRange(gCount, master[selected]);
@@ -614,25 +570,20 @@
                     }).filter(Boolean);
 
                     setLogs(results);
-                    // データのプロパティ名を標準化して表示不具合を防ぐ
-                    const fin = parseFinance(report);
-                    // 時間(h)と枚数を混同しないよう、抽出キーの優先順位と厳密性を100%確保
-                    const hoursVal = getField(report, ["稼働時間", "hours", "時間"]);
-                    const medalVal = getField(report, ["最終メダル枚数", "medal", "枚数", "最終枚数"]);
-                    const cashVal = getField(report, ["本日投資", "cash", "投資", "本日投資額"]);
-                    const memoVal = getField(report, ["備考", "memo", "備考欄", ""]);
 
+                    // データのプロパティ名を標準化（安定版の構成）
+                    const fin = parseFinance(report);
                     setEditData({
                         ...report,
                         ID: report.ID,
                         報告者: report.報告者,
                         店舗名: getField(report, ["店舗名", "store"]),
                         日付: report.日付,
-                        稼働時間: hoursVal,
-                        最終メダル枚数: medalVal || fin.medal,
-                        本日投資: cashVal || fin.cash,
-                        備考: memoVal || fin.text,
-                        details: getField(report, ["稼働内容", "details", "内容", ""])
+                        稼働時間: getField(report, ["稼働時間", "hours", "時間"]),
+                        最終メダル枚数: getField(report, ["最終メダル枚数", "medal", "枚数"]) || fin.medal,
+                        本日投資: getField(report, ["本日投資", "cash", "投資"]) || fin.cash,
+                        備考: getField(report, ["備考", "memo", "備考欄"]) || fin.text,
+                        details: getField(report, ["稼働内容", "details", "内容"])
                     });
                     setSelectedId(report.ID);
                 } catch (e) {
