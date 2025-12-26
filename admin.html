@@ -158,15 +158,13 @@
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-                        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                            <div className="flex gap-6 items-baseline">
-                                <h2 className="text-2xl font-black italic text-slate-900 uppercase">Master Console 📖</h2>
-                                <div className="flex gap-2 bg-slate-200 p-1 rounded-full">
-                                    <button onClick={() => setTab("dict")} className={`px-6 py-2 rounded-full text-[10px] font-black transition-all ${tab === 'dict' ? 'bg-[#0076FF] text-white' : 'text-slate-500 hover:text-slate-700'}`}>機種辞書</button>
-                                    <button onClick={() => setTab("strategy")} className={`px-6 py-2 rounded-full text-[10px] font-black transition-all ${tab === 'strategy' ? 'bg-[#0076FF] text-white' : 'text-slate-500 hover:text-slate-700'}`}>狙い目（攻略）</button>
-                                </div>
+                        <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-slate-50 shrink-0 gap-4">
+                            <h2 className="text-2xl font-black italic text-slate-900 uppercase">Master Console 📖</h2>
+                            <div className="flex gap-2 bg-slate-200 p-1 rounded-full w-full md:w-auto">
+                                <button onClick={() => setTab("dict")} className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${tab === 'dict' ? 'bg-[#0076FF] text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>機種辞書</button>
+                                <button onClick={() => setTab("strategy")} className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${tab === 'strategy' ? 'bg-[#0076FF] text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>狙い目（攻略）</button>
                             </div>
-                            <button onClick={onClose} className="text-slate-400 hover:text-rose-500 text-3xl transition-colors">✕</button>
+                            <button onClick={onClose} className="absolute top-4 right-8 text-slate-400 hover:text-rose-500 text-3xl transition-colors">✕</button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-8 custom-scroll">
                             {tab === "dict" ? (
@@ -250,15 +248,13 @@
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-                        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                            <div className="flex gap-6 items-baseline">
-                                <h2 className="text-2xl font-black italic text-slate-900 uppercase">Security Hub 🛡</h2>
-                                <div className="flex gap-2 bg-slate-200 p-1 rounded-full">
-                                    <button onClick={() => setTab("logs")} className={`flex-1 px-4 py-2 rounded-full text-[10px] font-black transition-all ${tab === 'logs' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-700'}`}>履歴</button>
-                                    <button onClick={() => setTab("ban")} className={`flex-1 px-4 py-2 rounded-full text-[10px] font-black transition-all ${tab === 'ban' ? 'bg-rose-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}>出禁</button>
-                                </div>
+                        <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-slate-50 shrink-0 gap-4">
+                            <h2 className="text-2xl font-black italic text-slate-900 uppercase">Security Hub 🛡</h2>
+                            <div className="flex gap-2 bg-slate-200 p-1 rounded-full w-full md:w-auto">
+                                <button onClick={() => setTab("logs")} className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${tab === 'logs' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>履歴</button>
+                                <button onClick={() => setTab("ban")} className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${tab === 'ban' ? 'bg-rose-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>出禁</button>
                             </div>
-                            <button onClick={onClose} className="text-slate-400 hover:text-rose-500 text-3xl transition-colors">✕</button>
+                            <button onClick={onClose} className="absolute top-4 right-8 text-slate-400 hover:text-rose-500 text-3xl transition-colors">✕</button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-10 custom-scroll">
                             {tab === "logs" ? (
@@ -487,12 +483,18 @@
 
             const parseFinance = (report) => {
                 const memo = getField(report, ["備考", "memo", "備考欄", ""]);
-                const result = { text: memo || "", medal: 0, cash: 0 };
+                const result = { text: memo || "", medal: 0, cash: 0, salary: 0, remaining: 0 };
                 if (!memo) return result;
                 const mMatch = memo.match(/(?:メダル|枚)[:：]?\s*(-?\d+)/);
                 const cMatch = memo.match(/(?:現金|投資|投資額|円)[:：]?\s*(-?\d+)/);
+                const sMatch = memo.match(/\[本日給料[:：]?\s*(-?\d+)円\]/);
+                const rMatch = memo.match(/\[残投資金[:：]?\s*(-?\d+)円\]/);
+
                 if (mMatch) result.medal = parseInt(mMatch[1]) || 0;
                 if (cMatch) result.cash = parseInt(cMatch[1]) || 0;
+                if (sMatch) result.salary = parseInt(sMatch[1]) || 0;
+                if (rMatch) result.remaining = parseInt(rMatch[1]) || 0;
+
                 result.text = memo.replace(/\[.*\]/g, "").trim();
                 return result;
             };
@@ -531,28 +533,36 @@
                         });
                         if (foundDict) {
                             match.machine = foundDict.機種名; match.color = foundDict.色コード;
+
+                            // 厳格な数値抽出（単位と符号を最優先）
+                            const gMatch = line.match(/(\d+)\s*[Gg]/);   // G数
+                            const sMatch = line.match(/([+-]?\d+)\s*[枚枚]/); // 差枚（単位あり）
+                            const signedMatch = line.match(/([+-]\d+)/); // 明示的な符号あり
                             const allNums = (line.match(/-?\d+/g) || []).map(Number);
-                            const gMatch = line.match(/(\d+)\s*[Gg]/);
-                            const sMatch = line.match(/([+-]?\d+)\s*[枚枚]/);
                             const isReset = /リセ|リセット|設定変更|変更後/.test(line);
 
                             let gCount = 0;
-                            let diff = 0;
+                            let diff = NaN;
 
-                            if (gMatch) {
-                                gCount = parseInt(gMatch[1]);
-                                if (sMatch) {
-                                    diff = parseInt(sMatch[1]);
-                                } else {
-                                    diff = allNums.find(n => n !== gCount) || 0;
-                                }
-                            } else if (sMatch) {
+                            if (gMatch) gCount = parseInt(gMatch[1]);
+                            if (sMatch) {
                                 diff = parseInt(sMatch[1]);
-                                gCount = allNums.find(n => n !== diff) || 0;
-                            } else {
-                                gCount = allNums[0] || 0;
-                                diff = allNums[1] || 0;
+                            } else if (signedMatch) {
+                                diff = parseInt(signedMatch[1]);
                             }
+
+                            // 補完: 数値が不足している場合、残りの数字を割り振る
+                            if (isNaN(diff)) {
+                                if (gCount !== 0) {
+                                    diff = allNums.find(n => n !== gCount) ?? 0;
+                                } else {
+                                    diff = allNums[1] ?? 0;
+                                }
+                            }
+                            if (gCount === 0) {
+                                gCount = allNums.find(n => n !== diff) ?? (allNums.length > 0 ? allNums[0] : 0);
+                            }
+                            if (isNaN(diff)) diff = 0;
 
                             if (match.machine === "スマスロ北斗の拳") {
                                 const sheets = Object.keys(master);
@@ -560,30 +570,35 @@
                                 if (isReset) {
                                     selected = sheets.find(s => s.includes("変更") || s.includes("リセ"));
                                 } else {
-                                    let rangeName = "";
-                                    if (diff < -1400) rangeName = "-1400未満";
-                                    else if (diff <= -1001) rangeName = "-1400～-1001";
-                                    else if (diff <= -601) rangeName = "-1000～-601";
-                                    else if (diff <= -401) rangeName = "-600～-401";
-                                    else if (diff <= -301) rangeName = "-400～-301";
-                                    else if (diff <= -201) rangeName = "-300～-201";
-                                    else if (diff <= -101) rangeName = "-200～-101";
-                                    else if (diff <= -1) rangeName = "-100～-1";
-                                    else if (diff <= 99) rangeName = "±0～+99";
-                                    else if (diff <= 199) rangeName = "+100～+199";
-                                    else if (diff <= 299) rangeName = "+200～+299";
-                                    else if (diff <= 399) rangeName = "+300～+399";
-                                    else if (diff <= 599) rangeName = "+400～+599";
-                                    else if (diff <= 799) rangeName = "+600～+799";
-                                    else if (diff <= 999) rangeName = "+800～+999";
-                                    else if (diff <= 1199) rangeName = "+1000～+1199";
-                                    else if (diff <= 1399) rangeName = "+1200～+1399";
-                                    else if (diff <= 1999) rangeName = "+1400～+1999";
-                                    else rangeName = "+2000以上";
+                                    // 20種類の範囲に完全一致させるための内部判定
+                                    const getRangeName = (d) => {
+                                        if (d < -1400) return "-1400枚未満";
+                                        if (d <= -1001) return "-1400～-1001枚";
+                                        if (d <= -601) return "-1000～-601枚";
+                                        if (d <= -401) return "-600～-401枚";
+                                        if (d <= -301) return "-400～-301枚";
+                                        if (d <= -201) return "-300～-201枚";
+                                        if (d <= -101) return "-200～-101枚";
+                                        if (d <= -1) return "-100～-1枚";
+                                        if (d <= 99) return "±0～+99枚";
+                                        if (d <= 199) return "+100～+199枚";
+                                        if (d <= 299) return "+200～+299枚";
+                                        if (d <= 399) return "+300～+399枚";
+                                        if (d <= 599) return "+400～+599枚";
+                                        if (d <= 799) return "+600～+799枚";
+                                        if (d <= 999) return "+800～+999枚";
+                                        if (d <= 1199) return "+1000～+1199枚";
+                                        if (d <= 1399) return "+1200～+1399枚";
+                                        if (d <= 1999) return "+1400～+1999枚";
+                                        return "+2000枚以上";
+                                    };
 
+                                    const targetName = getRangeName(diff);
                                     const normalize = (k) => k.replace(/[±枚（）()\[\]\s　]/g, "").replace(/[〜〜~]/g, "～").trim();
-                                    const normTarget = normalize(rangeName);
+                                    const normTarget = normalize(targetName);
+
                                     selected = sheets.find(sh => normalize(sh) === normTarget);
+                                    // 通常/基本 のフォールバック（±0～+99枚用）
                                     if (!selected && diff >= 0 && diff <= 99) {
                                         selected = sheets.find(sh => sh.includes("通常") || sh.includes("基本"));
                                     }
@@ -602,8 +617,11 @@
                         ...report,
                         ID: report.ID, 報告者: report.報告者, 店舗名: getField(report, ["店舗名", "store"]), 日付: report.日付,
                         稼働時間: getField(report, ["稼働時間", "hours", "時間", "TIME (H)", "time"]),
+                        rawHours: getField(report, ["rawHours", "hours_str", "時間入力値"]),
                         最終メダル枚数: getField(report, ["最終メダル枚数", "medal", "枚数"]) || fin.medal,
                         本日投資: getField(report, ["本日投資", "cash", "投資", "本日投資額"]) || fin.cash,
+                        本日の給料: getField(report, ["本日の給料", "salary", "給料"]) || fin.salary,
+                        残投資金: getField(report, ["残投資金", "remainingCash", "残高", "残投資金"]) || fin.remaining,
                         備考: getField(report, ["備考", "memo", "備考欄"]) || fin.text,
                         details: getField(report, ["稼働内容", "details", "内容"])
                     });
@@ -616,9 +634,15 @@
 
             const handleSaveEdit = async () => {
                 setLoading(true);
+                // 備考欄に金融情報を再注入して保存
+                const memoWithFinance = (editData.備考 || "").replace(/\[.*\]/g, "").trim() +
+                    (editData.本日の給料 ? `\n[本日給料: ${editData.本日の給料}円]` : "") +
+                    (editData.残投資金 ? `\n[残投資金: ${editData.残投資金}円]` : "");
+
+                const savePayload = { ...editData, 備考: memoWithFinance };
                 try {
-                    await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "updatePendingReport", data: editData }) });
-                    setReports(reports.map(r => r.ID === editData.ID ? { ...editData } : r));
+                    await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "updatePendingReport", data: savePayload }) });
+                    setReports(reports.map(r => r.ID === editData.ID ? { ...savePayload } : r));
                     alert("変更を保存しました");
                 } catch (e) { alert("保存エラー: " + e.message); }
                 finally { setLoading(false); }
@@ -626,11 +650,22 @@
 
             const onApprove = async () => {
                 const report = reports.find(r => r.ID === selectedId);
-                const info = { medal: parseInt(editData.最終メダル枚数) || 0, cash: parseInt(editData.本日投資) || 0, text: editData.備考 || "" };
+                const info = {
+                    medal: parseInt(editData.最終メダル枚数) || 0,
+                    cash: parseInt(editData.本日投資) || 0,
+                    salary: parseInt(editData.本日の給料) || 0,
+                    remaining: parseInt(editData.残投資金) || 0,
+                    text: (editData.備考 || "").replace(/\[.*\]/g, "").trim()
+                };
+
+                const memoWithFinance = info.text +
+                    (info.salary ? `\n[本日給料: ${info.salary}円]` : "") +
+                    (info.remaining ? `\n[残投資金: ${info.remaining}円]` : "");
+
                 const hours = parseFloat(editData.稼働時間) || 0;
                 const payload = {
                     id: report.ID, date: report.日付, name: report.報告者, store: editData.店舗名, machine: logs.map(l => l.machine).filter(Boolean).join("/"),
-                    ev: logs.reduce((s, l) => s + l.ev, 0), profit: (info.medal * 20) - info.cash, hours: hours, memo: info.text
+                    ev: logs.reduce((s, l) => s + l.ev, 0), profit: (info.medal * 20) - info.cash, hours: hours, memo: memoWithFinance
                 };
                 setLoading(true);
                 try {
@@ -706,19 +741,60 @@
                                         <div><div>Operator</div><div className="text-sm font-black text-white">{editData.報告者}</div></div>
                                         <div><div>Store</div><input value={editData.店舗名 || ""} onChange={e => setEditData({ ...editData, 店舗名: e.target.value })} className="bg-transparent border-b border-white/20 w-full text-sm font-black text-white outline-none" /></div>
                                         <div><div>Date</div><div className="text-sm font-black text-white">{editData.日付}</div></div>
-                                        <div><div>Time (h)</div><input value={editData.稼働時間 || ""} onChange={e => setEditData({ ...editData, 稼働時間: e.target.value })} className="bg-transparent border-b border-white/20 w-full text-sm font-black text-[#0076FF] outline-none" /></div>
+                                        <div><div>Time (h)</div><input value={(editData.稼働時間 !== undefined && editData.稼働時間 !== "") ? editData.稼働時間 : "0"} onChange={e => setEditData({ ...editData, 稼働時間: e.target.value })} className="bg-transparent border-b border-white/20 w-full text-sm font-black text-[#0076FF] outline-none" /></div>
                                     </div>
                                     <div className="mt-8 flex justify-end"><button onClick={handleSaveEdit} className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest">データのみ保存</button></div>
                                 </div>
                                 <div className="bg-white rounded-[2.5rem] p-10 lg:p-14 shadow-xl border border-slate-100 space-y-10">
-                                    <div className="grid lg:grid-cols-2 gap-10 border-b border-slate-100 pb-10">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-slate-50 p-6 rounded-3xl"><div className="text-[8px] font-black text-slate-400 mb-2">P-Tokens</div><input type="number" value={editData.最終メダル枚数 || 0} onChange={e => setEditData({ ...editData, 最終メダル枚数: e.target.value })} className="bg-white border rounded-lg px-2 w-full text-lg font-black" /></div>
-                                            <div className="bg-slate-50 p-6 rounded-3xl"><div className="text-[8px] font-black text-slate-400 mb-2">Invest</div><input type="number" value={editData.本日投資 || 0} onChange={e => setEditData({ ...editData, 本日投資: e.target.value })} className="bg-white border rounded-lg px-2 w-full text-lg font-black" /></div>
+                                    <div className="space-y-8 border-b border-slate-100 pb-10">
+                                        <div className="space-y-4">
+                                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                                <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">店舗名</div>
+                                                <input value={editData.店舗名 || ""} onChange={e => setEditData({ ...editData, 店舗名: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="例: マルハン〇〇店" />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">稼働時間</div>
+                                                    <input value={editData.rawHours || ""} onChange={e => setEditData({ ...editData, rawHours: e.target.value })} className="bg-white border text-base font-black px-4 py-3 rounded-xl w-full" placeholder="8:40~21:10" />
+                                                    <div className="text-[9px] font-bold text-[#0076FF] mt-2 ml-1 italic">数値: {editData.稼働時間 !== undefined ? editData.稼働時間 : "0"}h</div>
+                                                </div>
+                                                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">最終メダル枚数</div>
+                                                    <input type="number" value={editData.最終メダル枚数 ?? 0} onChange={e => setEditData({ ...editData, 最終メダル枚数: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="枚数" />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">本日投資 (円)</div>
+                                                    <input type="number" value={editData.本日投資 ?? 0} onChange={e => setEditData({ ...editData, 本日投資: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="投資" />
+                                                </div>
+                                                <div className="bg-slate-50 p-6 rounded-3xl border border-emerald-100">
+                                                    <div className="text-[10px] font-black text-emerald-500 uppercase mb-2 ml-1">本日の給料</div>
+                                                    <input type="number" value={editData.本日の給料 ?? 0} onChange={e => setEditData({ ...editData, 本日の給料: e.target.value })} className="bg-white border border-emerald-200 text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="給料" />
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-indigo-50 border border-indigo-100 p-8 rounded-[2.5rem] shadow-sm">
+                                                <div className="text-[10px] font-black text-indigo-400 uppercase mb-3 ml-1">引いた後の残投資金 (財布の残高)</div>
+                                                <input type="number" value={editData.残投資金 ?? 0} onChange={e => setEditData({ ...editData, 残投資金: e.target.value })} className="bg-white border-2 border-indigo-200 text-2xl font-black px-6 py-4 rounded-3xl w-full text-indigo-900" placeholder="残高" />
+                                                <p className="text-[9px] text-slate-400 mt-3 ml-2 italic">※給料を引いた後の、手元にある現金の合計</p>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                                <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">メモ・備考</div>
+                                                <textarea value={editData.備考 || ""} onChange={e => setEditData({ ...editData, 備考: e.target.value })} className="w-full bg-white border p-6 rounded-3xl text-sm font-medium min-h-[120px] outline-none" placeholder="備考" />
+                                            </div>
                                         </div>
-                                        <textarea value={editData.備考 || ""} onChange={e => setEditData({ ...editData, 備考: e.target.value })} className="w-full bg-slate-50 p-7 rounded-3xl text-sm border min-h-[100px]" placeholder="備考" />
                                     </div>
-                                    <div className="flex justify-between items-center bg-slate-100 p-2 rounded-3xl"><h3 className="text-xl font-black italic ml-4">Analysis Matrix</h3><div className="flex gap-2">{["設定１相当", "優良店"].map(m => (<button key={m} onClick={() => { setEvMode(m); handleAnalyze(reports.find(r => r.ID === selectedId), m); }} className={`px-6 py-2.5 text-[9px] font-black rounded-2xl ${evMode === m ? 'bg-white shadow text-[#0076FF]' : 'text-slate-400'}`}>{m}</button>))}</div></div>
+                                    <div className="flex justify-between items-center bg-slate-100 p-2 rounded-3xl">
+                                        <div className="flex flex-col ml-4">
+                                            <h3 className="text-xl font-black italic">北斗</h3>
+                                            <p className="text-[9px] font-bold text-amber-600 uppercase">※おすすめ週間のみ優良店に変更してください</p>
+                                        </div>
+                                        <div className="flex gap-2">{["設定１相当", "優良店"].map(m => (<button key={m} onClick={() => { setEvMode(m); handleAnalyze(reports.find(r => r.ID === selectedId), m); }} className={`px-6 py-2.5 text-[9px] font-black rounded-2xl ${evMode === m ? 'bg-white shadow text-[#0076FF]' : 'text-slate-400'}`}>{m}</button>))}</div>
+                                    </div>
                                     <div className="space-y-5">
                                         {logs.map((log, i) => (
                                             <div key={i} className="bg-slate-50 p-7 lg:p-10 rounded-[2.5rem] border flex flex-col lg:flex-row justify-between items-center gap-6 animate-fadeIn">
