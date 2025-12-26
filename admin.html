@@ -450,8 +450,6 @@
             const [strategyData, setStrategyData] = useState([]);
             const [syncInfo, setSyncInfo] = useState("");
             const [checkedIds, setCheckedIds] = useState([]); // 選択削除用
-            const [aiReason, setAiReason] = useState(""); // AI推定の根拠
-            const [aiLoading, setAiLoading] = useState(false); // AI待機中
             const [editData, setEditData] = useState(null);
 
             useEffect(() => {
@@ -485,11 +483,13 @@
 
             const getField = (obj, keys) => {
                 if (!obj) return "";
-                for (let k of keys) if (obj[k] !== undefined && obj[k] !== null) return obj[k];
                 const allKeys = Object.keys(obj);
-                for (let ak of allKeys) {
-                    if (ak.trim() === "" || ak === "undefined") {
-                        if (typeof obj[ak] === 'string' && (obj[ak].includes("メダル") || obj[ak].includes("現金"))) return obj[ak];
+                for (let k of keys) {
+                    const foundKey = allKeys.find(ak => ak.trim() === String(k).trim());
+                    if (foundKey) {
+                        const val = obj[foundKey];
+                        // undefined, null, 空文字, 空白のみの文字列、"undefined"という文字列を除外
+                        if (val !== undefined && val !== null && String(val).trim() !== "" && String(val) !== "undefined") return val;
                     }
                 }
                 return "";
@@ -551,53 +551,62 @@
                             const numMatches = line.match(/[+-]?\d+/g) || [];
                             const isReset = /リセ|リセット|設定変更|変更後/.test(line);
 
-                            let gCount = 0;
-                            let samai = null;
+                            // 差枚とゲーム数の抽出ロジックを抜本強化（枚、Gの単位を優先）
+                            let samaiCandidate = null;
+                            let gCandidate = null;
 
-                            // ロジック: 最重要は差枚の認識。符号付数値、または2番目の数値を差枚とみなす
-                            if (numMatches.length >= 2) {
-                                gCount = parseInt(numMatches[0]);
-                                samai = parseInt(numMatches[1]);
-                            } else if (numMatches.length === 1) {
-                                if (numMatches[0].startsWith("+") || numMatches[0].startsWith("-")) {
-                                    samai = parseInt(numMatches[0]);
-                                } else {
-                                    gCount = parseInt(numMatches[0]);
+                            // 1. 単位付きの数値を優先抽出
+                            const gMatch = line.match(/(\d+)\s*[Gg]/);
+                            if (gMatch) gCandidate = parseInt(gMatch[1]);
+                            const sMatch = line.match(/([+-]?\d+)\s*[枚枚]/);
+                            if (sMatch) samaiCandidate = parseInt(sMatch[1]);
+
+                            // 2. 単位がない場合は numMatches から推定
+                            if (gCandidate === null || samaiCandidate === null) {
+                                if (numMatches.length >= 2) {
+                                    if (gCandidate === null) gCandidate = parseInt(numMatches[0]);
+                                    if (samaiCandidate === null) samaiCandidate = parseInt(numMatches[1]);
+                                } else if (numMatches.length === 1) {
+                                    const v = numMatches[0];
+                                    if (v.startsWith("+") || v.startsWith("-")) {
+                                        if (samaiCandidate === null) samaiCandidate = parseInt(v);
+                                    } else {
+                                        if (gCandidate === null) gCandidate = parseInt(v);
+                                    }
                                 }
                             }
+                            gCount = gCandidate || 0;
+                            samai = samaiCandidate; // NULLの可能性を維持して範囲判定へ
 
                             if (match.machine === "スマスロ北斗の拳") {
-                                const sheetNames = Object.keys(master);
-                                let bestKey = "";
-
+                                const sheets = Object.keys(master);
+                                let selected = "";
                                 if (isReset) {
-                                    bestKey = sheetNames.find(k => /設定変更|リセ|変更後/.test(k));
+                                    selected = sheets.find(k => k.includes("リセ") || k.includes("設定変更") || k.includes("変更後"));
                                 } else {
-                                    // 差枚数に基づく範囲マッチング
-                                    for (const key of sheetNames) {
-                                        const norm = key.replace(/[～〜]/g, "~");
-                                        const range = norm.match(/([+-]?\d+)~([+-]?\d+)/);
+                                    // 差枚数(samai)に基づく厳密な判定
+                                    for (const sName of sheets) {
+                                        const clean = sName.replace(/[～〜]/g, "~");
+                                        const range = clean.match(/([+-]?\d+)\s*~\s*([+-]?\d+)/);
                                         if (range && samai !== null) {
-                                            const low = parseInt(range[1]);
-                                            const high = parseInt(range[2]);
-                                            if (samai >= low && samai <= high) { bestKey = key; break; }
+                                            const v1 = parseInt(range[1]);
+                                            const v2 = parseInt(range[2]);
+                                            if (samai >= Math.min(v1, v2) && samai <= Math.max(v1, v2)) { selected = sName; break; }
                                         }
-                                        if (norm.includes("以上") && samai !== null) {
-                                            const val = parseInt(norm.replace(/[^-0-9]/g, ""));
-                                            if (samai >= val) { bestKey = key; break; }
+                                        if (clean.includes("以上") && samai !== null) {
+                                            const v = parseInt(clean.replace(/[^-0-9]/g, ""));
+                                            if (!isNaN(v) && samai >= v) { if (!selected || !selected.includes("~")) selected = sName; }
                                         }
-                                        if (norm.includes("未満") && samai !== null) {
-                                            const val = parseInt(norm.replace(/[^-0-9]/g, ""));
-                                            if (samai < val) { bestKey = key; break; }
+                                        if (clean.includes("未満") && samai !== null) {
+                                            const v = parseInt(clean.replace(/[^-0-9]/g, ""));
+                                            if (!isNaN(v) && samai < v) { if (!selected || !selected.includes("~")) selected = sName; }
                                         }
                                     }
-                                    // 見つからない場合のフォールバック
-                                    if (!bestKey) bestKey = sheetNames.find(k => /通常|基本|0~|±0/.test(k));
                                 }
-
-                                if (bestKey) {
-                                    match.source = bestKey;
-                                    match.ev = matchEvInRange(gCount, master[bestKey]);
+                                if (!selected) selected = sheets.find(k => k.includes("通常") || k.includes("基本") || k.includes("0~") || k.includes("±0")) || sheets[0];
+                                if (selected) {
+                                    match.source = selected;
+                                    match.ev = matchEvInRange(gCount, master[selected]);
                                 }
                             }
                         }
@@ -606,17 +615,24 @@
 
                     setLogs(results);
                     // データのプロパティ名を標準化して表示不具合を防ぐ
+                    const fin = parseFinance(report);
+                    // 時間(h)と枚数を混同しないよう、抽出キーの優先順位と厳密性を100%確保
+                    const hoursVal = getField(report, ["稼働時間", "hours", "時間"]);
+                    const medalVal = getField(report, ["最終メダル枚数", "medal", "枚数", "最終枚数"]);
+                    const cashVal = getField(report, ["本日投資", "cash", "投資", "本日投資額"]);
+                    const memoVal = getField(report, ["備考", "memo", "備考欄", ""]);
+
                     setEditData({
                         ...report,
                         ID: report.ID,
                         報告者: report.報告者,
                         店舗名: getField(report, ["店舗名", "store"]),
                         日付: report.日付,
-                        稼働時間: getField(report, ["稼働時間", "hours"]),
-                        最終メダル枚数: getField(report, ["最終メダル枚数", "medal", "枚数"]),
-                        本日投資: getField(report, ["本日投資", "cash", "投資"]),
-                        備考: getField(report, ["備考", "memo"]),
-                        details: getField(report, ["稼働内容", "details", "内容"])
+                        稼働時間: hoursVal,
+                        最終メダル枚数: medalVal || fin.medal,
+                        本日投資: cashVal || fin.cash,
+                        備考: memoVal || fin.text,
+                        details: getField(report, ["稼働内容", "details", "内容", ""])
                     });
                     setSelectedId(report.ID);
                 } catch (e) {
@@ -639,21 +655,6 @@
             };
 
 
-            const handleAiEstimate = async (report, machine) => {
-                setAiLoading(true); setAiReason("");
-                try {
-                    const text = encodeURIComponent(getField(report, ["稼働内容", "details", "内容"]));
-                    const machineEnc = encodeURIComponent(machine || "");
-                    const res = await fetch(`${GAS_URL}?action=getAiPrediction&text=${text}&machine=${machineEnc}`);
-                    const json = await res.json();
-                    if (json.status === "success") {
-                        setAiReason(`【AI推定期待値: ${json.prediction.ev}円】\n根拠: ${json.prediction.reason}`);
-                    } else {
-                        setAiReason("AI解析に失敗しました。");
-                    }
-                } catch (e) { setAiReason("AI Error: " + e.message); }
-                finally { setAiLoading(false); }
-            };
 
             const onApprove = async () => {
                 const report = reports.find(r => r.ID === selectedId);
@@ -760,9 +761,6 @@
                             <button onClick={() => setShowMaster(true)} className="w-full bg-blue-600/10 border border-blue-600/20 py-4 rounded-xl text-blue-400 text-[10px] font-black tracking-widest hover:bg-blue-600/20 flex items-center justify-center gap-2">📖 MASTER CONSOLE (マスター管理)</button>
                             <button onClick={() => setShowSecurity(true)} className="w-full bg-indigo-600 py-4 rounded-xl text-white text-[10px] font-black tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">🛡️ SECURITY HUB (セキュリティ管理)</button>
                             <button onClick={() => setShowAnalytics(true)} className="w-full bg-emerald-600 py-4 rounded-xl text-white text-[10px] font-black tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">📊 ANALYTICS (KPI分析)</button>
-                            <div className="flex justify-center pt-2">
-                                <button onClick={() => setShowDebug(!showDebug)} className="text-[8px] font-black text-slate-700 uppercase tracking-[0.3em] hover:text-orange-500 transition-colors">Debug Mode: {showDebug ? 'ON' : 'OFF'}</button>
-                            </div>
                         </div>
                     </div>
 
@@ -830,29 +828,13 @@
                                     </div>
 
                                     <div className="flex justify-between items-center bg-slate-100 p-2 rounded-3xl border border-slate-200">
-                                        <div className="flex items-center gap-4">
-                                            <h3 className="text-xl font-black italic ml-4 text-slate-900 tracking-tight">Analysis Matrix</h3>
-                                            <button
-                                                onClick={() => handleAiEstimate(reports.find(r => r.ID === selectedId), logs[0]?.machine)}
-                                                disabled={aiLoading}
-                                                className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${aiLoading ? 'bg-slate-300 text-slate-400' : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg active:scale-95'}`}
-                                            >
-                                                {aiLoading ? "Thinking..." : "✨ AI 推定"}
-                                            </button>
-                                        </div>
+                                        <h3 className="text-xl font-black italic ml-4 text-slate-900 tracking-tight">Analysis Matrix</h3>
                                         <div className="flex gap-2">
                                             {["設定１相当", "優良店"].map(m => (
                                                 <button key={m} onClick={() => { setEvMode(m); handleAnalyze(reports.find(r => r.ID === selectedId), m); }} className={`px-6 py-2.5 text-[9px] font-black rounded-2xl transition-all ${evMode === m ? 'bg-white shadow-lg text-[#0076FF]' : 'text-slate-400'}`}>{m}</button>
                                             ))}
                                         </div>
                                     </div>
-
-                                    {aiReason && (
-                                        <div className="bg-indigo-50 border-2 border-indigo-100 p-8 rounded-[2.5rem] animate-fadeIn">
-                                            <div className="text-[10px] font-black text-indigo-400 uppercase mb-2">Gemini AI Insights</div>
-                                            <div className="text-xs font-bold text-indigo-900 leading-relaxed whitespace-pre-wrap">{aiReason}</div>
-                                        </div>
-                                    )}
 
                                     <div className="space-y-5">
                                         {logs.map((log, i) => (
