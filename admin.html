@@ -189,7 +189,7 @@
                                                 <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">キーワード (カンマ区切り)</label>
                                                 <input value={it.キーワード} onChange={e => { const n = [...dictItems]; n[i].キーワード = e.target.value; setDictItems(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-xs font-bold outline-none border border-slate-200" placeholder="例: 北斗,ほくと,拳" />
                                             </div>
-                                            <button onClick={() => setDictItems(dictItems.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 font-black text-xl">✕</button>
+                                            <button onClick={() => { if (window.confirm(`${it.機種名 || 'これ'} を辞書から削除しますか？`)) setDictItems(dictItems.filter((_, idx) => idx !== i)); }} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 font-black text-xl">✕</button>
                                         </div>
                                     ))}
                                 </div>
@@ -203,7 +203,7 @@
                                                 <textarea value={it.狙い目} onChange={e => { const n = [...stData]; n[i].狙い目 = e.target.value; setStData(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-xs font-medium outline-none border border-slate-200 min-h-[100px]" placeholder="狙い目・やめどき等の解説" />
                                                 <input value={it.URL} onChange={e => { const n = [...stData]; n[i].URL = e.target.value; setStData(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-[10px] outline-none border border-slate-200" placeholder="解析サイトURL" />
                                             </div>
-                                            <button onClick={() => setStData(stData.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-rose-500 font-black">✕</button>
+                                            <button onClick={() => { if (window.confirm(`${it.機種名 || 'これ'} の攻略情報を削除しますか？`)) setStData(stData.filter((_, idx) => idx !== i)); }} className="text-slate-300 hover:text-rose-500 font-black">✕</button>
                                         </div>
                                     ))}
                                 </div>
@@ -248,7 +248,7 @@
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-                        <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-slate-50 shrink-0 gap-4">
+                        <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-slate-50 shrink-0 gap-4 relative">
                             <h2 className="text-2xl font-black italic text-slate-900 uppercase">Security Hub 🛡</h2>
                             <div className="flex gap-2 bg-slate-200 p-1 rounded-full w-full md:w-auto">
                                 <button onClick={() => setTab("logs")} className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${tab === 'logs' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>履歴</button>
@@ -257,28 +257,38 @@
                             <button onClick={onClose} className="absolute top-4 right-8 text-slate-400 hover:text-rose-500 text-3xl transition-colors">✕</button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-10 custom-scroll">
-                            {tab === "logs" ? (
+                            {loading ? (
+                                <div className="h-full flex items-center justify-center text-slate-400 font-black italic animate-pulse">読み込み中...</div>
+                            ) : tab === "logs" ? (
                                 <div className="space-y-2">
-                                    {logs.map((L, i) => (
-                                        <div key={i} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 italic">
-                                            <div className="flex gap-4 items-center">
-                                                <span className="text-[10px] font-mono text-slate-400">{new Date(L.日時).toLocaleString()}</span>
-                                                <span className="text-xs font-black text-slate-700">{L.名前}</span>
+                                    {logs.length > 0 ? (
+                                        logs.map((L, i) => (
+                                            <div key={i} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 italic">
+                                                <div className="flex gap-4 items-center">
+                                                    <span className="text-[10px] font-mono text-slate-400">{new Date(L.日時).toLocaleString()}</span>
+                                                    <span className="text-xs font-black text-slate-700">{L.名前}</span>
+                                                </div>
+                                                <span className="text-[10px] font-black px-3 py-1 bg-indigo-100 text-indigo-600 rounded-lg">{L.行動}</span>
                                             </div>
-                                            <span className="text-[10px] font-black px-3 py-1 bg-indigo-100 text-indigo-600 rounded-lg">{L.行動}</span>
-                                        </div>
-                                    ))}
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-10 text-slate-300 italic font-bold">履歴がありません</div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="max-w-md mx-auto space-y-6 text-center">
                                     <h3 className="text-xl font-black text-rose-600 uppercase">Blacklist Control</h3>
                                     <div className="space-y-2 text-left">
-                                        {blacklist.map((name, i) => (
-                                            <div key={i} className="flex justify-between items-center bg-rose-50 p-4 rounded-2xl border-rose-100 border">
-                                                <span className="font-black text-rose-900">{name}</span>
-                                                <button onClick={() => setBlacklist(blacklist.filter(n => n !== name))} className="text-rose-300 hover:text-rose-600">解除</button>
-                                            </div>
-                                        ))}
+                                        {blacklist.length > 0 ? (
+                                            blacklist.map((name, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-rose-50 p-4 rounded-2xl border-rose-100 border">
+                                                    <span className="font-black text-rose-900">{name}</span>
+                                                    <button onClick={() => { if (window.confirm(`${name} さんを出禁リストから解除しますか？`)) setBlacklist(blacklist.filter(n => n !== name)); }} className="text-rose-300 hover:text-rose-600 font-bold text-sm">解除</button>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-10 text-slate-300 italic font-bold">出禁リストは空です</div>
+                                        )}
                                     </div>
                                     <div className="flex gap-2">
                                         <input id="banInputSec" className="flex-1 bg-slate-100 p-4 rounded-2xl outline-none font-bold text-sm" placeholder="名前を入力" />
@@ -814,7 +824,6 @@
                                             <p className="text-[9px] font-bold text-amber-600 uppercase">※おすすめ週間のみ優良店に変更してください</p>
                                         </div>
                                         <div className="flex gap-4 items-center">
-                                            <button onClick={handleSaveEdit} className="px-6 py-2.5 bg-white border border-slate-200 text-[#0076FF] text-[9px] font-black rounded-2xl shadow-sm hover:bg-slate-50 transition-all uppercase tracking-widest">変更内容を一時保存</button>
                                             <div className="flex gap-2 bg-slate-200/50 p-1 rounded-2xl">
                                                 {["設定１相当", "優良店"].map(m => (<button key={m} onClick={() => { setEvMode(m); handleAnalyze(reports.find(r => r.ID === selectedId), m); }} className={`px-5 py-2 text-[9px] font-black rounded-xl ${evMode === m ? 'bg-white shadow text-[#0076FF]' : 'text-slate-400'}`}>{m}</button>))}
                                             </div>
@@ -822,9 +831,33 @@
                                     </div>
                                     <div className="space-y-5">
                                         {logs.map((log, i) => (
-                                            <div key={i} className="bg-slate-50 p-7 lg:p-10 rounded-[2.5rem] border flex flex-col lg:flex-row justify-between items-center gap-6 animate-fadeIn">
-                                                <div className="flex-1 space-y-2 w-full"><div className="flex items-center gap-4"><span className={`text-[8px] font-black px-3 py-1.5 rounded-lg text-white ${log.color}`}>{log.machine}</span><span className="text-sm font-black">{log.text}</span></div>{log.source && <div className="text-[9px] font-black text-[#0076FF] italic opacity-60 ml-2">Sheet: {log.source}</div>}</div>
-                                                <div className="flex items-center gap-4 shrink-0"><input type="number" value={log.ev || ""} onChange={e => { const n = [...logs]; n[i].ev = parseInt(e.target.value) || 0; setLogs(n); }} className="input-ev" /><button onClick={() => setLogs(logs.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-rose-500 text-2xl">✕</button></div>
+                                            <div key={i} className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col gap-6 animate-fadeIn relative overflow-hidden group">
+                                                <div className="space-y-5">
+                                                    <div>
+                                                        <span className={`text-[10px] font-black px-4 py-2 rounded-xl text-white shadow-sm inline-block ${log.color}`}>{log.machine}</span>
+                                                    </div>
+
+                                                    <div className="text-base font-black text-slate-800 leading-relaxed pl-1">
+                                                        {log.text}
+                                                        {log.source && <div className="text-[9px] font-black text-[#0076FF] italic opacity-60 mt-2">Sheet: {log.source}</div>}
+                                                    </div>
+
+                                                    <div className="pt-6 border-t border-slate-200 flex items-end justify-between">
+                                                        <div className="space-y-2">
+                                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">算出期待値 (編集可能)</div>
+                                                            <div className="flex items-center gap-3">
+                                                                <input type="number" value={log.ev || ""} onChange={e => { const n = [...logs]; n[i].ev = parseInt(e.target.value) || 0; setLogs(n); }} className="input-ev text-xl" />
+                                                                <span className="text-xs font-black text-slate-400">円</span>
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => setLogs(logs.filter((_, idx) => idx !== i))} className="p-4 text-slate-200 hover:text-rose-500 transition-colors">
+                                                            <span className="text-3xl font-light">✕</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                                                    <div className="text-6xl font-black italic">#{i + 1}</div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
