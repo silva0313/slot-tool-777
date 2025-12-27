@@ -761,7 +761,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
 
             const parseFinance = (report) => {
                 const memo = getField(report, ["備考", "memo", "備考欄", ""]);
-                const result = { text: memo || "", medal20: 0, medal5: 0, pachi4: 0, saved: 0, cash: 0, salary: 0, remaining: 0 };
+                const result = { text: memo || "", medal20: 0, medal5: 0, pachi4: 0, cash: 0, salary: 0, remaining: 0 };
                 if (!memo) return result;
 
                 // 20スロ / メダル
@@ -770,8 +770,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                 const m5 = memo.match(/(?:5ス|5スロ)[:：]?\s*(-?\d+)/);
                 // 4パチ
                 const p4 = memo.match(/(?:4パ|4パチ|4円)[:：]?\s*(-?\d+)/);
-                // 貯玉
-                const sv = memo.match(/(?:貯玉|貯メダル)[:：]?\s*(-?\d+)/);
 
                 const cMatch = memo.match(/(?:現金|投資|投資額|円)[:：]?\s*(-?\d+)/);
                 const sMatch = memo.match(/\[本日給料[:：]?\s*(-?\d+)円\]/);
@@ -780,7 +778,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                 if (m20) result.medal20 = parseInt(m20[1]) || 0;
                 if (m5) result.medal5 = parseInt(m5[1]) || 0;
                 if (p4) result.pachi4 = parseInt(p4[1]) || 0;
-                if (sv) result.saved = parseInt(sv[1]) || 0;
 
                 if (cMatch) result.cash = parseInt(cMatch[1]) || 0;
                 if (sMatch) result.salary = parseInt(sMatch[1]) || 0;
@@ -917,7 +914,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                         medal20: getField(report, ["最終メダル枚数", "medal", "枚数", "medal20"]) || fin.medal20,
                         medal5: getField(report, ["medal5", "5スロ"]) || fin.medal5,
                         pachi4: getField(report, ["pachi4", "4パチ", "4円"]) || fin.pachi4,
-                        saved: getField(report, ["saved", "貯玉"]) || fin.saved,
                         本日投資: getField(report, ["本日投資", "cash", "投資", "本日投資額"]) || fin.cash,
                         本日の給料: getField(report, ["本日の給料", "salary", "給料"]) || fin.salary,
                         残投資金: getField(report, ["残投資金", "remainingCash", "残高", "残投資金"]) || fin.remaining,
@@ -938,7 +934,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     (editData.medal20 ? `\n[20スロ: ${editData.medal20}枚]` : "") +
                     (editData.medal5 ? `\n[5スロ: ${editData.medal5}枚]` : "") +
                     (editData.pachi4 ? `\n[4パチ: ${editData.pachi4}枚]` : "") +
-                    (editData.saved ? `\n[貯玉: ${editData.saved}枚]` : "") +
                     (editData.本日の給料 ? `\n[本日給料: ${editData.本日の給料}円]` : "") +
                     (editData.残投資金 ? `\n[残投資金: ${editData.残投資金}円]` : "");
 
@@ -957,7 +952,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     m20: parseInt(editData.medal20) || 0,
                     m5: parseInt(editData.medal5) || 0,
                     p4: parseInt(editData.pachi4) || 0,
-                    saved: parseInt(editData.saved) || 0,
                     cash: parseInt(editData.本日投資) || 0,
                     salary: parseInt(editData.本日の給料) || 0,
                     remaining: parseInt(editData.残投資金) || 0,
@@ -968,7 +962,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     (info.m20 ? `\n[20スロ: ${info.m20}枚]` : "") +
                     (info.m5 ? `\n[5スロ: ${info.m5}枚]` : "") +
                     (info.p4 ? `\n[4パチ: ${info.p4}枚]` : "") +
-                    (info.saved ? `\n[貯玉: ${info.saved}枚]` : "") +
                     (info.salary ? `\n[本日給料: ${info.salary}円]` : "") +
                     (info.remaining ? `\n[残投資金: ${info.remaining}円]` : "");
 
@@ -1099,10 +1092,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                                     <div>
                                                         <label className="text-[9px] font-black text-emerald-500 uppercase ml-1">4円パチ</label>
                                                         <input type="number" value={editData.pachi4 ?? 0} onChange={e => setEditData({ ...editData, pachi4: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="4円パチ数" />
-                                                    </div>
-                                                    <div className="pt-2 border-t border-slate-200">
-                                                        <label className="text-[9px] font-black text-slate-400 uppercase ml-1 italic">貯玉・貯メダル</label>
-                                                        <input type="number" value={editData.saved ?? 0} onChange={e => setEditData({ ...editData, saved: e.target.value })} className="bg-white border-2 border-dashed border-slate-200 text-base font-black px-4 py-3 rounded-xl w-full" placeholder="貯玉" />
                                                     </div>
                                                 </div>
                                             </div>
