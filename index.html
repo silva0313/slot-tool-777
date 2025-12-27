@@ -145,15 +145,19 @@
             };
 
             useEffect(() => {
-                const passVerified = localStorage.getItem("p_v7") === APP_PASS;
-                if (passVerified) setIsLocked(false);
+                try {
+                    const passVerified = localStorage.getItem("p_v7") === APP_PASS;
+                    if (passVerified) setIsLocked(false);
 
-                const saved = localStorage.getItem("u_v7");
-                if (saved) setUser(JSON.parse(saved));
-                const savedLogs = localStorage.getItem("l_v7");
-                if (savedLogs) setLogs(JSON.parse(savedLogs));
-                const savedRep = localStorage.getItem("r_v7");
-                if (savedRep) setReportInput(JSON.parse(savedRep));
+                    const saved = localStorage.getItem("u_v7");
+                    if (saved) setUser(JSON.parse(saved));
+                    const savedLogs = localStorage.getItem("l_v7");
+                    if (savedLogs) setLogs(JSON.parse(savedLogs));
+                    const savedRep = localStorage.getItem("r_v7");
+                    if (savedRep) setReportInput(JSON.parse(savedRep));
+                } catch (e) {
+                    console.error("Storage load error:", e);
+                }
             }, []);
 
             useEffect(() => {
@@ -320,15 +324,19 @@
                             <h1 className="text-3xl font-black mb-1 italic tracking-tighter">WORKER APP<span className="text-indigo-600">.</span></h1>
                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Login / 設定確認</p>
                         </div>
-                        <div className="card p-6 space-y-4 shadow-xl">
+                        <form onSubmit={handleLogin} className="card p-6 space-y-4 shadow-xl">
                             <input
                                 type="text"
                                 value={tempName}
                                 onChange={e => setTempName(e.target.value)}
                                 className="input-dark text-center font-bold"
                                 placeholder="あなたのお名前"
+                                required
                             />
-                            <button onClick={handleLogin} className="btn-premium">アプリを始める</button>
+                            <button type="submit" className="btn-premium">アプリを始める</button>
+                        </form>
+                        <div className="text-center">
+                            <button onClick={() => { if (confirm("設定を完全にリセットしますか？")) { localStorage.clear(); location.reload(); } }} className="text-[10px] text-slate-600 font-bold uppercase tracking-widest border-b border-slate-700 pb-1">ログインできない場合はこちら（リセット）</button>
                         </div>
                     </div>
                 </div>
