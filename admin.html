@@ -229,16 +229,32 @@
             const load = async () => {
                 setLoading(true);
                 try {
-                    const [hRes, bRes, sRes] = await Promise.all([
-                        fetch(`${GAS_URL}?action=getAccessHistory`),
-                        fetch(`${GAS_URL}?action=getBlacklist`),
-                        fetch(`${GAS_URL}?action=getSettings`)
+                    // 各リクエストを個別に試行し、エラーが起きても他を止めないよう堅牢化
+                    const fetchSafe = async (action, defaultVal = []) => {
+                        try {
+                            const res = await fetch(`${GAS_URL}?action=${action}`);
+                            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+                            return await res.json();
+                        } catch (e) {
+                            console.error(`Failed to fetch ${action}:`, e);
+                            return defaultVal;
+                        }
+                    };
+
+                    const [hData, bData, sData] = await Promise.all([
+                        fetchSafe("getAccessHistory", []),
+                        fetchSafe("getBlacklist", []),
+                        fetchSafe("getSettings", { registrationLocked: false })
                     ]);
-                    setLogs(await hRes.json());
-                    setBlacklist(await bRes.json());
-                    setSettings(await sRes.json());
-                } catch (e) { console.error(e); }
-                finally { setLoading(false); }
+
+                    setLogs(hData);
+                    setBlacklist(bData);
+                    setSettings(sData);
+                } catch (e) {
+                    console.error("Critical load error:", e);
+                } finally {
+                    setLoading(false);
+                }
             };
             const saveBan = async () => {
                 setLoading(true);
