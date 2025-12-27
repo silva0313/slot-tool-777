@@ -133,6 +133,7 @@
             const [strategyLoading, setStrategyLoading] = useState(false);
             const [myShifts, setMyShifts] = useState([]); // 自分のシフト
             const [selectedDates, setSelectedDates] = useState([]); // 選択中の日付
+            const [isRegistrationLocked, setIsRegistrationLocked] = useState(false);
             const [shiftLoading, setShiftLoading] = useState(false);
             const [modal, setModal] = useState({ show: false, title: "", message: "", type: "alert", onConfirm: null });
 
@@ -158,6 +159,16 @@
                 } catch (e) {
                     console.error("Storage load error:", e);
                 }
+
+                // リモートロック状態の取得
+                const checkLock = async () => {
+                    try {
+                        const res = await fetch(`${GAS_URL}?action=getSettings`);
+                        const settings = await res.json();
+                        setIsRegistrationLocked(settings.registrationLocked);
+                    } catch (e) { console.error("Setting sync fail:", e); }
+                };
+                checkLock();
             }, []);
 
             useEffect(() => {
@@ -177,6 +188,7 @@
 
             const handleLogin = (e) => {
                 if (e) e.preventDefault();
+                if (isRegistrationLocked) return showAlert("登録制限中", "現在、新規の利用登録は停止されています。管理権限を持つ担当者までお問い合わせください。");
                 if (!tempName.trim()) return showAlert("入力エラー", "有効な名前を入力してください");
                 showConfirm("ログイン名の確定", `名前を「${tempName.trim()}」で確定します。一度決めた名前は変更できません。よろしいですか？`, () => {
                     const u = { displayName: tempName.trim() };
@@ -295,321 +307,334 @@
                 });
             };
 
-            if (isLocked) return (
-                <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-950">
-                    <div className="w-full max-w-xs space-y-6 animate-fadeIn">
-                        <div className="text-center">
-                            <h1 className="text-2xl font-black mb-1 italic text-indigo-500">PRIVATE SYSTEM</h1>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Entry Key Required</p>
-                        </div>
-                        <form onSubmit={verifyPass} className="card p-6 space-y-4 shadow-xl">
-                            <input
-                                type="password"
-                                value={passInput}
-                                onChange={e => setPassInput(e.target.value)}
-                                className="input-dark text-center font-bold tracking-widest"
-                                placeholder="合言葉を入力"
-                                autoFocus
-                            />
-                            <button type="submit" className="btn-premium">UNLOCK</button>
-                        </form>
-                    </div>
-                </div>
-            );
-
-            if (!user) return (
-                <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-900">
-                    <div className="w-full max-w-xs space-y-6 animate-fadeIn">
-                        <div className="text-center">
-                            <h1 className="text-3xl font-black mb-1 italic tracking-tighter">WORKER APP<span className="text-indigo-600">.</span></h1>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Login / 設定確認</p>
-                        </div>
-                        <form onSubmit={handleLogin} className="card p-6 space-y-4 shadow-xl">
-                            <input
-                                type="text"
-                                value={tempName}
-                                onChange={e => setTempName(e.target.value)}
-                                className="input-dark text-center font-bold"
-                                placeholder="あなたのお名前"
-                                required
-                            />
-                            <button type="submit" className="btn-premium">アプリを始める</button>
-                        </form>
-                        <div className="text-center">
-                            <button onClick={() => { if (confirm("設定を完全にリセットしますか？")) { localStorage.clear(); location.reload(); } }} className="text-[10px] text-slate-600 font-bold uppercase tracking-widest border-b border-slate-700 pb-1">ログインできない場合はこちら（リセット）</button>
-                        </div>
-                    </div>
-                </div>
-            );
-
             return (
                 <>
-                    <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900">
-                        <div className="p-4 flex justify-between items-center border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-0 z-20">
-                            <div className="text-lg font-black italic tracking-tighter">稼働まとめ<span className="text-indigo-600">.</span></div>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => location.reload(true)} className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all">最新に更新</button>
-                                <div onClick={logout} className="text-[10px] font-black text-slate-400 bg-white/5 px-3 py-1.5 rounded-full active:bg-indigo-500/20 truncate max-w-[100px]">
-                                    {user.displayName}
+                    {isLocked ? (
+                        <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-950">
+                            <div className="w-full max-w-xs space-y-6 animate-fadeIn">
+                                <div className="text-center">
+                                    <h1 className="text-2xl font-black mb-1 italic text-indigo-500">PRIVATE SYSTEM</h1>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Entry Key Required</p>
+                                </div>
+                                <form onSubmit={verifyPass} className="card p-6 space-y-4 shadow-xl">
+                                    <input
+                                        type="password"
+                                        value={passInput}
+                                        onChange={e => setPassInput(e.target.value)}
+                                        className="input-dark text-center font-bold tracking-widest"
+                                        placeholder="合言葉を入力"
+                                        autoFocus
+                                    />
+                                    <button type="submit" className="btn-premium">UNLOCK</button>
+                                </form>
+                            </div>
+                        </div>
+                    ) : !user ? (
+                        <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-900">
+                            <div className="w-full max-w-xs space-y-6 animate-fadeIn">
+                                <div className="text-center">
+                                    <h1 className="text-3xl font-black mb-1 italic tracking-tighter">WORKER APP<span className="text-indigo-600">.</span></h1>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Login / 設定確認</p>
+                                </div>
+                                {isRegistrationLocked ? (
+                                    <div className="card p-8 space-y-6 shadow-xl border-rose-500/20 bg-rose-500/5 text-center">
+                                        <div className="text-3xl">🔒</div>
+                                        <div className="space-y-2">
+                                            <h3 className="text-rose-400 font-black text-sm uppercase">Registration Locked</h3>
+                                            <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
+                                                現在、セキュリティ保護のため<br />
+                                                新規の利用登録を一時的に停止しています。<br />
+                                                <span className="text-white">管理者へ直接お問い合わせください。</span>
+                                            </p>
+                                        </div>
+                                        <button onClick={() => location.reload()} className="text-[10px] text-indigo-400 font-black border-b border-indigo-400/30 pb-0.5">再試行する</button>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleLogin} className="card p-6 space-y-4 shadow-xl">
+                                        <input
+                                            type="text"
+                                            value={tempName}
+                                            onChange={e => setTempName(e.target.value)}
+                                            className="input-dark text-center font-bold"
+                                            placeholder="あなたのお名前"
+                                            required
+                                        />
+                                        <button type="submit" className="btn-premium">アプリを始める</button>
+                                    </form>
+                                )}
+                                <div className="text-center">
+                                    <button onClick={() => { if (confirm("設定を完全にリセットしますか？")) { localStorage.clear(); location.reload(); } }} className="text-[10px] text-slate-600 font-bold uppercase tracking-widest border-b border-slate-700 pb-1">ログインできない場合はこちら（リセット）</button>
                                 </div>
                             </div>
                         </div>
-
-                        <div className="flex border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-[57px] z-20 overflow-x-auto whitespace-nowrap">
-                            <button onClick={() => setActiveTab("log")} className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}>01 報告送信</button>
-                            <button onClick={() => { setActiveTab("strategy"); fetchStrategy(); }} className={`tab-btn ${activeTab === 'strategy' ? 'active' : ''}`}>02 狙い目</button>
-                            <button onClick={() => { setActiveTab("shift"); fetchShifts(); }} className={`tab-btn ${activeTab === 'shift' ? 'active' : ''}`}>03 シフト</button>
-                            <button onClick={() => setActiveTab("help")} className={`tab-btn ${activeTab === 'help' ? 'active' : ''}`}>04 HELP</button>
-                        </div>
-
-                        <div className="p-4 flex-1 space-y-5 pb-10">
-                            {status && (
-                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs font-bold animate-pulse">
-                                    {status}
-                                </div>
-                            )}
-
-                            {activeTab === 'log' && (
-                                <div className="space-y-6 animate-fadeIn">
-                                    <section className="card p-4 space-y-4 shadow-xl border-indigo-500/10">
-                                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">台移動・稼働ログ入力</div>
-                                        <div className="space-y-3">
-                                            <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark font-bold py-3 text-base" placeholder="機種名 (例: 北斗)" />
-                                            <div className="flex gap-2">
-                                                <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark py-3" placeholder="G数・リセ・状況など" />
-                                                <button onClick={addLog} className="bg-indigo-600 w-14 h-12 rounded-xl font-black text-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-all">+</button>
-                                            </div>
-                                        </div>
-                                        <p className="text-[9px] text-slate-500 font-bold px-1 italic">※台を移動するたびに、ここに「北斗 650～」のようにメモしてください。</p>
-                                    </section>
-
-                                    <section className="space-y-3">
-                                        <div className="flex justify-between items-center px-1">
-                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">現在のログ履歴 / {logs.length}件</div>
-                                            {logs.length > 0 && <button onClick={() => showConfirm("ログのリセット", "現在記録されている全てのログを削除します。よろしいですか？", () => setLogs([]))} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">全削除</button>}
-                                        </div>
-                                        <div className="space-y-2">
-                                            {logs.length === 0 ? (
-                                                <div className="py-16 text-center card bg-slate-800/20 border-dashed">
-                                                    <div className="text-3xl mb-2 opacity-20">📝</div>
-                                                    <div className="text-slate-600 text-[10px] font-black uppercase tracking-widest leading-relaxed">まだログがありません<br />上の入力欄から追加してください</div>
-                                                </div>
-                                            ) : (
-                                                [...logs].reverse().map(l => (
-                                                    <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-indigo-500 shadow-sm animate-fadeIn">
-                                                        <div className="min-w-0 flex-1 pr-4">
-                                                            <div className="font-black text-sm text-indigo-100 truncate">{l.machine}</div>
-                                                            <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
-                                                        </div>
-                                                        <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-10 h-10 flex items-center justify-center text-2xl transition-colors">×</button>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </section>
-
-                                    <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10">
-                                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">詳細情報の入力</div>
-                                        <div>
-                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">店舗名</label>
-                                            <input value={reportInput.store} onChange={e => setReportInput({ ...reportInput, store: e.target.value })} className="input-dark font-bold text-base" placeholder="例: マルハン〇〇店" />
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">稼働時間</label>
-                                                <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-2" placeholder="8:40~21:10" />
-                                                <div className="text-[8px] text-slate-600 mt-1 font-bold italic">計算結果: {parseHours(reportInput.hours)}h</div>
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">最終メダル枚数</label>
-                                                <input type="number" value={reportInput.medal} onChange={e => setReportInput({ ...reportInput, medal: e.target.value })} className="input-dark py-2 font-bold" placeholder="枚数" />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">本日投資 (円)</label>
-                                                <input type="number" value={reportInput.cash} onChange={e => setReportInput({ ...reportInput, cash: e.target.value })} className="input-dark font-bold" placeholder="例: 20000" />
-                                                <p className="text-[8px] text-slate-500 mt-1">※現金投資した場合のみ</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-2 px-1">本日の給料</label>
-                                                <input type="number" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-bold border-emerald-500/20" placeholder="例: 10000" />
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
-                                            <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-2 px-1">引いた後の残投資金 (財布の残高)</label>
-                                            <input type="number" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-lg border-indigo-500/30" placeholder="例: 20000" />
-                                            <p className="text-[8px] text-slate-500 mt-1.5 font-bold italic">※給料を引いた後の、手元にある現金の合計を入力してください。</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">メモ・備考</label>
-                                            <textarea value={reportInput.memo} onChange={e => setReportInput({ ...reportInput, memo: e.target.value })} className="input-dark h-24 text-xs leading-relaxed" placeholder="今日の環境や立ち回りなど..."></textarea>
-                                        </div>
-                                    </section>
-
-                                    <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg ${submitting ? 'opacity-50' : ''}`}>
-                                        {submitting ? '送信中...' : '報告を送信して終了する'}
-                                    </button>
-                                    <p className="text-[10px] text-slate-600 text-center font-bold pb-10">※送信すると上のログ履歴はリセットされます</p>
-                                </div>
-                            )}
-
-                            {activeTab === 'strategy' && (
-                                <div className="space-y-6 animate-fadeIn pb-10">
-                                    <div className="card p-4 sticky top-[108px] z-10 bg-slate-800 shadow-xl border-indigo-500/20">
-                                        <input
-                                            type="text"
-                                            value={search}
-                                            onChange={e => setSearch(e.target.value)}
-                                            className="input-dark bg-slate-950 font-bold"
-                                            placeholder="機種名で検索..."
-                                        />
+                    ) : (
+                        <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900">
+                            <div className="p-4 flex justify-between items-center border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-0 z-20">
+                                <div className="text-lg font-black italic tracking-tighter">稼働まとめ<span className="text-indigo-600">.</span></div>
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => location.reload(true)} className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all">最新に更新</button>
+                                    <div onClick={logout} className="text-[10px] font-black text-slate-400 bg-white/5 px-3 py-1.5 rounded-full active:bg-indigo-500/20 truncate max-w-[100px]">
+                                        {user.displayName}
                                     </div>
+                                </div>
+                            </div>
 
-                                    <div className="space-y-4">
-                                        {strategyLoading ? (
-                                            <div className="py-20 text-center text-indigo-400 font-black animate-pulse uppercase tracking-[0.2em] text-xs">Loading Strategy...</div>
-                                        ) : strategies.filter(s => {
-                                            const term = search.toLowerCase();
-                                            const nameMatch = s.機種名.toLowerCase().includes(term);
-                                            const keywordMatch = (s.keywords || "").toLowerCase().split(/[,，、]/).some(k => k.trim().includes(term));
-                                            return nameMatch || keywordMatch;
-                                        }).length > 0 ? (
-                                            strategies.filter(s => {
+                            <div className="flex border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-[57px] z-20 overflow-x-auto whitespace-nowrap">
+                                <button onClick={() => setActiveTab("log")} className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}>01 報告送信</button>
+                                <button onClick={() => { setActiveTab("strategy"); fetchStrategy(); }} className={`tab-btn ${activeTab === 'strategy' ? 'active' : ''}`}>02 狙い目</button>
+                                <button onClick={() => { setActiveTab("shift"); fetchShifts(); }} className={`tab-btn ${activeTab === 'shift' ? 'active' : ''}`}>03 シフト</button>
+                                <button onClick={() => setActiveTab("help")} className={`tab-btn ${activeTab === 'help' ? 'active' : ''}`}>04 HELP</button>
+                            </div>
+
+                            <div className="p-4 flex-1 space-y-5 pb-10">
+                                {status && (
+                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs font-bold animate-pulse">
+                                        {status}
+                                    </div>
+                                )}
+
+                                {activeTab === 'log' && (
+                                    <div className="space-y-6 animate-fadeIn">
+                                        <section className="card p-4 space-y-4 shadow-xl border-indigo-500/10">
+                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">台移動・稼働ログ入力</div>
+                                            <div className="space-y-3">
+                                                <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark font-bold py-3 text-base" placeholder="機種名 (例: 北斗)" />
+                                                <div className="flex gap-2">
+                                                    <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark py-3" placeholder="G数・リセ・状況など" />
+                                                    <button onClick={addLog} className="bg-indigo-600 w-14 h-12 rounded-xl font-black text-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-all">+</button>
+                                                </div>
+                                            </div>
+                                            <p className="text-[9px] text-slate-500 font-bold px-1 italic">※台を移動するたびに、ここに「北斗 650～」のようにメモしてください。</p>
+                                        </section>
+
+                                        <section className="space-y-3">
+                                            <div className="flex justify-between items-center px-1">
+                                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">現在のログ履歴 / {logs.length}件</div>
+                                                {logs.length > 0 && <button onClick={() => showConfirm("ログのリセット", "現在記録されている全てのログを削除します。よろしいですか？", () => setLogs([]))} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">全削除</button>}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {logs.length === 0 ? (
+                                                    <div className="py-16 text-center card bg-slate-800/20 border-dashed">
+                                                        <div className="text-3xl mb-2 opacity-20">📝</div>
+                                                        <div className="text-slate-600 text-[10px] font-black uppercase tracking-widest leading-relaxed">まだログがありません<br />上の入力欄から追加してください</div>
+                                                    </div>
+                                                ) : (
+                                                    [...logs].reverse().map(l => (
+                                                        <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-indigo-500 shadow-sm animate-fadeIn">
+                                                            <div className="min-w-0 flex-1 pr-4">
+                                                                <div className="font-black text-sm text-indigo-100 truncate">{l.machine}</div>
+                                                                <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
+                                                            </div>
+                                                            <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-10 h-10 flex items-center justify-center text-2xl transition-colors">×</button>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </section>
+
+                                        <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10">
+                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">詳細情報の入力</div>
+                                            <div>
+                                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">店舗名</label>
+                                                <input value={reportInput.store} onChange={e => setReportInput({ ...reportInput, store: e.target.value })} className="input-dark font-bold text-base" placeholder="例: マルハン〇〇店" />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">稼働時間</label>
+                                                    <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-2" placeholder="8:40~21:10" />
+                                                    <div className="text-[8px] text-slate-600 mt-1 font-bold italic">計算結果: {parseHours(reportInput.hours)}h</div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">最終メダル枚数</label>
+                                                    <input type="number" value={reportInput.medal} onChange={e => setReportInput({ ...reportInput, medal: e.target.value })} className="input-dark py-2 font-bold" placeholder="枚数" />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">本日投資 (円)</label>
+                                                    <input type="number" value={reportInput.cash} onChange={e => setReportInput({ ...reportInput, cash: e.target.value })} className="input-dark font-bold" placeholder="例: 20000" />
+                                                    <p className="text-[8px] text-slate-500 mt-1">※現金投資した場合のみ</p>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-2 px-1">本日の給料</label>
+                                                    <input type="number" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-bold border-emerald-500/20" placeholder="例: 10000" />
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
+                                                <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-2 px-1">引いた後の残投資金 (財布の残高)</label>
+                                                <input type="number" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-lg border-indigo-500/30" placeholder="例: 20000" />
+                                                <p className="text-[8px] text-slate-500 mt-1.5 font-bold italic">※給料を引いた後の、手元にある現金の合計を入力してください。</p>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-2 px-1">メモ・備考</label>
+                                                <textarea value={reportInput.memo} onChange={e => setReportInput({ ...reportInput, memo: e.target.value })} className="input-dark h-24 text-xs leading-relaxed" placeholder="今日の環境や立ち回りなど..."></textarea>
+                                            </div>
+                                        </section>
+
+                                        <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg ${submitting ? 'opacity-50' : ''}`}>
+                                            {submitting ? '送信中...' : '報告を送信して終了する'}
+                                        </button>
+                                        <p className="text-[10px] text-slate-600 text-center font-bold pb-10">※送信すると上のログ履歴はリセットされます</p>
+                                    </div>
+                                )}
+
+                                {activeTab === 'strategy' && (
+                                    <div className="space-y-6 animate-fadeIn pb-10">
+                                        <div className="card p-4 sticky top-[108px] z-10 bg-slate-800 shadow-xl border-indigo-500/20">
+                                            <input
+                                                type="text"
+                                                value={search}
+                                                onChange={e => setSearch(e.target.value)}
+                                                className="input-dark bg-slate-950 font-bold"
+                                                placeholder="機種名で検索..."
+                                            />
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {strategyLoading ? (
+                                                <div className="py-20 text-center text-indigo-400 font-black animate-pulse uppercase tracking-[0.2em] text-xs">Loading Strategy...</div>
+                                            ) : strategies.filter(s => {
                                                 const term = search.toLowerCase();
                                                 const nameMatch = s.機種名.toLowerCase().includes(term);
                                                 const keywordMatch = (s.keywords || "").toLowerCase().split(/[,，、]/).some(k => k.trim().includes(term));
                                                 return nameMatch || keywordMatch;
-                                            }).map((s, i) => (
-                                                <div key={i} className="card p-5 space-y-3 bg-slate-800/50 border-white/5 hover:border-indigo-500/20 transition-all">
-                                                    <div className="text-sm font-black text-indigo-100 flex justify-between items-center">
-                                                        {s.機種名}
-                                                        {s.URL && (
-                                                            <a href={s.URL} target="_blank" className="text-[9px] font-black bg-indigo-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">解析サイト</a>
-                                                        )}
+                                            }).length > 0 ? (
+                                                strategies.filter(s => {
+                                                    const term = search.toLowerCase();
+                                                    const nameMatch = s.機種名.toLowerCase().includes(term);
+                                                    const keywordMatch = (s.keywords || "").toLowerCase().split(/[,，、]/).some(k => k.trim().includes(term));
+                                                    return nameMatch || keywordMatch;
+                                                }).map((s, i) => (
+                                                    <div key={i} className="card p-5 space-y-3 bg-slate-800/50 border-white/5 hover:border-indigo-500/20 transition-all">
+                                                        <div className="text-sm font-black text-indigo-100 flex justify-between items-center">
+                                                            {s.機種名}
+                                                            {s.URL && (
+                                                                <a href={s.URL} target="_blank" className="text-[9px] font-black bg-indigo-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">解析サイト</a>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap">{s.狙い目}</p>
                                                     </div>
-                                                    <p className="text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap">{s.狙い目}</p>
+                                                ))
+                                            ) : (
+                                                <div className="py-20 text-center">
+                                                    <div className="text-4xl mb-4 opacity-20">🔍</div>
+                                                    <p className="text-slate-500 font-black italic uppercase text-xs tracking-widest">No matching results</p>
                                                 </div>
-                                            ))
-                                        ) : (
-                                            <div className="py-20 text-center">
-                                                <div className="text-4xl mb-4 opacity-20">🔍</div>
-                                                <p className="text-slate-500 font-black italic uppercase text-xs tracking-widest">No matching results</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'shift' && (
+                                    <div className="space-y-6 animate-fadeIn pb-10">
+                                        <section className="card p-5 space-y-4">
+                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">シフト申請（今後2週間分）</div>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {[...Array(14)].map((_, i) => {
+                                                    const d = new Date(); d.setDate(d.getDate() + i);
+                                                    const dStr = d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+                                                    const iso = d.toISOString().split('T')[0];
+                                                    const isSelected = selectedDates.includes(iso);
+                                                    return (
+                                                        <div key={i} onClick={() => toggleDate(iso)} className={`p-2 rounded-xl text-center cursor-pointer transition-all border ${isSelected ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-800 border-white/5 text-slate-400'}`}>
+                                                            <div className="text-[8px] font-bold opacity-60 leading-none mb-1">{dStr.split(' ')[1]}</div>
+                                                            <div className="text-xs font-black leading-none">{dStr.split('(')[0]}</div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
-                                        )}
+                                            <button onClick={handleShiftSubmit} disabled={submitting || selectedDates.length === 0} className={`btn-premium py-3 text-xs ${submitting || selectedDates.length === 0 ? 'opacity-30' : ''}`}>
+                                                {submitting ? 'SENDING...' : '選択した日付を申請'}
+                                            </button>
+                                        </section>
+
+                                        <section className="space-y-3">
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">確定済みシフト</div>
+                                            <div className="card p-4 space-y-2">
+                                                {shiftLoading ? <div className="text-center py-4 text-[10px] text-indigo-400 animate-pulse">読み込み中...</div> :
+                                                    myShifts.length === 0 ? <div className="text-center py-8 text-slate-600 text-[10px] font-bold italic uppercase opacity-40">No confirmed shifts</div> :
+                                                        myShifts.sort((a, b) => new Date(a.date) - new Date(b.date)).map((s, i) => (
+                                                            <div key={i} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                                                                <div className="text-xs font-black text-white">{new Date(s.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'long' })}</div>
+                                                                <div className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md uppercase tracking-tighter">Confirmed</div>
+                                                            </div>
+                                                        ))}
+                                            </div>
+                                        </section>
+                                        <p className="text-[10px] text-slate-500 italic text-center px-4 leading-relaxed">※入力したシフトは管理者のカレンダーに反映されます。<br />※一度申請した内容の変更は管理者に連絡してください。</p>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {activeTab === 'shift' && (
-                                <div className="space-y-6 animate-fadeIn pb-10">
-                                    <section className="card p-5 space-y-4">
-                                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">シフト申請（今後2週間分）</div>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {[...Array(14)].map((_, i) => {
-                                                const d = new Date(); d.setDate(d.getDate() + i);
-                                                const dStr = d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
-                                                const iso = d.toISOString().split('T')[0];
-                                                const isSelected = selectedDates.includes(iso);
-                                                return (
-                                                    <div key={i} onClick={() => toggleDate(iso)} className={`p-2 rounded-xl text-center cursor-pointer transition-all border ${isSelected ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-800 border-white/5 text-slate-400'}`}>
-                                                        <div className="text-[8px] font-bold opacity-60 leading-none mb-1">{dStr.split(' ')[1]}</div>
-                                                        <div className="text-xs font-black leading-none">{dStr.split('(')[0]}</div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        <button onClick={handleShiftSubmit} disabled={submitting || selectedDates.length === 0} className={`btn-premium py-3 text-xs ${submitting || selectedDates.length === 0 ? 'opacity-30' : ''}`}>
-                                            {submitting ? 'SENDING...' : '選択した日付を申請'}
-                                        </button>
-                                    </section>
+                                {activeTab === 'help' && (
+                                    <div className="space-y-6 animate-fadeIn text-slate-400 text-xs leading-relaxed pb-10">
+                                        <div className="card p-6 lg:p-10 space-y-10">
+                                            <h3 className="text-indigo-400 font-extrabold flex items-center gap-3 uppercase tracking-[0.2em] text-[15px] border-b border-white/5 pb-6">
+                                                <span className="text-2xl text-white">SYSTEM GUIDE</span>
+                                                <span className="text-xs font-medium opacity-50">運用マニュアル</span>
+                                            </h3>
 
-                                    <section className="space-y-3">
-                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">確定済みシフト</div>
-                                        <div className="card p-4 space-y-2">
-                                            {shiftLoading ? <div className="text-center py-4 text-[10px] text-indigo-400 animate-pulse">読み込み中...</div> :
-                                                myShifts.length === 0 ? <div className="text-center py-8 text-slate-600 text-[10px] font-bold italic uppercase opacity-40">No confirmed shifts</div> :
-                                                    myShifts.sort((a, b) => new Date(a.date) - new Date(b.date)).map((s, i) => (
-                                                        <div key={i} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                                                            <div className="text-xs font-black text-white">{new Date(s.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'long' })}</div>
-                                                            <div className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md uppercase tracking-tighter">Confirmed</div>
-                                                        </div>
-                                                    ))}
-                                        </div>
-                                    </section>
-                                    <p className="text-[10px] text-slate-500 italic text-center px-4 leading-relaxed">※入力したシフトは管理者のカレンダーに反映されます。<br />※一度申請した内容の変更は管理者に連絡してください。</p>
-                                </div>
-                            )}
-
-                            {activeTab === 'help' && (
-                                <div className="space-y-6 animate-fadeIn text-slate-400 text-xs leading-relaxed pb-10">
-                                    <div className="card p-6 lg:p-10 space-y-10">
-                                        <h3 className="text-indigo-400 font-extrabold flex items-center gap-3 uppercase tracking-[0.2em] text-[15px] border-b border-white/5 pb-6">
-                                            <span className="text-2xl text-white">SYSTEM GUIDE</span>
-                                            <span className="text-xs font-medium opacity-50">運用マニュアル</span>
-                                        </h3>
-
-                                        <div className="space-y-12">
-                                            <section className="space-y-4">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">01</div>
-                                                    <div className="space-y-2">
-                                                        <h4 className="font-black text-white text-base">リアルタイムでの稼働ログ記録</h4>
-                                                        <p className="opacity-80 text-[12px] leading-6">
-                                                            本システムは、正確な収支・期待値分析を行うため、<strong className="text-indigo-300">台移動直後のログ入力を原則</strong>としています。新しい遊技台を打つ際は、まず「報告送信」タブの入力欄に「機種名」および「ゲーム数・状況」を入力し、追加ボタンで履歴へ保存してください。
-                                                        </p>
-                                                        <div className="bg-slate-950/40 p-4 rounded-xl border border-white/5 italic text-[11px]">
-                                                            入力例： スマスロ北斗の拳　720G～
+                                            <div className="space-y-12">
+                                                <section className="space-y-4">
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">01</div>
+                                                        <div className="space-y-2">
+                                                            <h4 className="font-black text-white text-base">リアルタイムでの稼働ログ記録</h4>
+                                                            <p className="opacity-80 text-[12px] leading-6">
+                                                                本システムは、正確な収支・期待値分析を行うため、<strong className="text-indigo-300">台移動直後のログ入力を原則</strong>としています。新しい遊技台を打つ際は、まず「報告送信」タブの入力欄に「機種名」および「ゲーム数・状況」を入力し、追加ボタンで履歴へ保存してください。
+                                                            </p>
+                                                            <div className="bg-slate-950/40 p-4 rounded-xl border border-white/5 italic text-[11px]">
+                                                                入力例： スマスロ北斗の拳　720G～
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </section>
+                                                </section>
 
-                                            <section className="space-y-4">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">02</div>
-                                                    <div className="space-y-2">
-                                                        <h4 className="font-black text-white text-base">業務終了時の詳細報告と送信</h4>
-                                                        <p className="opacity-80 text-[12px] leading-6">
-                                                            一日の業務（稼働）が全て終了した際、蓄積されたログの下部にある「詳細情報の入力」欄を確認し、必要事項を記入してください。
-                                                        </p>
-                                                        <ul className="text-[11px] space-y-2 pt-2 text-slate-300">
-                                                            <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日投資:</strong> 遊技に要した総現金投資額。</span></li>
-                                                            <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日の給料:</strong> 業務終了時に受け取った給料額。</span></li>
-                                                            <li className="flex gap-2"><span>・</span><span><strong className="text-white">残投資金:</strong> 給料受取後、現在手元に残っている現金額（財布の残高）。</span></li>
-                                                        </ul>
+                                                <section className="space-y-4">
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">02</div>
+                                                        <div className="space-y-2">
+                                                            <h4 className="font-black text-white text-base">業務終了時の詳細報告と送信</h4>
+                                                            <p className="opacity-80 text-[12px] leading-6">
+                                                                一日の業務（稼働）が全て終了した際、蓄積されたログの下部にある「詳細情報の入力」欄を確認し、必要事項を記入してください。
+                                                            </p>
+                                                            <ul className="text-[11px] space-y-2 pt-2 text-slate-300">
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日投資:</strong> 遊技に要した総現金投資額。</span></li>
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日の給料:</strong> 業務終了時に受け取った給料額。</span></li>
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">残投資金:</strong> 給料受取後、現在手元に残っている現金額（財布の残高）。</span></li>
+                                                            </ul>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </section>
+                                                </section>
 
-                                            <section className="bg-rose-500/5 p-6 rounded-3xl space-y-4 border border-rose-500/20">
-                                                <p className="font-bold text-rose-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-widest">
-                                                    <span className="text-sm">●</span> セキュリティおよび注意事項
-                                                </p>
-                                                <div className="text-[11px] space-y-4 opacity-90 leading-relaxed">
-                                                    <p>
-                                                        送信ボタンは、すべての入力内容に誤りがないことを確認した上で実行してください。送信完了と同時に、端末に保存されているログ履歴は自動的に初期化されます。
+                                                <section className="bg-rose-500/5 p-6 rounded-3xl space-y-4 border border-rose-500/20">
+                                                    <p className="font-bold text-rose-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-widest">
+                                                        <span className="text-sm">●</span> セキュリティおよび注意事項
                                                     </p>
-                                                    <p>
-                                                        表示上の不具合が発生した場合や、最新のマスタデータを反映させたい場合は、画面右上の<strong className="text-indigo-400">「最新に更新」</strong>ボタンを利用してリロードを行ってください。
-                                                    </p>
-                                                    <p className="text-rose-300/80">
-                                                        ※本アプリは機密情報を含みます。第三者への開示、スクリーンショットのSNS投稿等は厳禁です。
-                                                    </p>
-                                                </div>
-                                            </section>
+                                                    <div className="text-[11px] space-y-4 opacity-90 leading-relaxed">
+                                                        <p>
+                                                            送信ボタンは、すべての入力内容に誤りがないことを確認した上で実行してください。送信完了と同時に、端末に保存されているログ履歴は自動的に初期化されます。
+                                                        </p>
+                                                        <p>
+                                                            表示上の不具合が発生した場合や、最新のマスタデータを反映させたい場合は、画面右上の<strong className="text-indigo-400">「最新に更新」</strong>ボタンを利用してリロードを行ってください。
+                                                        </p>
+                                                        <p className="text-rose-300/80">
+                                                            ※本アプリは機密情報を含みます。第三者への開示、スクリーンショットのSNS投稿等は厳禁です。
+                                                        </p>
+                                                    </div>
+                                                </section>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div className="text-center opacity-30 font-black text-[9px] uppercase tracking-[0.3em] pt-4">Internal System Worker Security Level: AA+ | v7.13.0</div>
-                                </div>
-                            )}
+                                        <div className="text-center opacity-30 font-black text-[9px] uppercase tracking-[0.3em] pt-4">Internal System Worker Security Level: AA+ | v7.13.0</div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {modal.show && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
