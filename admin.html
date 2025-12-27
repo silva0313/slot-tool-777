@@ -958,10 +958,10 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                         medal20: getField(report, ["20スロ", "最終メダル枚数", "medal", "枚数", "medal20"]) || fin.medal20,
                         medal5: getField(report, ["5スロ", "medal5"]) || fin.medal5,
                         pachi4: getField(report, ["4パチ", "pachi4", "4円"]) || fin.pachi4,
-                        本日投資: getField(report, ["本日投資", "cash", "投資", "本日投資額"]) || fin.cash,
-                        本日の給料: getField(report, ["本日の給料", "salary", "給料"]) || fin.salary,
-                        残投資金: getField(report, ["残投資金", "remainingCash", "残高", "remaining"]) || fin.remaining,
-                        備考: getField(report, ["備考", "memo", "備考欄"]) || fin.text,
+                        cash: getField(report, ["本日投資", "cash", "投資", "本日投資額"]) || fin.cash,
+                        salary: getField(report, ["本日の給料", "salary", "給料"]) || fin.salary,
+                        remaining: getField(report, ["残投資金", "remainingCash", "残高", "remaining"]) || fin.remaining,
+                        memo: getField(report, ["備考", "memo", "備考欄"]) || fin.text,
                         details: getField(report, ["稼働内容", "details", "内容"])
                     });
                     setSelectedId(report.ID);
@@ -974,14 +974,29 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             const handleSaveEdit = async () => {
                 setLoading(true);
                 // 備考欄に金融情報を再注入して保存
-                const memoWithFinance = (editData.備考 || "").replace(/\[.*\]/g, "").trim() +
+                const memoWithFinance = (editData.memo || "").replace(/\[.*\]/g, "").trim() +
                     (editData.medal20 ? `\n[20スロ: ${editData.medal20}枚]` : "") +
                     (editData.medal5 ? `\n[5スロ: ${editData.medal5}枚]` : "") +
                     (editData.pachi4 ? `\n[4パチ: ${editData.pachi4}枚]` : "") +
-                    (editData.本日の給料 ? `\n[本日給料: ${editData.本日の給料}円]` : "") +
-                    (editData.残投資金 ? `\n[残投資金: ${editData.残投資金}円]` : "");
+                    (editData.cash ? `\n[本日投資: ${editData.cash}円]` : "") +
+                    (editData.salary ? `\n[本日給料: ${editData.salary}円]` : "") +
+                    (editData.remaining ? `\n[残投資金: ${editData.remaining}円]` : "");
 
-                const savePayload = { ...editData, 最終メダル枚数: editData.medal20, 備考: memoWithFinance };
+                const savePayload = {
+                    id: editData.ID,
+                    date: editData.日付,
+                    name: editData.報告者,
+                    store: editData.店舗名,
+                    details: editData.details,
+                    hours: editData.rawHours || editData.稼働時間,
+                    medal20: editData.medal20,
+                    medal5: editData.medal5,
+                    pachi4: editData.pachi4,
+                    cash: editData.cash,
+                    salary: editData.salary,
+                    remaining: editData.remaining,
+                    memo: memoWithFinance
+                };
                 try {
                     await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "updatePendingReport", data: savePayload }) });
                     setReports(reports.map(r => r.ID === editData.ID ? { ...savePayload } : r));
@@ -996,16 +1011,17 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     m20: parseInt(editData.medal20) || 0,
                     m5: parseInt(editData.medal5) || 0,
                     p4: parseInt(editData.pachi4) || 0,
-                    cash: parseInt(editData.本日投資) || 0,
-                    salary: parseInt(editData.本日の給料) || 0,
-                    remaining: parseInt(editData.残投資金) || 0,
-                    text: (editData.備考 || "").replace(/\[.*\]/g, "").trim()
+                    cash: parseInt(editData.cash) || 0,
+                    salary: parseInt(editData.salary) || 0,
+                    remaining: parseInt(editData.remaining) || 0,
+                    text: (editData.memo || "").replace(/\[.*\]/g, "").trim()
                 };
 
                 const memoWithFinance = info.text +
                     (info.m20 ? `\n[20スロ: ${info.m20}枚]` : "") +
                     (info.m5 ? `\n[5スロ: ${info.m5}枚]` : "") +
                     (info.p4 ? `\n[4パチ: ${info.p4}枚]` : "") +
+                    (info.cash ? `\n[本日投資: ${info.cash}円]` : "") +
                     (info.salary ? `\n[本日給料: ${info.salary}円]` : "") +
                     (info.remaining ? `\n[残投資金: ${info.remaining}円]` : "");
 
@@ -1156,23 +1172,23 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                                                     <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">本日投資 (円)</div>
-                                                    <input type="number" value={editData.本日投資 ?? 0} onChange={e => setEditData({ ...editData, 本日投資: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="投資" />
+                                                    <input type="number" value={editData.cash ?? 0} onChange={e => setEditData({ ...editData, cash: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="投資" />
                                                 </div>
                                                 <div className="bg-slate-50 p-6 rounded-3xl border border-emerald-100">
                                                     <div className="text-[10px] font-black text-emerald-500 uppercase mb-2 ml-1">本日の給料</div>
-                                                    <input type="number" value={editData.本日の給料 ?? 0} onChange={e => setEditData({ ...editData, 本日の給料: e.target.value })} className="bg-white border border-emerald-200 text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="給料" />
+                                                    <input type="number" value={editData.salary ?? 0} onChange={e => setEditData({ ...editData, salary: e.target.value })} className="bg-white border border-emerald-200 text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="給料" />
                                                 </div>
                                             </div>
 
                                             <div className="bg-indigo-50 border border-indigo-100 p-8 rounded-[2.5rem] shadow-sm">
                                                 <div className="text-[10px] font-black text-indigo-400 uppercase mb-3 ml-1">引いた後の残投資金 (財布の残高)</div>
-                                                <input type="number" value={editData.残投資金 ?? 0} onChange={e => setEditData({ ...editData, 残投資金: e.target.value })} className="bg-white border-2 border-indigo-200 text-2xl font-black px-6 py-4 rounded-3xl w-full text-indigo-900" placeholder="残高" />
+                                                <input type="number" value={editData.remaining ?? 0} onChange={e => setEditData({ ...editData, remaining: e.target.value })} className="bg-white border-2 border-indigo-200 text-2xl font-black px-6 py-4 rounded-3xl w-full text-indigo-900" placeholder="残高" />
                                                 <p className="text-[9px] text-slate-400 mt-3 ml-2 italic">※給料を引いた後の、手元にある現金の合計</p>
                                             </div>
 
                                             <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                                                 <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">メモ・備考</div>
-                                                <textarea value={editData.備考 || ""} onChange={e => setEditData({ ...editData, 備考: e.target.value })} className="w-full bg-white border p-6 rounded-3xl text-sm font-medium min-h-[120px] outline-none" placeholder="備考" />
+                                                <textarea value={editData.memo || ""} onChange={e => setEditData({ ...editData, memo: e.target.value })} className="w-full bg-white border p-6 rounded-3xl text-sm font-medium min-h-[120px] outline-none" placeholder="備考" />
                                             </div>
                                         </div>
                                     </div>
