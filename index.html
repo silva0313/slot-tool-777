@@ -296,8 +296,12 @@
                         hours: calculatedHours,
                         rawHours: reportInput.hours,
                         medal: reportInput.medal20,
+                        medal5: reportInput.medal5,
+                        pachi4: reportInput.pachi4,
                         cash: reportInput.cash,
-                        memo: memoWithFinance
+                        salary: reportInput.salary,
+                        remainingCash: reportInput.remainingCash,
+                        memo: reportInput.memo
                     };
                     try {
                         await fetch(`${GAS_URL}`, {
