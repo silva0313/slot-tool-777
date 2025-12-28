@@ -178,8 +178,13 @@
                         const settings = await res.json();
                         setIsRegistrationLocked(settings.registrationLocked);
 
-                        // 管理者による名前修正の同期チェック
+                        // アプリ起動ログの記録
                         const savedUser = JSON.parse(localStorage.getItem("u_v7") || "{}");
+                        if (savedUser.displayName) {
+                            fetch(`${GAS_URL}?action=logAccess&name=${encodeURIComponent(savedUser.displayName)}&type=アプリ起動`).catch(() => { });
+                        }
+
+                        // 管理者による名前修正の同期チェック
                         if (savedUser.displayName && settings.nameMap && settings.nameMap[savedUser.displayName]) {
                             const newName = settings.nameMap[savedUser.displayName];
                             const updatedUser = { ...savedUser, displayName: newName };
