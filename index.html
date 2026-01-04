@@ -257,14 +257,27 @@
                 if (selectedDates.length === 0) return showAlert("申請エラー", "日付が選択されていません。");
                 setSubmitting(true);
                 try {
-                    await fetch(GAS_URL, {
-                        method: "POST", mode: "no-cors",
+                    const res = await fetch(GAS_URL, {
+                        method: "POST",
                         body: JSON.stringify({ action: "submitShift", data: { name: user.displayName, dates: selectedDates } })
                     });
+
+                    if (!res.ok) {
+                        throw new Error(`HTTP Error: ${res.status}`);
+                    }
+
+                    const result = await res.json();
+                    if (result.status === "error") {
+                        throw new Error(result.message);
+                    }
+
                     setSelectedDates([]);
                     showAlert("申請完了", "シフトの申請を完了し、カレンダーへ反映しました。");
                     fetchShifts();
-                } catch (e) { showAlert("送信エラー", e.message); }
+                } catch (e) {
+                    console.error("Shift Submit Error:", e);
+                    showAlert("送信エラー", `不具合が発生しました: ${e.message}\n(GASの「実行数」ログを確認してください)`);
+                }
                 finally { setSubmitting(false); }
             };
 
