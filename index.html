@@ -640,9 +640,15 @@
                                             <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">シフト申請（今後2週間分）</div>
                                             <div className="grid grid-cols-4 gap-2">
                                                 {[...Array(14)].map((_, i) => {
-                                                    const d = new Date(); d.setDate(d.getDate() + i);
+                                                    const d = new Date();
+                                                    d.setDate(d.getDate() + i);
                                                     const dStr = d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
-                                                    const iso = d.toISOString().split('T')[0];
+                                                    // タイムゾーンを考慮した YYYY-MM-DD 生成
+                                                    const y = d.getFullYear();
+                                                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                                                    const day = String(d.getDate()).padStart(2, '0');
+                                                    const iso = `${y}-${m}-${day}`;
+
                                                     const isSelected = selectedDates.includes(iso);
                                                     return (
                                                         <div key={i} onClick={() => toggleDate(iso)} className={`p-2 rounded-xl text-center cursor-pointer transition-all border ${isSelected ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-800 border-white/5 text-slate-400'}`}>
