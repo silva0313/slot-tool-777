@@ -1112,10 +1112,10 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     const fin = parseFinance(report);
                     setEditData({
                         ...report,
-                        ID: getField(report, ["ID", "id"]),
-                        報告者: getField(report, ["報告者", "name", "名前"]),
-                        店舗名: getField(report, ["店舗名", "store"]),
-                        日付: getField(report, ["日付", "date"]),
+                        ID: getField(report, ["ID", "id", "受付番号"]),
+                        報告者: getField(report, ["報告者", "name", "名前", "Worker"]),
+                        店舗名: getField(report, ["店舗名", "store", "店名"]),
+                        日付: getField(report, ["日付", "date", "稼働日"]),
                         稼働時間: getField(report, ["稼働時間", "hours", "時間", "TIME (H)", "time", "rawHours"]) || "0:00",
                         rawHours: getField(report, ["rawHours", "hours_str", "時間入力値", "稼働時間"]),
                         medal20: getField(report, ["20スロ", "最終メダル枚数", "medal", "枚数", "medal20"]) || fin.medal20,
