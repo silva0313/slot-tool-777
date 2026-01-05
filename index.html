@@ -357,6 +357,8 @@
 4パチ: ${p4}玉
 投資: ${c}円
 給料: ${s}円
+換金: ${reportInput.exchange || 0}円
+手渡し: ${reportInput.handover || 0}円
 残高: ${r}円
 
 この内容で間違いありませんか？
@@ -379,6 +381,8 @@
                         pachi4: p4,
                         cash: c,
                         salary: s,
+                        exchange: Number(reportInput.exchange || 0),
+                        handover: Number(reportInput.handover || 0),
                         remaining: r,
                         memo: reportInput.memo
                     };
@@ -391,7 +395,8 @@
                         setLogs([]);
                         setReportInput({
                             store: "", hours: "", date: new Date().toISOString().split('T')[0],
-                            medal20: "", medal5: "", pachi4: "", cash: "", memo: "", salary: "", remainingCash: ""
+                            medal20: "", medal5: "", pachi4: "", cash: "", memo: "", salary: "", remainingCash: "",
+                            exchange: "", handover: ""
                         });
                         localStorage.removeItem("l_v7");
                         localStorage.removeItem("r_v7");
@@ -578,6 +583,14 @@
                                                         <div>
                                                             <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-1.5 px-1">本日の給料</label>
                                                             <input type="text" inputmode="numeric" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-bold text-sm border-emerald-500/20 py-2" placeholder="10000円" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[9px] font-black text-rose-400 uppercase tracking-widest block mb-1.5 px-1">換金額 (円)</label>
+                                                            <input type="text" inputmode="numeric" value={reportInput.exchange} onChange={e => setReportInput({ ...reportInput, exchange: e.target.value })} className="input-dark font-bold text-sm border-rose-500/20 py-2" placeholder="32000円" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[9px] font-black text-amber-400 uppercase tracking-widest block mb-1.5 px-1">親への手渡し (円)</label>
+                                                            <input type="text" inputmode="numeric" value={reportInput.handover} onChange={e => setReportInput({ ...reportInput, handover: e.target.value })} className="input-dark font-bold text-sm border-amber-500/20 py-2" placeholder="25000円" />
                                                         </div>
                                                     </div>
                                                     <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
