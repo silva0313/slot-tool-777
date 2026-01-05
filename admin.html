@@ -879,6 +879,16 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             const [checkedIds, setCheckedIds] = useState([]);
             const [editData, setEditData] = useState(null);
 
+            const formatDateLocal = (dateStr) => {
+                if (!dateStr) return "";
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+
             useEffect(() => {
                 const passVerified = localStorage.getItem("ap_v7") === APP_PASS;
                 if (passVerified) { setIsLocked(false); loadAll(); }
@@ -1284,7 +1294,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-baseline mb-1">
                                                 <div className="text-sm font-black text-white truncate">{r.名前 || r.報告者}</div>
-                                                <div className="text-[8px] font-black opacity-40 uppercase font-mono ml-2 shrink-0">{String(r.日付).split(/[T\s]/)[0]}</div>
+                                                <div className="text-[8px] font-black opacity-40 uppercase font-mono ml-2 shrink-0">{formatDateLocal(r.日付)}</div>
                                             </div>
                                             <div className="font-bold text-[10px] truncate opacity-80 text-slate-400">{r.店舗名}</div>
                                         </div>
@@ -1331,7 +1341,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                                 <div className="mb-2 opacity-50">稼働日 / Work Date</div>
                                                 <input
                                                     type="date"
-                                                    value={editData.日付.includes('T') ? editData.日付.split('T')[0] : editData.日付}
+                                                    value={formatDateLocal(editData.日付)}
                                                     onChange={e => setEditData({ ...editData, 日付: e.target.value })}
                                                     className="bg-white/10 border border-white/20 text-sm font-black text-white italic px-3 py-1.5 rounded-xl outline-none focus:border-indigo-500/50"
                                                 />
