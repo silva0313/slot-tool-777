@@ -721,10 +721,10 @@
                                                         <div className="space-y-2">
                                                             <h4 className="font-black text-white text-base">リアルタイムでの稼働ログ記録</h4>
                                                             <p className="opacity-80 text-[12px] leading-6">
-                                                                本システムは、正確な収支・期待値分析を行うため、<strong className="text-indigo-300">台移動直後のログ入力を原則</strong>としています。新しい遊技台を打つ際は、まず「報告送信」タブの入力欄に「機種名」および「ゲーム数・状況」を入力し、追加ボタンで履歴へ保存してください。
+                                                                本システムは、正確な収支・期待値分析を行うため、台移動直後のログ入力を原則としています。新しい遊技台を打つ際は、まず「報告送信」タブの入力欄に「機種名」および「ゲーム数・状況」を入力し、追加ボタンで履歴へ保存してください。
                                                             </p>
                                                             <div className="bg-slate-950/40 p-4 rounded-xl border border-white/5 italic text-[11px]">
-                                                                入力例： スマスロ北斗の拳　720G～
+                                                                入力例： 北斗720
                                                             </div>
                                                         </div>
                                                     </div>
@@ -734,33 +734,44 @@
                                                     <div className="flex items-start gap-4">
                                                         <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">02</div>
                                                         <div className="space-y-2">
-                                                            <h4 className="font-black text-white text-base">業務終了時の詳細報告と送信</h4>
+                                                            <h4 className="font-black text-white text-base">業務終了時の詳細報告</h4>
                                                             <p className="opacity-80 text-[12px] leading-6">
-                                                                一日の業務（稼働）が全て終了した際、蓄積されたログの下部にある「詳細情報の入力」欄を確認し、必要事項を記入してください。
+                                                                一日の業務（稼働）が全て終了した際、詳細情報の入力欄を正しく記入してください。
                                                             </p>
                                                             <ul className="text-[11px] space-y-2 pt-2 text-slate-300">
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日投資:</strong> 遊技に要した総現金投資額。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日の給料:</strong> 業務終了時に受け取った給料額。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">残投資金:</strong> 給料受取後、現在手元に残っている現金額。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">最終枚数:</strong> 20スロ等の流した枚数。</span></li>
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">最終枚数/球数:</strong> 20スロ等の流した枚数。</span></li>
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日投資:</strong> その日に使った現金の総額。</span></li>
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日の給料:</strong> 今日受け取った給料（現金収入）。</span></li>
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">換金額:</strong> 換金した場合、換金額を記入。</span></li>
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">親への手渡し:</strong> 管理者へその場で手渡した現金額。</span></li>
+                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">残投資金:</strong> 全て完了後、現在の財布に残っている現金。</span></li>
                                                             </ul>
+                                                        </div>
+                                                    </div>
+                                                </section>
+
+                                                <section className="bg-indigo-500/5 p-6 rounded-3xl space-y-4 border border-indigo-500/20">
+                                                    <p className="font-bold text-indigo-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-widest">
+                                                        <span className="text-sm">●</span> 金銭フローの計算ルール（重要）
+                                                    </p>
+                                                    <div className="text-[11px] space-y-2 opacity-90 leading-relaxed text-slate-300">
+                                                        <p>以下の計算が財布の中身と一致することを確認してください：</p>
+                                                        <div className="bg-slate-950/60 p-4 rounded-xl font-mono text-center border border-white/5 text-white">
+                                                            前日残金 ＋ 給料 ＋ 換金 － 投資 － 手渡し ＝ <span className="text-indigo-400">残投資金</span>
                                                         </div>
                                                     </div>
                                                 </section>
 
                                                 <section className="bg-rose-500/5 p-6 rounded-3xl space-y-4 border border-rose-500/20">
                                                     <p className="font-bold text-rose-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-widest">
-                                                        <span className="text-sm">●</span> セキュリティおよび注意事項
+                                                        <span className="text-sm">●</span> 注意事項
                                                     </p>
                                                     <div className="text-[11px] space-y-4 opacity-90 leading-relaxed">
                                                         <p>
-                                                            送信ボタンは、すべての入力内容に誤りがないことを確認した上で実行してください。送信完了と同時に、端末に保存されているログ履歴は自動的に初期化されます。
-                                                        </p>
-                                                        <p>
-                                                            表示上の不具合が発生した場合や、最新のマスタデータを反映させたい場合は、画面右上の<strong className="text-indigo-400">「最新に更新」</strong>ボタンを利用してリロードを行ってください。
+                                                            送信ボタンは、すべての内容に誤りがないことを確認した上で実行してください。送信完了と同時に、ログ履歴は自動的に初期化されます。
                                                         </p>
                                                         <p className="text-rose-300/80">
-                                                            ※本アプリは機密情報を含みます。第三者への開示、スクリーンショットのSNS投稿等は厳禁です。
+                                                            ※本アプリは機密情報を含みます。第三者への開示、SNS投稿等は厳禁です。
                                                         </p>
                                                     </div>
                                                 </section>
