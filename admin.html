@@ -271,7 +271,7 @@
                         fetchSafe("getAccessHistory", []),
                         fetchSafe("getBlacklist", []),
                         fetchSafe("getSettings", { registrationLocked: false }),
-                        fetchSafe("getMembers", []),
+                        fetchSafe("getMembers", []), // ここでメンバーマスタを取得
                         fetchSafe("getStores", [])
                     ]);
 
@@ -291,6 +291,15 @@
                 try {
                     await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveBlacklist", data: blacklist }) });
                     alert("ブラックリストを更新しました");
+                } catch (e) { alert(e.message); }
+                finally { setLoading(false); }
+            };
+
+            const saveMembers = async () => {
+                setLoading(true);
+                try {
+                    await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveMembers", data: members }) });
+                    alert("メンバーリストを更新しました。新規登録ロック有効時に適用されます。");
                 } catch (e) { alert(e.message); }
                 finally { setLoading(false); }
             };
@@ -339,10 +348,11 @@
                                 </div>
                             </div>
                             <div className="flex gap-2 bg-slate-200 p-1.5 rounded-full w-full lg:w-auto overflow-x-auto custom-scroll no-scrollbar">
-                                <button onClick={() => setActiveTab("logs")} className={`px-8 py-3 rounded-full text-[10px] font-black transition-all whitespace-nowrap ${activeTab === 'logs' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-300'}`}>履歴</button>
-                                <button onClick={() => setActiveTab("ban")} className={`px-8 py-3 rounded-full text-[10px] font-black transition-all whitespace-nowrap ${activeTab === 'ban' ? 'bg-rose-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-300'}`}>出禁</button>
-                                <button onClick={() => setActiveTab("stores")} className={`px-8 py-3 rounded-full text-[10px] font-black transition-all whitespace-nowrap ${activeTab === 'stores' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-300'}`}>店舗</button>
-                                <button onClick={() => setActiveTab("system")} className={`px-8 py-3 rounded-full text-[10px] font-black transition-all whitespace-nowrap ${activeTab === 'system' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-300'}`}>設定</button>
+                                <button onClick={() => setActiveTab("logs")} className={`flex-1 py-4 text-[10px] font-black tracking-widest transition-all ${activeTab === 'logs' ? 'bg-[#0076FF] text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>安全ログ</button>
+                                <button onClick={() => setActiveTab("members")} className={`flex-1 py-4 text-[10px] font-black tracking-widest transition-all ${activeTab === 'members' ? 'bg-[#0076FF] text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>メンバー名簿</button>
+                                <button onClick={() => setActiveTab("blacklist")} className={`flex-1 py-4 text-[10px] font-black tracking-widest transition-all ${activeTab === 'blacklist' ? 'bg-[#0076FF] text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>禁止設定</button>
+                                <button onClick={() => setActiveTab("stores")} className={`flex-1 py-4 text-[10px] font-black tracking-widest transition-all ${activeTab === 'stores' ? 'bg-[#0076FF] text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>店舗設定</button>
+                                <button onClick={() => setActiveTab("system")} className={`flex-1 py-4 text-[10px] font-black tracking-widest transition-all ${activeTab === 'system' ? 'bg-[#0076FF] text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>システム防壁</button>
                             </div>
                             <button onClick={onClose} className="hidden lg:block text-slate-300 hover:text-rose-500 text-4xl transition-colors font-light">✕</button>
                             <button onClick={load} className="absolute top-4 right-20 text-indigo-400 hover:text-indigo-600 text-sm font-black p-2 animate-pulse">{loading ? "SYNCING..." : "🔄 REFRESH"}</button>
@@ -366,7 +376,7 @@
                                         </div>
                                     )) : <div className="text-center py-20 text-slate-300 font-bold italic">No access logs found</div>}
                                 </div>
-                            ) : activeTab === "ban" ? (
+                            ) : activeTab === "blacklist" ? (
                                 <div className="max-w-3xl mx-auto space-y-10 py-6 animate-fadeIn">
                                     <div className="text-center space-y-3">
                                         <h3 className="text-2xl font-black text-rose-600 uppercase italic tracking-tighter">Blacklist Control</h3>
@@ -451,13 +461,10 @@
                                                 <div className="w-2 h-6 bg-rose-500 rounded-full"></div>
                                                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Entry Control</h4>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <div className="text-sm font-black text-slate-800 italic underline decoration-indigo-500 underline-offset-4 decoration-2">新規登録ロック機能</div>
-                                                    <p className="text-[10px] text-slate-400 font-bold leading-relaxed max-w-[280px]">有効にすると、管理者側でマニュアル登録されていないユーザー（名前）は報告を送信できません。</p>
-                                                </div>
-                                                <button
-                                                    onClick={async () => {
+                                            <div className="bg-rose-500/10 p-6 rounded-3xl border border-rose-500/20">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="text-rose-400 font-black text-[10px] uppercase tracking-[0.2em]">新規登録ロック</h4>
+                                                    <div onClick={async () => {
                                                         const newVal = !settings.registrationLocked;
                                                         setSettings({ ...settings, registrationLocked: newVal });
                                                         setLoading(true);
@@ -465,40 +472,11 @@
                                                             await fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "updateSettings", data: { registrationLocked: String(newVal) } }) });
                                                         } catch (e) { alert(e.message); }
                                                         finally { setLoading(false); }
-                                                    }}
-                                                    className={`w-20 h-10 rounded-full transition-all relative ${settings.registrationLocked ? 'bg-rose-600' : 'bg-slate-200'}`}
-                                                >
-                                                    <div className={`absolute top-1 w-8 h-8 bg-white rounded-full shadow-lg transition-all ${settings.registrationLocked ? 'right-1' : 'left-1'}`}></div>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Member Master */}
-                                        <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm space-y-8">
-                                            <div className="flex items-center gap-3 border-b border-slate-100 pb-6 mb-2">
-                                                <div className="w-2 h-6 bg-indigo-500 rounded-full"></div>
-                                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Master Member List</h4>
-                                            </div>
-                                            <div className="space-y-6">
-                                                <div className="text-xs font-bold text-indigo-500 leading-relaxed bg-indigo-50 p-6 rounded-[1.5rem] border border-indigo-100 italic">
-                                                    名前を修正すると、承認待ちリスト・稼働ログ・アクセス履歴の全データを置換し、ワーカー側のプロフィールも自動同期されます。
+                                                    }} className={`w-14 h-8 rounded-full relative transition-all cursor-pointer ${settings.registrationLocked ? 'bg-rose-600' : 'bg-slate-700'}`}>
+                                                        <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-md transition-all ${settings.registrationLocked ? 'left-7' : 'left-1'}`}></div>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-wrap gap-3">
-                                                    {members.length > 0 ? members.filter(m => m !== "ID").map(m => (
-                                                        <div key={m} className="group relative">
-                                                            <button
-                                                                onClick={() => handleRename(m)}
-                                                                className="bg-slate-100 hover:bg-slate-900 hover:text-white px-6 py-3 rounded-2xl text-xs font-black transition-all shadow-sm italic peer"
-                                                            >
-                                                                {m}
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteMember(m)}
-                                                                className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-                                                            >✕</button>
-                                                        </div>
-                                                    )) : <p className="text-slate-300 italic text-sm py-4">データが存在しません</p>}
-                                                </div>
+                                                <p className="text-[9px] text-slate-400 font-bold leading-relaxed">有効にすると、管理者側で「メンバー名簿」に登録されていない名前は<span className="text-rose-400">アプリへのログイン（利用開始）が拒否</span>されます。</p>
                                             </div>
                                         </div>
 
@@ -516,6 +494,49 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            ) : activeTab === "members" && (
+                                <div className="space-y-6 animate-fadeIn">
+                                    <div className="bg-slate-900 text-white p-10 rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
+                                        <div className="relative z-10 flex items-center gap-8">
+                                            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-3xl backdrop-blur-md">👤</div>
+                                            <div>
+                                                <h3 className="text-2xl font-black italic tracking-tighter">Member Master</h3>
+                                                <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.3em] mt-1">Manage authorized users</p>
+                                            </div>
+                                        </div>
+                                        <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none transform rotate-12 group-hover:scale-110 transition-transform">
+                                            <div className="text-9xl font-black italic">MEMBERS</div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm space-y-8">
+                                        <div className="flex items-center gap-3 border-b border-slate-100 pb-6 mb-2">
+                                            <div className="w-2 h-6 bg-indigo-500 rounded-full"></div>
+                                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">メンバー名簿 (ホワイトリスト)</h4>
+                                        </div>
+                                        <div className="flex gap-4 bg-slate-900/5 p-6 rounded-[2.5rem] border-2 border-dashed border-slate-200 shadow-inner">
+                                            <input id="newMember" className="flex-1 bg-white p-5 rounded-3xl outline-none font-bold text-sm border-2 border-transparent focus:border-indigo-400 transition-all shadow-sm" placeholder="新規メンバー名 (例: 前野)" />
+                                            <button onClick={() => { const el = document.getElementById("newMember"); if (el.value && !members.includes(el.value)) { setMembers([...members, el.value]); el.value = ""; } }} className="bg-slate-900 text-white px-10 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all">追加</button>
+                                        </div>
+                                        <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scroll pr-2">
+                                            {members.length > 0 ? members.map((name, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-indigo-500 group">
+                                                    <span className="font-black text-slate-950 italic text-base">{name}</span>
+                                                    <div className="flex items-center gap-4">
+                                                        <button onClick={() => {
+                                                            const newName = prompt(`「${name}」さんの新しい名前を入力してください:`, name);
+                                                            if (newName && newName !== name) {
+                                                                handleRename(name); // Call the existing rename function
+                                                            }
+                                                        }} className="text-[10px] font-black text-indigo-300 hover:text-indigo-600 uppercase tracking-widest transition-colors">RENAME</button>
+                                                        <button onClick={() => handleDeleteMember(name)} className="text-[10px] font-black text-rose-300 hover:text-rose-600 uppercase tracking-widest transition-colors">DELETE</button>
+                                                    </div>
+                                                </div>
+                                            )) : <div className="text-center py-10 text-slate-300 italic font-bold">No members registered</div>}
+                                        </div>
+                                        <button onClick={saveMembers} className="w-full bg-indigo-600 py-7 rounded-[2.5rem] text-white font-black shadow-2xl hover:bg-indigo-700 active:scale-[0.98] transition-all text-xs tracking-[0.3em] uppercase mt-4">Commit Changes to Server</button>
+                                        <p className="text-[9px] text-slate-500 font-bold mt-4 italic leading-relaxed">※「システム防壁」タブで「新規登録ロック」をONにすると、ここに登録された名前以外はログインできなくなります。</p>
                                     </div>
                                 </div>
                             ) : null}
@@ -1378,6 +1399,23 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                                     className="w-full bg-slate-800/50 border border-white/10 p-4 rounded-2xl text-xs font-bold leading-relaxed min-h-[150px] outline-none focus:border-indigo-500/50 transition-all text-white"
                                                     placeholder="稼働内容..."
                                                 />
+
+                                                {/* 写真プレビューエリア */}
+                                                {(editData.memo || "").includes("[IMAGES]") && (
+                                                    <div className="mt-4 pt-4 border-t border-white/5">
+                                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">添付写真 (クリックで拡大)</div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {editData.memo.split("[IMAGES]")[1].split("\n").filter(line => line.startsWith("http")).map((url, i) => (
+                                                                <div key={i} className="relative group cursor-pointer" onClick={() => window.open(url, "_blank")}>
+                                                                    <img src={url.replace("open?id=", "uc?export=view&id=")} className="w-24 h-24 object-cover rounded-xl border border-white/10 hover:border-indigo-500 transition-all" />
+                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity">
+                                                                        <span className="text-white text-xs font-black">拡大</span>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-10 border-t border-white/5 pt-8 uppercase text-[9px] font-black text-slate-500">
