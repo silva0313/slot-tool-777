@@ -1167,6 +1167,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                         rawHours: getField(report, ["rawHours", "hours_str", "時間入力値", "稼働時間"]),
                         exchange: getField(report, ["換金額", "exchange", "現金化", "換金"]) || 0,
                         handover: getField(report, ["手渡し額", "手渡し", "handover", "送金", "transfer"]) || 0,
+                        parentReceived: getField(report, ["親受取額", "parentReceived", "親受取"]) || 0, // 【新設】親受取
                         medal20: getField(report, ["20スロ", "最終メダル枚数", "medal", "枚数", "medal20"]) || fin.medal20,
                         medal5: getField(report, ["5スロ", "medal5"]) || fin.medal5,
                         pachi4: getField(report, ["4パチ", "pachi4", "4円"]) || fin.pachi4,
@@ -1206,6 +1207,9 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     pachi4: safeParseFinance(editData.pachi4),
                     cash: safeParseFinance(editData.cash),
                     salary: safeParseFinance(editData.salary),
+                    exchange: safeParseFinance(editData.exchange), // 同期漏れ修正
+                    handover: safeParseFinance(editData.handover), // 同期漏れ修正
+                    parentReceived: safeParseFinance(editData.parentReceived), // 【新設】親受取
                     remaining: safeParseFinance(editData.remaining),
                     memo: memoWithFinance
                 };
@@ -1247,6 +1251,12 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     store: editData.店舗名,
                     ev: logs.reduce((s, l) => s + l.ev, 0),
                     hours: hours,
+                    exchange: safeParseFinance(editData.exchange),
+                    handover: safeParseFinance(editData.handover),
+                    parentReceived: safeParseFinance(editData.parentReceived),
+                    medal20: safeParseFinance(editData.medal20),
+                    medal5: safeParseFinance(editData.medal5),
+                    pachi4: safeParseFinance(editData.pachi4),
                     memo: memoWithFinance,
                     details: editData.稼働内容 || editData.details
                 };
@@ -1361,8 +1371,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
-                                        <div className="text-8xl font-black italic">REPORT</div>
                                     </div>
                                 </div>
                                 <div className="bg-white rounded-[2.5rem] p-10 lg:p-14 shadow-xl border border-slate-100 space-y-10">
@@ -1397,25 +1405,43 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                             </div>
 
                                             <div className="space-y-4">
+                                                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <div className="text-[10px] font-black text-rose-500 uppercase mb-2 ml-1">本日投資 (円)</div>
+                                                            <input type="text" value={editData.cash ?? 0} onChange={e => setEditData({ ...editData, cash: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="15000" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] font-black text-indigo-500 uppercase mb-2 ml-1">親から受取 (円)</div>
+                                                            <input type="text" value={editData.parentReceived ?? 0} onChange={e => setEditData({ ...editData, parentReceived: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="0" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] font-black text-emerald-500 uppercase mb-2 ml-1">換金額 (円)</div>
+                                                            <input type="text" value={editData.exchange ?? 0} onChange={e => setEditData({ ...editData, exchange: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="30000" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] font-black text-amber-500 uppercase mb-2 ml-1">親へ手渡し (円)</div>
+                                                            <input type="text" value={editData.handover ?? 0} onChange={e => setEditData({ ...editData, handover: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="25000" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-white p-6 rounded-2xl border border-slate-200">
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-2 text-center">本日の給料 (売上から差引)</div>
+                                                        <input type="text" value={editData.salary ?? 0} onChange={e => setEditData({ ...editData, salary: e.target.value })} className="bg-slate-50 border border-slate-100 text-lg font-black px-4 py-3 rounded-xl w-full text-center" placeholder="10000" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-indigo-50 border border-indigo-100 p-8 rounded-[2.5rem] shadow-sm">
+                                                    <div className="text-[10px] font-black text-indigo-400 uppercase mb-3 ml-1 text-center">残投資金 (財布の残高)</div>
+                                                    <input type="text" value={editData.remaining ?? 0} onChange={e => setEditData({ ...editData, remaining: e.target.value })} className="bg-white border-2 border-indigo-200 text-3xl font-black px-6 py-4 rounded-3xl w-full text-indigo-900 text-center" placeholder="財布の残高" />
+                                                    <p className="text-[8px] text-slate-400 mt-4 text-center font-bold">
+                                                        ※ (前日残) + 換金 + 受取 - 投資 - 手渡し - 給料 ＝ 残高
+                                                    </p>
+                                                </div>
+
                                                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">本日投資 (円) <span className="text-[7px] italic">※「円」OK</span></div>
-                                                    <input type="text" value={editData.cash ?? 0} onChange={e => setEditData({ ...editData, cash: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="15000円" />
+                                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">メモ・備考</div>
+                                                    <textarea value={editData.memo || ""} onChange={e => setEditData({ ...editData, memo: e.target.value })} className="w-full bg-white border p-6 rounded-3xl text-sm font-medium min-h-[120px] outline-none" placeholder="備考" />
                                                 </div>
-                                                <div className="bg-slate-50 p-6 rounded-3xl border border-emerald-100">
-                                                    <div className="text-[10px] font-black text-emerald-500 uppercase mb-2 ml-1">本日の給料 <span className="text-[7px] italic">※「円」OK</span></div>
-                                                    <input type="text" value={editData.salary ?? 0} onChange={e => setEditData({ ...editData, salary: e.target.value })} className="bg-white border border-emerald-200 text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="10000円" />
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-indigo-50 border border-indigo-100 p-8 rounded-[2.5rem] shadow-sm">
-                                                <div className="text-[10px] font-black text-indigo-400 uppercase mb-3 ml-1">引いた後の残投資金 (財布の残高) <span className="text-[7px] italic">※「円」OK</span></div>
-                                                <input type="text" value={editData.remaining ?? 0} onChange={e => setEditData({ ...editData, remaining: e.target.value })} className="bg-white border-2 border-indigo-200 text-2xl font-black px-6 py-4 rounded-3xl w-full text-indigo-900" placeholder="5000円" />
-                                                <p className="text-[9px] text-slate-400 mt-3 ml-2 italic">※給料を引いた後の、手元にある現金の合計</p>
-                                            </div>
-
-                                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                                                <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">メモ・備考</div>
-                                                <textarea value={editData.memo || ""} onChange={e => setEditData({ ...editData, memo: e.target.value })} className="w-full bg-white border p-6 rounded-3xl text-sm font-medium min-h-[120px] outline-none" placeholder="備考" />
                                             </div>
                                         </div>
                                     </div>
@@ -1468,12 +1494,12 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                     </div>
                                 </div>
                             </div>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-200 text-6xl font-black italic opacity-60 text-center p-10"><div className="tracking-tighter">管理者アプリ</div><div className="text-[11px] tracking-[1.5em] mt-8 opacity-70 font-black">Select Report to Start</div></div>
-                        )}
-                    </div>
                 </div>
-            );
+            ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-200 text-6xl font-black italic opacity-60 text-center p-10"><div className="tracking-tighter">管理者アプリ</div><div className="text-[11px] tracking-[1.5em] mt-8 opacity-70 font-black">Select Report to Start</div></div>
+                </div >
+            </div >
+        );
         }
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<AdminApp />);
