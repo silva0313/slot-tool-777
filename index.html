@@ -119,12 +119,13 @@
         // グローバルエラーの捕捉
         window.onerror = function (msg, url, lineNo, columnNo, error) {
             console.error('Global Error: ', msg, url, lineNo, columnNo, error);
+            alert("System Error: " + msg);
             return false;
         };
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzPIDjd4AXjH5FLFltk_cwNJM7NMG5WLDsS4Q3LgCSkL_gXX7s0NA3jm7UckOGdzQeQlQ/exec";
         // ↑【注意】デプロイ時に新しいURLが発行された場合は、必ずここに貼り替えてください。
         const APP_PASS = "nogawa";
-        const APP_VERSION_FRONTEND = "7.7.3";
+        const APP_VERSION_FRONTEND = "7.7.4";
 
         function App() {
             const [isLocked, setIsLocked] = useState(true);
@@ -163,7 +164,6 @@
             const [modal, setModal] = useState({ show: false, title: "", message: "", type: "alert", onConfirm: null });
             const [backendVersion, setBackendVersion] = useState("Checking...");
 
-
             const showConfirm = (title, message, onConfirm) => {
                 setModal({ show: true, title, message, type: "confirm", onConfirm });
             };
@@ -182,7 +182,10 @@
                     const savedLogs = localStorage.getItem("l_v7");
                     if (savedLogs) setLogs(JSON.parse(savedLogs));
                     const savedRep = localStorage.getItem("r_v7");
-                    if (savedRep) setReportInput(JSON.parse(savedRep));
+                    if (savedRep) {
+                        const parsed = JSON.parse(savedRep);
+                        setReportInput(prev => ({ ...prev, ...parsed }));
+                    }
                 } catch (e) {
                     console.error("Storage load error:", e);
                 }
@@ -743,8 +746,6 @@
                                                     <p className="text-[8px] text-slate-500 font-bold italic">※写真は最大5枚まで。送信前に自動で軽量化されます。</p>
                                                 </div>
                                             </div>
-
-
 
                                             <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg ${submitting ? 'opacity-50' : ''}`}>
                                                 {submitting ? '送信中...' : '報告を送信して終了する'}
