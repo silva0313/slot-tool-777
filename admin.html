@@ -139,6 +139,7 @@
 
         function MasterConsole({ dictionary, onSaveDict, strategyData, onSaveStrategy, onClose }) {
             const [tab, setTab] = useState("dict");
+            const [search, setSearch] = useState("");
             const [dictItems, setDictItems] = useState([...dictionary]);
             const [stData, setStData] = useState([...strategyData]);
             const [loading, setLoading] = useState(false);
@@ -160,6 +161,15 @@
                     <div className="bg-white rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
                         <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-slate-50 shrink-0 gap-4">
                             <h2 className="text-2xl font-black italic text-slate-900 uppercase">Master Console 📖</h2>
+                            <div className="flex-1 max-w-md w-full relative group">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30 group-focus-within:opacity-100 transition-opacity">🔍</span>
+                                <input
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 pl-10 pr-4 py-3 rounded-2xl text-xs font-bold outline-none focus:border-[#0076FF] focus:ring-4 focus:ring-[#0076FF]/5 transition-all"
+                                    placeholder={`${tab === 'dict' ? '機種名・キーワードを検索...' : '機種名・内容を検索...'}`}
+                                />
+                            </div>
                             <div className="flex gap-2 bg-slate-200 p-1 rounded-full w-full md:w-auto">
                                 <button onClick={() => setTab("dict")} className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${tab === 'dict' ? 'bg-[#0076FF] text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>機種辞書</button>
                                 <button onClick={() => setTab("strategy")} className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${tab === 'strategy' ? 'bg-[#0076FF] text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>狙い目（攻略）</button>
@@ -170,42 +180,48 @@
                             {tab === "dict" ? (
                                 <div className="space-y-4">
                                     <button onClick={() => setDictItems([{ 機種名: "", キーワード: "", 色コード: "bg-slate-400" }, ...dictItems])} className="w-full py-4 border-2 border-dashed border-[#0076FF] text-[#0076FF] font-black rounded-2xl mb-4">+ 新機辞書キーワードを追加</button>
-                                    {dictItems.map((it, i) => (
-                                        <div key={i} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4 relative group">
-                                            <div className="flex flex-col md:flex-row gap-4">
-                                                <div className="flex-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">機種名</label>
-                                                    <input value={it.機種名} onChange={e => { const n = [...dictItems]; n[i].機種名 = e.target.value; setDictItems(n); }} className="w-full bg-white px-4 py-3 rounded-xl font-black text-sm outline-none border border-slate-200" placeholder="機種名" />
+                                    {dictItems
+                                        .map((it, idx) => ({ it, idx }))
+                                        .filter(({ it }) => !search || it.機種名.includes(search) || it.キーワード.includes(search))
+                                        .map(({ it, idx }) => (
+                                            <div key={idx} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4 relative group">
+                                                <div className="flex flex-col md:flex-row gap-4">
+                                                    <div className="flex-1">
+                                                        <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">機種名</label>
+                                                        <input value={it.機種名} onChange={e => { const n = [...dictItems]; n[idx].機種名 = e.target.value; setDictItems(n); }} className="w-full bg-white px-4 py-3 rounded-xl font-black text-sm outline-none border border-slate-200" placeholder="機種名" />
+                                                    </div>
+                                                    <div className="w-full md:w-40">
+                                                        <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">色コード</label>
+                                                        <select value={it.色コード} onChange={e => { const n = [...dictItems]; n[idx].色コード = e.target.value; setDictItems(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-[10px] font-black border border-slate-200">
+                                                            <option value="bg-indigo-600">INDIGO</option><option value="bg-rose-600">ROSE</option><option value="bg-emerald-600">EMERALD</option>
+                                                            <option value="bg-orange-500">ORANGE</option><option value="bg-blue-600">BLUE</option><option value="bg-slate-400">SLATE</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
-                                                <div className="w-full md:w-40">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">色コード</label>
-                                                    <select value={it.色コード} onChange={e => { const n = [...dictItems]; n[i].色コード = e.target.value; setDictItems(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-[10px] font-black border border-slate-200">
-                                                        <option value="bg-indigo-600">INDIGO</option><option value="bg-rose-600">ROSE</option><option value="bg-emerald-600">EMERALD</option>
-                                                        <option value="bg-orange-500">ORANGE</option><option value="bg-blue-600">BLUE</option><option value="bg-slate-400">SLATE</option>
-                                                    </select>
+                                                <div>
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">キーワード (カンマ区切り)</label>
+                                                    <input value={it.キーワード} onChange={e => { const n = [...dictItems]; n[idx].キーワード = e.target.value; setDictItems(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-xs font-bold outline-none border border-slate-200" placeholder="例: 北斗,ほくと,拳" />
                                                 </div>
+                                                <button onClick={() => { if (window.confirm(`${it.機種名 || 'これ'} を辞書から削除しますか？`)) setDictItems(dictItems.filter((_, i) => i !== idx)); }} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 font-black text-xl">✕</button>
                                             </div>
-                                            <div>
-                                                <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">キーワード (カンマ区切り)</label>
-                                                <input value={it.キーワード} onChange={e => { const n = [...dictItems]; n[i].キーワード = e.target.value; setDictItems(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-xs font-bold outline-none border border-slate-200" placeholder="例: 北斗,ほくと,拳" />
-                                            </div>
-                                            <button onClick={() => { if (window.confirm(`${it.機種名 || 'これ'} を辞書から削除しますか？`)) setDictItems(dictItems.filter((_, idx) => idx !== i)); }} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 font-black text-xl">✕</button>
-                                        </div>
-                                    ))}
+                                        ))}
                                 </div>
                             ) : (
                                 <div className="space-y-4">
                                     <button onClick={() => setStData([{ 機種名: "", 狙い目: "", URL: "" }, ...stData])} className="w-full py-4 border-2 border-dashed border-[#0076FF] text-[#0076FF] font-black rounded-2xl mb-4">+ 新規攻略情報を追加</button>
-                                    {stData.map((it, i) => (
-                                        <div key={i} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex gap-4 items-start group">
-                                            <div className="flex-1 space-y-4">
-                                                <input value={it.機種名} onChange={e => { const n = [...stData]; n[i].機種名 = e.target.value; setStData(n); }} className="w-full bg-white px-4 py-3 rounded-xl font-black text-sm outline-none border border-slate-200" placeholder="機種名" />
-                                                <textarea value={it.狙い目} onChange={e => { const n = [...stData]; n[i].狙い目 = e.target.value; setStData(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-xs font-medium outline-none border border-slate-200 min-h-[100px]" placeholder="狙い目・やめどき等の解説" />
-                                                <input value={it.URL} onChange={e => { const n = [...stData]; n[i].URL = e.target.value; setStData(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-[10px] outline-none border border-slate-200" placeholder="解析サイトURL" />
+                                    {stData
+                                        .map((it, idx) => ({ it, idx }))
+                                        .filter(({ it }) => !search || it.機種名.includes(search) || it.狙い目.includes(search))
+                                        .map(({ it, idx }) => (
+                                            <div key={idx} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex gap-4 items-start group">
+                                                <div className="flex-1 space-y-4">
+                                                    <input value={it.機種名} onChange={e => { const n = [...stData]; n[idx].機種名 = e.target.value; setStData(n); }} className="w-full bg-white px-4 py-3 rounded-xl font-black text-sm outline-none border border-slate-200" placeholder="機種名" />
+                                                    <textarea value={it.狙い目} onChange={e => { const n = [...stData]; n[idx].狙い目 = e.target.value; setStData(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-xs font-medium outline-none border border-slate-200 min-h-[100px]" placeholder="狙い目・やめどき等の解説" />
+                                                    <input value={it.URL} onChange={e => { const n = [...stData]; n[idx].URL = e.target.value; setStData(n); }} className="w-full bg-white px-4 py-3 rounded-xl text-[10px] outline-none border border-slate-200" placeholder="解析サイトURL" />
+                                                </div>
+                                                <button onClick={() => { if (window.confirm(`${it.機種名 || 'これ'} の攻略情報を削除しますか？`)) setStData(stData.filter((_, i) => i !== idx)); }} className="text-slate-300 hover:text-rose-500 font-black">✕</button>
                                             </div>
-                                            <button onClick={() => { if (window.confirm(`${it.機種名 || 'これ'} の攻略情報を削除しますか？`)) setStData(stData.filter((_, idx) => idx !== i)); }} className="text-slate-300 hover:text-rose-500 font-black">✕</button>
-                                        </div>
-                                    ))}
+                                        ))}
                                 </div>
                             )}
                         </div>
