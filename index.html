@@ -121,7 +121,8 @@
             console.error('Global Error: ', msg, url, lineNo, columnNo, error);
             return false;
         };
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzb2yxwCPwN10T2cO6suWKtRa5RO11QxmUJRUN2DrDy5Jt76cFwF61LlggpZoEubP6T9Q/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwVk5KkeSBzLtD7w1JY6_GEe0jWM4eiqBNEYloZBfH2_jG3rI2CgbzWOfp9DkXyaMgvXQ/exec";
+        // ↑【注意】デプロイ時に新しいURLが発行された場合は、必ずここに貼り替えてください。
         const APP_PASS = "nogawa";
         const APP_VERSION_FRONTEND = "7.7.3";
 
@@ -491,12 +492,30 @@
                     } catch (e) {
                         console.error("Submit error:", e);
                         let extra = "";
-                        try {
-                            const errorText = await res.text();
-                            extra = `\n[Server Response (先頭)]: ${errorText.substring(0, 100)}`;
-                        } catch (re) { }
+                        let errorTitle = "送信エラー (システム障害)";
+                        let isSyntaxError = e.name === "SyntaxError" || e.message.includes("Unexpected token") || e.message.includes("JSON");
 
-                        showAlert("送信エラー (Unexpected Token)", `報告が届いていない可能性があります。\n原因: ${e.message}${extra}\n\n※「Response: <」や「Response: P」と出る場合は、Google側のアクセス過多や権限切れです。数分置いて再試行してください。`);
+                        // JSONパースエラー（HTMLが返ってきた場合）
+                        if (isSyntaxError) {
+                            errorTitle = "送信エラー (通信/サーバーダウン)";
+                            try {
+                                const errorText = await res.text();
+                                extra = `\n[Server Response (先頭)]: ${errorText.substring(0, 100)}`;
+                            } catch (re) { }
+                        }
+                        // サーバーからの明示的なエラーメッセージ（JSON）
+                        else {
+                            errorTitle = "送信エラー (サーバー拒否)";
+                        }
+
+                        // エラー内容に応じたメッセージ構築
+                        let msgBody = `報告が届いていない可能性があります。\n原因: ${e.message}${extra}`;
+
+                        if (isSyntaxError) {
+                            msgBody += `\n\n※「Response: <」や「Response: P」と出る場合は、Google側のアクセス過多や権限切れです。数分置いて再試行してください。`;
+                        }
+
+                        showAlert(errorTitle, msgBody);
                     }
                     finally { setSubmitting(false); }
                 });
