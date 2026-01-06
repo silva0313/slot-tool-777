@@ -605,14 +605,11 @@
                                                             <input type="text" inputmode="numeric" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-black text-center text-sm border-slate-700/30 py-2 placeholder:opacity-30" placeholder="10000" />
                                                         </div>
                                                     </div>
-                                                    
+
                                                     {/* 【残利益/残高】最終的な財布の状態 */}
                                                     <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
-                                                        <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-1.5 px-1">残投資金 (現在の財布の残高)</label>
-                                                        <input type="text" inputmode="numeric" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-lg border-indigo-500/30 py-2 text-center" placeholder="財布に残っているお金" />
-                                                        <p className="text-[8px] text-slate-500 mt-2 text-center font-bold">
-                                                            ※ (前日残) + 換金 + 受取 - 投資 - 手渡し - 給料 ＝ 残高
-                                                        </p>
+                                                        <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-1.5 px-1">最終的な残投資金</label>
+                                                        <input type="text" inputmode="numeric" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-lg border-indigo-500/30 py-2 text-center" placeholder="0" />
                                                     </div>
                                                 </div>
 
