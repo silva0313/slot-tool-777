@@ -1457,7 +1457,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                                 {/* 【新設】画像プレビューエリア（最終枚数の直下） */}
                                                 {(editData.imageUrls || (editData.memo && editData.memo.includes("[IMAGES]"))) && (
                                                     <div className="mt-6 pt-6 border-t border-slate-200">
-                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-4 ml-1">証跡写真 (クリックで拡大)</div>
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-4 ml-1">会員カード総枚数写真 <span className="text-[8px] font-normal opacity-70 ml-2">※Google Driveで開く</span></div>
                                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                                             {(editData.imageUrls || (editData.memo && editData.memo.includes("[IMAGES]") ? editData.memo.split("[IMAGES]")[1] : ""))
                                                                 .split(/[\n\s,]+/)
