@@ -1108,7 +1108,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                 if (!report || !window.HOKUTO_MASTER) return;
                 try {
                     const master = window.HOKUTO_MASTER[mode] || {};
-                    const rawContent = getField(report, ["稼働内容", "details", "内容"]);
+                    const rawContent = getField(report, ["稼動内容", "稼働内容", "details", "内容"]);
                     const content = String(rawContent || ""); // 明示的に文字列変換してクラッシュ防止
                     const lines = content.split("\n");
                     const results = lines.map(line => {
