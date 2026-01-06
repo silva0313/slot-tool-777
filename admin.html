@@ -146,15 +146,22 @@
             const saveAll = async () => {
                 setLoading(true);
                 try {
-                    await Promise.all([
-                        fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveDictionary", data: dictItems }) }),
-                        fetch(GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveStrategy", data: stData }) })
-                    ]);
+                    await fetch(GAS_URL, {
+                        method: "POST",
+                        mode: "no-cors",
+                        body: JSON.stringify({
+                            action: "saveMasterAll",
+                            data: { dictionary: dictItems, strategy: stData }
+                        })
+                    });
                     alert("全て保存しました");
-                    onSaveDict(dictItems);
+                    onSaveDict(dictItems); // 状態同期
                     onClose();
-                } catch (e) { alert(e.message); }
-                finally { setLoading(false); }
+                } catch (e) {
+                    alert("保存エラー: " + e.message);
+                } finally {
+                    setLoading(false);
+                }
             };
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn">
