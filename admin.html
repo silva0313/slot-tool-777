@@ -949,7 +949,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             };
 
             const parseFinance = (report) => {
-                const memo = getField(report, ["備考", "memo", "備考欄", ""]);
+                const rawMemo = getField(report, ["備考", "memo", "備考欄", ""]);
+                const memo = String(rawMemo || ""); // 明示的に文字列変換してクラッシュ防止
                 const result = { text: memo || "", medal20: 0, medal5: 0, pachi4: 0, cash: 0, salary: 0, remaining: 0 };
                 if (!memo) return result;
 
@@ -1061,7 +1062,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                 if (!report || !window.HOKUTO_MASTER) return;
                 try {
                     const master = window.HOKUTO_MASTER[mode] || {};
-                    const content = getField(report, ["稼働内容", "details", "内容"]);
+                    const rawContent = getField(report, ["稼働内容", "details", "内容"]);
+                    const content = String(rawContent || ""); // 明示的に文字列変換してクラッシュ防止
                     const lines = content.split("\n");
                     const results = lines.map(line => {
                         if (!line.trim()) return null;
@@ -1180,7 +1182,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     setSelectedId(report.ID);
                 } catch (e) {
                     console.error("Analysis Error:", e);
-                    alert("解析エラーが発生しました。");
+                    alert("解析エラーが発生しました。\n理由: " + e.message);
                 }
             };
 
@@ -1424,7 +1426,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                                         </div>
                                                     </div>
                                                     <div className="bg-white p-6 rounded-2xl border border-slate-200">
-                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-2 text-center">本日の給料 (売上から差引)</div>
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-2 text-center">本日の給料</div>
                                                         <input type="text" value={editData.salary ?? 0} onChange={e => setEditData({ ...editData, salary: e.target.value })} className="bg-slate-50 border border-slate-100 text-lg font-black px-4 py-3 rounded-xl w-full text-center" placeholder="10000" />
                                                     </div>
                                                 </div>
