@@ -744,10 +744,7 @@
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2 px-1 py-2 bg-rose-500/10 rounded-xl border border-rose-500/20 mb-2">
-                                                <input type="checkbox" id="debug-check" checked={debugMode} onChange={e => setDebugMode(e.target.checked)} className="w-5 h-5 accent-rose-500" />
-                                                <label htmlFor="debug-check" className="text-[10px] font-black text-rose-400 uppercase tracking-widest cursor-pointer">DEBUGモード (画像を除外して送信)</label>
-                                            </div>
+
 
                                             <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg ${submitting ? 'opacity-50' : ''}`}>
                                                 {submitting ? '送信中...' : '報告を送信して終了する'}
