@@ -490,14 +490,13 @@
                         setTimeout(() => setStatus(""), 5000);
                     } catch (e) {
                         console.error("Submit error:", e);
-                        // もしレスポンスがあれば中身を表示してデバッグしやすくする
                         let extra = "";
                         try {
                             const errorText = await res.text();
-                            extra = `\nServer Response: ${errorText.substring(0, 50)}`;
+                            extra = `\n[Server Response (先頭)]: ${errorText.substring(0, 100)}`;
                         } catch (re) { }
 
-                        showAlert("送信エラー", `報告が届いていない可能性があります。\n原因: ${e.message}${extra}\n(しばらく時間をおいて再送するか、よしきさんに連絡してください)`);
+                        showAlert("送信エラー (Unexpected Token)", `報告が届いていない可能性があります。\n原因: ${e.message}${extra}\n\n※「Response: <」や「Response: P」と出る場合は、Google側のアクセス過多や権限切れです。数分置いて再試行してください。`);
                     }
                     finally { setSubmitting(false); }
                 });
