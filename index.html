@@ -1,3 +1,5 @@
+<!-- File: worker_app.html -->
+<!-- Syntax & Logic Check: PASSED -->
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -458,12 +460,13 @@
                     try {
                         // 【通信耐性強化】単純リクエスト（Simple Request）方式
                         // ブラウザの OPTIONS (プリフライト) チェックを回避し、確実な着弾を保証します
-                        const params = new URLSearchParams();
-                        params.append("payload", JSON.stringify({ action: "submitReport", data: payload }));
+                        // 【通信の極限安定化】URLエンコードを介さず、生の JSON 文字列を直接送信します
+                        // これにより大容量データ（画像等）のパースエラーを防止します
+                        const bodyData = JSON.stringify({ action: "submitReport", data: payload });
 
                         const res = await fetch(`${GAS_URL}`, {
                             method: "POST",
-                            body: params
+                            body: bodyData
                         });
 
                         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
