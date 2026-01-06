@@ -148,6 +148,8 @@
             const [myShifts, setMyShifts] = useState([]); // 自分のシフト
             const [selectedDates, setSelectedDates] = useState([]); // 選択中の日付
             const [isRegistrationLocked, setIsRegistrationLocked] = useState(false);
+            const [members, setMembers] = useState([]); // 【新設】ホワイトリスト
+            const [images, setImages] = useState([]); // 【新設】証跡写真 (Base64)
             const [shiftLoading, setShiftLoading] = useState(false);
             const [modal, setModal] = useState({ show: false, title: "", message: "", type: "alert", onConfirm: null });
 
@@ -180,6 +182,11 @@
                         const res = await fetch(`${GAS_URL}?action=getSettings`);
                         const settings = await res.json();
                         setIsRegistrationLocked(settings.registrationLocked);
+
+                        // メンバーリストの取得 (ホワイトリスト)
+                        const mRes = await fetch(`${GAS_URL}?action=getMembers`);
+                        const mData = await mRes.json();
+                        setMembers(mData);
 
                         // アプリ起動ログの記録
                         const savedUser = JSON.parse(localStorage.getItem("u_v7") || "{}");
@@ -217,10 +224,18 @@
 
             const handleLogin = (e) => {
                 if (e) e.preventDefault();
-                if (isRegistrationLocked) return showAlert("登録制限中", "現在、新規の利用登録は停止されています。管理権限を持つ担当者までお問い合わせください。");
-                if (!tempName.trim()) return showAlert("入力エラー", "有効な名前を入力してください");
-                showConfirm("ログイン名の確定", `名前を「${tempName.trim()}」で確定します。一度決めた名前は変更できません。よろしいですか？`, () => {
-                    const u = { displayName: tempName.trim() };
+                const cleanName = tempName.trim();
+                if (!cleanName) return showAlert("入力エラー", "名前を入力してください");
+
+                if (isRegistrationLocked) {
+                    // ホワイトリスト照合
+                    if (!members.includes(cleanName)) {
+                        return showAlert("登録制限中", "入力された名前は名簿に登録されていません。管理者に名前の登録を依頼してください。");
+                    }
+                }
+
+                showConfirm("ログイン名の確定", `名前を「${cleanName}」で確定します。よろしいですか？`, () => {
+                    const u = { displayName: cleanName };
                     setUser(u);
                     localStorage.setItem("u_v7", JSON.stringify(u));
                 });
@@ -341,6 +356,43 @@
 
             const removeLog = (id) => setLogs(logs.filter(l => l.id !== id));
 
+            const compressImage = (file) => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.src = e.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement("canvas");
+                            let width = img.width;
+                            let height = img.height;
+                            const MAX_SIZE = 1200;
+                            if (width > height) {
+                                if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                            } else {
+                                if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext("2d");
+                            ctx.drawImage(img, 0, 0, width, height);
+                            const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+                            resolve(dataUrl);
+                        };
+                    };
+                });
+            };
+
+            const handleFileSelect = async (e) => {
+                const files = Array.from(e.target.files);
+                if (images.length + files.length > 5) return showAlert("上限エラー", "写真は最大5枚までです。");
+                setSubmitting(true);
+                const compressed = await Promise.all(files.map(f => compressImage(f)));
+                setImages([...images, ...compressed]);
+                setSubmitting(false);
+            };
+
             const submit = async () => {
                 if (logs.length === 0 || !reportInput.store) return showAlert("不備があります", "ログ履歴、または店舗名が入力されておりません。");
 
@@ -391,7 +443,8 @@
                         handover: Number(reportInput.handover || 0),
                         parentReceived: pr, // 【送信】親受取額をGASへ送る
                         remaining: r,
-                        memo: reportInput.memo
+                        memo: reportInput.memo,
+                        images: images // 【新設】画像データ
                     };
                     try {
                         await fetch(`${GAS_URL}`, {
@@ -407,6 +460,7 @@
                         });
                         localStorage.removeItem("l_v7");
                         localStorage.removeItem("r_v7");
+                        setImages([]); // リセット
                         setActiveTab("log");
                         setTimeout(() => setStatus(""), 5000);
                     } catch (e) { showAlert("通信エラー", e.message); }
@@ -450,8 +504,9 @@
                                             <h3 className="text-rose-400 font-black text-sm uppercase">Registration Locked</h3>
                                             <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
                                                 現在、セキュリティ保護のため<br />
-                                                新規の利用登録を一時的に停止しています。<br />
-                                                <span className="text-white">管理者へ直接お問い合わせください。</span>
+                                                <span className="text-white font-black underline">管理者による名簿登録がない方</span>の<br />
+                                                新規利用を一時的に停止しています。<br />
+                                                <span className="text-white">管理者へ直接名前の登録を依頼してください。</span>
                                             </p>
                                         </div>
                                         <button onClick={() => location.reload()} className="text-[10px] text-indigo-400 font-black border-b border-indigo-400/30 pb-0.5">再試行する</button>
@@ -616,6 +671,23 @@
                                                 <div>
                                                     <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">メモ・備考</label>
                                                     <textarea value={reportInput.memo} onChange={e => setReportInput({ ...reportInput, memo: e.target.value })} className="input-dark h-24 text-xs leading-relaxed" placeholder="環境や立ち回りなど..."></textarea>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block px-1">証跡写真 (会員カードの枚数表示など)</label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <label className="w-16 h-16 bg-slate-800 border-2 border-dashed border-slate-600 rounded-xl flex items-center justify-center text-3xl cursor-pointer hover:border-indigo-500 transition-colors">
+                                                            <span className="opacity-50">+</span>
+                                                            <input type="file" accept="image/*" multiple onChange={handleFileSelect} className="hidden" />
+                                                        </label>
+                                                        {images.map((img, idx) => (
+                                                            <div key={idx} className="relative w-16 h-16">
+                                                                <img src={img} className="w-full h-full object-cover rounded-xl border border-white/10" />
+                                                                <button onClick={() => setImages(images.filter((_, i) => i !== idx))} className="absolute -top-2 -right-2 bg-rose-600 text-white w-5 h-5 rounded-full text-xs font-black">✕</button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-[8px] text-slate-500 font-bold italic">※写真は最大5枚まで。送信前に自動で軽量化されます。</p>
                                                 </div>
                                             </div>
 
