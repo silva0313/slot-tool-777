@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="robots" content="noindex,nofollow">
-    <title>管理者アプリ | v8.1.0 STABLE</title>
+    <title>管理者アプリ | v8.2.0 STABLE</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -1221,7 +1221,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                         salary: getField(report, ["本日の給料", "salary", "給料"]) || fin.salary,
                         remaining: getField(report, ["残投資金", "remainingCash", "残高", "remaining"]) || fin.remaining,
                         memo: getField(report, ["備考", "memo", "備考欄"]) || fin.text,
-                        details: getField(report, ["稼働内容", "details", "内容"])
+                        details: getField(report, ["稼働内容", "details", "内容"]),
+                        imageUrls: getField(report, ["画像URL", "imageUrls", "images"]) || ""
                     });
                     setSelectedId(report.ID);
                 } catch (e) {
@@ -1304,7 +1305,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                     medal5: safeParseFinance(editData.medal5),
                     pachi4: safeParseFinance(editData.pachi4),
                     memo: memoWithFinance,
-                    details: editData.稼働内容 || editData.details
+                    details: editData.稼働内容 || editData.details,
+                    imageUrls: editData.imageUrls // 画像URLを保持
                 };
                 setLoading(true);
                 try {
@@ -1400,22 +1402,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                                     placeholder="稼働内容..."
                                                 />
 
-                                                {/* 写真プレビューエリア */}
-                                                {(editData.memo || "").includes("[IMAGES]") && (
-                                                    <div className="mt-4 pt-4 border-t border-white/5">
-                                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">添付写真 (クリックで拡大)</div>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {editData.memo.split("[IMAGES]")[1].split("\n").filter(line => line.startsWith("http")).map((url, i) => (
-                                                                <div key={i} className="relative group cursor-pointer" onClick={() => window.open(url, "_blank")}>
-                                                                    <img src={url.replace("open?id=", "uc?export=view&id=")} className="w-24 h-24 object-cover rounded-xl border border-white/10 hover:border-indigo-500 transition-all" />
-                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity">
-                                                                        <span className="text-white text-xs font-black">拡大</span>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                {/* 旧・写真プレビューエリア（削除済み：最終枚数の下へ移動） */}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-10 border-t border-white/5 pt-8 uppercase text-[9px] font-black text-slate-500">
@@ -1464,6 +1451,31 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                                         <input type="text" value={editData.pachi4 ?? 0} onChange={e => setEditData({ ...editData, pachi4: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" placeholder="5000玉" />
                                                     </div>
                                                 </div>
+
+                                                {/* 【新設】画像プレビューエリア（最終枚数の直下） */}
+                                                {(editData.imageUrls || (editData.memo && editData.memo.includes("[IMAGES]"))) && (
+                                                    <div className="mt-6 pt-6 border-t border-slate-200">
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-4 ml-1">証跡写真 (クリックで拡大)</div>
+                                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                            {(editData.imageUrls || (editData.memo && editData.memo.includes("[IMAGES]") ? editData.memo.split("[IMAGES]")[1] : ""))
+                                                                .split(/[\n\s,]+/)
+                                                                .filter(line => line.trim().startsWith("http"))
+                                                                .map((url, i) => (
+                                                                    <div key={i} className="relative group cursor-pointer aspect-square" onClick={() => window.open(url.trim(), "_blank")}>
+                                                                        <img
+                                                                            src={url.trim().replace("open?id=", "uc?export=view&id=")}
+                                                                            className="w-full h-full object-cover rounded-2xl border border-slate-200 group-hover:border-indigo-500 transition-all shadow-sm"
+                                                                            loading="lazy"
+                                                                        />
+                                                                        <div className="absolute inset-0 bg-indigo-600/20 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-2xl transition-all">
+                                                                            <span className="bg-white text-indigo-600 px-3 py-1.5 rounded-full text-[10px] font-black shadow-lg">ZOOM 🔍</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="space-y-4">
