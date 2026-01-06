@@ -162,7 +162,7 @@
             const [shiftLoading, setShiftLoading] = useState(false);
             const [modal, setModal] = useState({ show: false, title: "", message: "", type: "alert", onConfirm: null });
             const [backendVersion, setBackendVersion] = useState("Checking...");
-            const [debugMode, setDebugMode] = useState(false);
+
 
             const showConfirm = (title, message, onConfirm) => {
                 setModal({ show: true, title, message, type: "confirm", onConfirm });
@@ -456,7 +456,7 @@
                         parentReceived: pr, // 【送信】親受取額をGASへ送る
                         remaining: r,
                         memo: reportInput.memo,
-                        images: debugMode ? [] : images // DEBUG時は画像を除外
+                        images: images
                     };
                     try {
                         // 【通信耐性強化】単純リクエスト（Simple Request）方式
