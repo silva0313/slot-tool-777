@@ -1223,7 +1223,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                         salary: getField(report, ["本日の給料", "salary", "給料"]) || fin.salary,
                         remaining: getField(report, ["残投資金", "remainingCash", "残高", "remaining"]) || fin.remaining,
                         memo: getField(report, ["備考", "memo", "備考欄"]) || fin.text,
-                        details: getField(report, ["稼働内容", "details", "内容"]),
+                        details: getField(report, ["稼動内容", "稼働内容", "details", "内容"]),
                         imageUrls: getField(report, ["画像URL", "imageUrls", "images"]) || ""
                     });
                     setSelectedId(report.ID);
