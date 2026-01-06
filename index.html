@@ -114,6 +114,11 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
+        // グローバルエラーの捕捉
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            console.error('Global Error: ', msg, url, lineNo, columnNo, error);
+            return false;
+        };
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzb2yxwCPwN10T2cO6suWKtRa5RO11QxmUJRUN2DrDy5Jt76cFwF61LlggpZoEubP6T9Q/exec";
         const APP_PASS = "nogawa";
 
@@ -447,9 +452,14 @@
                         images: images // 【新設】画像データ
                     };
                     try {
+                        // 【通信耐性強化】単純リクエスト（Simple Request）方式
+                        // ブラウザの OPTIONS (プリフライト) チェックを回避し、確実な着弾を保証します
+                        const params = new URLSearchParams();
+                        params.append("payload", JSON.stringify({ action: "submitReport", data: payload }));
+
                         const res = await fetch(`${GAS_URL}`, {
                             method: "POST",
-                            body: JSON.stringify({ action: "submitReport", data: payload })
+                            body: params
                         });
 
                         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
