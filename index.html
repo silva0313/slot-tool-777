@@ -447,10 +447,18 @@
                         images: images // 【新設】画像データ
                     };
                     try {
-                        await fetch(`${GAS_URL}`, {
+                        const res = await fetch(`${GAS_URL}`, {
                             method: "POST",
                             body: JSON.stringify({ action: "submitReport", data: payload })
                         });
+
+                        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+
+                        const result = await res.json();
+                        if (result.status !== "success") {
+                            throw new Error(result.message || "Server Error");
+                        }
+
                         setStatus("正常に送信されました。本日もお疲れ様でした。");
                         setLogs([]);
                         setReportInput({
@@ -463,7 +471,10 @@
                         setImages([]); // リセット
                         setActiveTab("log");
                         setTimeout(() => setStatus(""), 5000);
-                    } catch (e) { showAlert("通信エラー", e.message); }
+                    } catch (e) {
+                        console.error("Submit error:", e);
+                        showAlert("送信エラー", `報告が届いていない可能性があります。\n原因: ${e.message}\n(しばらく時間をおいて再送するか、よしきさんに連絡してください)`);
+                    }
                     finally { setSubmitting(false); }
                 });
             };
