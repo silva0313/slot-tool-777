@@ -1371,7 +1371,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                             </div>
                                         </div>
                                     </div>
-                                    </div>
                                 </div>
                                 <div className="bg-white rounded-[2.5rem] p-10 lg:p-14 shadow-xl border border-slate-100 space-y-10">
                                     <div className="space-y-8 border-b border-slate-100 pb-10">
@@ -1431,11 +1430,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                                 </div>
 
                                                 <div className="bg-indigo-50 border border-indigo-100 p-8 rounded-[2.5rem] shadow-sm">
-                                                    <div className="text-[10px] font-black text-indigo-400 uppercase mb-3 ml-1 text-center">残投資金 (財布の残高)</div>
-                                                    <input type="text" value={editData.remaining ?? 0} onChange={e => setEditData({ ...editData, remaining: e.target.value })} className="bg-white border-2 border-indigo-200 text-3xl font-black px-6 py-4 rounded-3xl w-full text-indigo-900 text-center" placeholder="財布の残高" />
-                                                    <p className="text-[8px] text-slate-400 mt-4 text-center font-bold">
-                                                        ※ (前日残) + 換金 + 受取 - 投資 - 手渡し - 給料 ＝ 残高
-                                                    </p>
+                                                    <div className="text-[10px] font-black text-indigo-400 uppercase mb-3 ml-1 text-center">最終的な残投資金</div>
+                                                    <input type="text" value={editData.remaining ?? 0} onChange={e => setEditData({ ...editData, remaining: e.target.value })} className="bg-white border-2 border-indigo-200 text-3xl font-black px-6 py-4 rounded-3xl w-full text-indigo-900 text-center" placeholder="0" />
                                                 </div>
 
                                                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
@@ -1489,17 +1485,20 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                         ))}
                                     </div>
                                     <div className="bg-[#0076FF] p-10 rounded-[4rem] text-white flex flex-col lg:flex-row justify-between items-center gap-8 shadow-2xl">
-                                        <div className="text-center lg:text-left"><div className="text-[10px] font-black opacity-50 uppercase mb-1">Aggregate Potential EV</div><div className="text-7xl font-black italic">{logs.reduce((s, l) => s + l.ev, 0).toLocaleString()} <span className="text-xl font-bold opacity-30 ml-2">円</span></div></div>
+                                        <div className="text-center lg:text-left">
+                                            <div className="text-[10px] font-black opacity-50 uppercase mb-1">Aggregate Potential EV</div>
+                                            <div className="text-7xl font-black italic">{logs.reduce((s, l) => s + l.ev, 0).toLocaleString()} <span className="text-xl font-bold opacity-30 ml-2">円</span></div>
+                                        </div>
                                         <button onClick={onApprove} className="bg-white text-[#0076FF] px-16 py-6 rounded-[2.5rem] font-black shadow-xl hover:bg-slate-50 transition-all text-xs tracking-widest">Approve & Complete</button>
                                     </div>
                                 </div>
                             </div>
-                </div>
-            ) : (
-                <div className="h-full flex flex-col items-center justify-center text-slate-200 text-6xl font-black italic opacity-60 text-center p-10"><div className="tracking-tighter">管理者アプリ</div><div className="text-[11px] tracking-[1.5em] mt-8 opacity-70 font-black">Select Report to Start</div></div>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-200 text-6xl font-black italic opacity-60 text-center p-10"><div className="tracking-tighter">管理者アプリ</div><div className="text-[11px] tracking-[1.5em] mt-8 opacity-70 font-black">Select Report to Start</div></div>
+                        )}
+                    </div>
                 </div >
-            </div >
-        );
+            );
         }
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<AdminApp />);
