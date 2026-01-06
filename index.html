@@ -121,6 +121,7 @@
         };
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzb2yxwCPwN10T2cO6suWKtRa5RO11QxmUJRUN2DrDy5Jt76cFwF61LlggpZoEubP6T9Q/exec";
         const APP_PASS = "nogawa";
+        const APP_VERSION_FRONTEND = "7.7.3";
 
         function App() {
             const [isLocked, setIsLocked] = useState(true);
@@ -157,6 +158,8 @@
             const [images, setImages] = useState([]); // 【新設】証跡写真 (Base64)
             const [shiftLoading, setShiftLoading] = useState(false);
             const [modal, setModal] = useState({ show: false, title: "", message: "", type: "alert", onConfirm: null });
+            const [backendVersion, setBackendVersion] = useState("Checking...");
+            const [debugMode, setDebugMode] = useState(false);
 
             const showConfirm = (title, message, onConfirm) => {
                 setModal({ show: true, title, message, type: "confirm", onConfirm });
@@ -187,6 +190,7 @@
                         const res = await fetch(`${GAS_URL}?action=getSettings`);
                         const settings = await res.json();
                         setIsRegistrationLocked(settings.registrationLocked);
+                        setBackendVersion(settings.version || "Unknown (< v8.1.5)");
 
                         // メンバーリストの取得 (ホワイトリスト)
                         const mRes = await fetch(`${GAS_URL}?action=getMembers`);
@@ -449,7 +453,7 @@
                         parentReceived: pr, // 【送信】親受取額をGASへ送る
                         remaining: r,
                         memo: reportInput.memo,
-                        images: images // 【新設】画像データ
+                        images: debugMode ? [] : images // DEBUG時は画像を除外
                     };
                     try {
                         // 【通信耐性強化】単純リクエスト（Simple Request）方式
@@ -712,6 +716,11 @@
                                                 </div>
                                             </div>
 
+                                            <div className="flex items-center gap-2 px-1 py-2 bg-rose-500/10 rounded-xl border border-rose-500/20 mb-2">
+                                                <input type="checkbox" id="debug-check" checked={debugMode} onChange={e => setDebugMode(e.target.checked)} className="w-5 h-5 accent-rose-500" />
+                                                <label htmlFor="debug-check" className="text-[10px] font-black text-rose-400 uppercase tracking-widest cursor-pointer">DEBUGモード (画像を除外して送信)</label>
+                                            </div>
+
                                             <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg ${submitting ? 'opacity-50' : ''}`}>
                                                 {submitting ? '送信中...' : '報告を送信して終了する'}
                                             </button>
@@ -816,10 +825,13 @@
                                 {activeTab === 'help' && (
                                     <div className="space-y-6 animate-fadeIn text-slate-400 text-xs leading-relaxed pb-10">
                                         <div className="card p-6 lg:p-10 space-y-10">
-                                            <h3 className="text-indigo-400 font-extrabold flex items-center gap-3 uppercase tracking-[0.2em] text-[15px] border-b border-white/5 pb-6">
-                                                <span className="text-2xl text-white">SYSTEM GUIDE</span>
-                                                <span className="text-xs font-medium opacity-50 whitespace-nowrap">運用マニュアル</span>
+                                            <h3 className="text-indigo-400 font-extrabold flex items-center gap-3 uppercase tracking-[0.2em] text-[15px] border-b border-white/5 pb-2">
+                                                <span className="text-2xl text-white">SYSTEM INFO</span>
                                             </h3>
+                                            <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest pb-6 opacity-60">
+                                                <div>Front: <span className="text-emerald-400">{APP_VERSION_FRONTEND}</span></div>
+                                                <div>Back: <span className="text-emerald-400">{backendVersion}</span></div>
+                                            </div>
 
                                             <div className="space-y-12">
                                                 <section className="space-y-4">
