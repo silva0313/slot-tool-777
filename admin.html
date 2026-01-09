@@ -1845,13 +1845,10 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             );
             if (foundKey) {
               const val = obj[foundKey];
-              if (
-                val !== undefined &&
-                val !== null &&
-                String(val).trim() !== "" &&
-                String(val) !== "undefined"
-              )
-                return val;
+              // null/undefined でなければ、空文字であっても有効なデータとして返す
+              if (val !== undefined && val !== null && String(val) !== "undefined") {
+                return String(val);
+              }
             }
           }
           return "";
@@ -2179,8 +2176,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             handover: safeParseFinance(editData.handover),
             parentReceived: safeParseFinance(editData.parentReceived),
             remaining: safeParseFinance(editData.remaining),
-            memo: memoWithFinance,
-            備考: memoWithFinance,
+            memo: memoWithFinance, // 内部キー
+            備考: memoWithFinance, // バックエンド・表示用共通キー
           };
           try {
             await fetch(GAS_URL, {
