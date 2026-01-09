@@ -2132,7 +2132,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                 cash: getField(report, ["本日投資", "cash", "投資", "本日投資額"]) || fin.cash,
                 salary: getField(report, ["本日の給料", "salary", "給料"]) || fin.salary,
                 remaining: getField(report, ["残投資金", "remainingCash", "残高", "remaining"]) || fin.remaining,
-                memo: getField(report, ["備考", "memo", "備考欄"]) || fin.text,
+                memo: getField(report, ["備考", "memo", "備考欄"]),
                 details: getField(report, ["稼動内容", "稼働内容", "details", "内容"]),
                 imageUrls: getField(report, ["画像URL", "imageUrls", "images"]) || "",
                 ev: existingEv
@@ -2147,17 +2147,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
 
         const handleSaveEdit = async () => {
           setLoading(true);
-          // 備考欄から金融タグのみを除去して、最新の値を再注入
-          const cleanMemo = (editData.memo || "").replace(FINANCE_TAG_RE, "").trim();
-          const memoWithFinance =
-            cleanMemo +
-            (editData.medal20 ? `\n[20スロ: ${editData.medal20}枚]` : "") +
-            (editData.medal5 ? `\n[5スロ: ${editData.medal5}枚]` : "") +
-            (editData.pachi4 ? `\n[4パチ: ${editData.pachi4}枚]` : "") +
-            (editData.cash ? `\n[本日投資: ${editData.cash}円]` : "") +
-            (editData.salary ? `\n[本日給料: ${editData.salary}円]` : "") +
-            (editData.remaining ? `\n[残投資金: ${editData.remaining}円]` : "");
-
           const savePayload = {
             ID: editData.ID,
             日付: editData.日付,
@@ -2176,8 +2165,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             handover: safeParseFinance(editData.handover),
             parentReceived: safeParseFinance(editData.parentReceived),
             remaining: safeParseFinance(editData.remaining),
-            memo: memoWithFinance, // 内部キー
-            備考: memoWithFinance, // バックエンド・表示用共通キー
+            memo: editData.memo, // 内部キー
+            備考: editData.memo, // バックエンド・表示用共通キー
           };
           try {
             await fetch(GAS_URL, {
@@ -2210,27 +2199,6 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
 
         const onApprove = async () => {
           const report = reports.find((r) => r.ID === selectedId);
-          const info = {
-            m20: safeParseFinance(editData.medal20),
-            m5: safeParseFinance(editData.medal5),
-            p4: safeParseFinance(editData.pachi4),
-            cash: safeParseFinance(editData.cash),
-            salary: safeParseFinance(editData.salary),
-            exchange: safeParseFinance(editData.exchange),
-            handover: safeParseFinance(editData.handover),
-            remaining: safeParseFinance(editData.remaining),
-            text: (editData.memo || "").replace(FINANCE_TAG_RE, "").trim(),
-          };
-
-          const memoWithFinance =
-            info.text +
-            (info.m20 ? `\n[20スロ: ${info.m20}枚]` : "") +
-            (info.m5 ? `\n[5スロ: ${info.m5}枚]` : "") +
-            (info.p4 ? `\n[4パチ: ${info.p4}枚]` : "") +
-            (info.cash ? `\n[本日投資: ${info.cash}円]` : "") +
-            (info.salary ? `\n[本日給料: ${info.salary}円]` : "") +
-            (info.remaining ? `\n[残投資金: ${info.remaining}円]` : "");
-
           const hours = parseHours(editData.rawHours || editData.稼働時間);
           const payload = {
             id: report.ID,
@@ -2245,7 +2213,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             medal20: safeParseFinance(editData.medal20),
             medal5: safeParseFinance(editData.medal5),
             pachi4: safeParseFinance(editData.pachi4),
-            memo: memoWithFinance,
+            memo: editData.memo,
             details: editData.稼働内容 || editData.details,
             imageUrls: editData.imageUrls, // 画像URLを保持
           };
