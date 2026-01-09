@@ -1904,7 +1904,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             if (fallbackC) result.cash = parseInt(fallbackC[1]) || 0;
           }
 
-          result.text = memo.replace(/\[.*\]/g, "").trim();
+          // ブラケット形式のタグをすべて削除したものを純粋な備考(text)とする
+          result.text = memo.replace(/\[[^\]]*[:：][^\]]*\]/g, "").trim();
           return result;
         };
 
@@ -2157,20 +2158,20 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             (editData.remaining ? `\n[残投資金: ${editData.remaining}円]` : "");
 
           const savePayload = {
-            id: editData.ID,
-            date: editData.日付,
-            name: editData.報告者,
-            store: editData.店舗名,
+            ID: editData.ID,
+            日付: editData.日付,
+            報告者: editData.報告者,
+            店舗名: editData.店舗名,
             details: editData.details,
-            hours: editData.rawHours || editData.稼働時間,
+            rawHours: editData.rawHours || editData.稼働時間,
             medal20: safeParseFinance(editData.medal20),
             medal5: safeParseFinance(editData.medal5),
             pachi4: safeParseFinance(editData.pachi4),
             cash: safeParseFinance(editData.cash),
             salary: safeParseFinance(editData.salary),
-            exchange: safeParseFinance(editData.exchange), // 同期漏れ修正
-            handover: safeParseFinance(editData.handover), // 同期漏れ修正
-            parentReceived: safeParseFinance(editData.parentReceived), // 【新設】親受取
+            exchange: safeParseFinance(editData.exchange),
+            handover: safeParseFinance(editData.handover),
+            parentReceived: safeParseFinance(editData.parentReceived),
             remaining: safeParseFinance(editData.remaining),
             memo: memoWithFinance,
           };
@@ -2180,7 +2181,14 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
               mode: "no-cors",
               body: JSON.stringify({
                 action: "updatePendingReport",
-                data: savePayload,
+                data: {
+                  ...savePayload,
+                  id: savePayload.ID, // API互換性のため
+                  date: savePayload.日付,
+                  name: savePayload.報告者,
+                  store: savePayload.店舗名,
+                  hours: savePayload.rawHours
+                },
               }),
             });
             setReports(
