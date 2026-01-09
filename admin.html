@@ -1857,6 +1857,9 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
           return "";
         };
 
+        // 金融タグ抽出・除去用の共通正規表現
+        const FINANCE_TAG_RE = /\[(?:20スロ|5スロ|4パチ|本日投資|投資|投資額|cash|本日給料|給料|残投資金|残高)[:：][^\]]*\]/gi;
+
         const parseFinance = (report) => {
           const rawMemo = getField(report, ["備考", "memo", "備考欄", ""]);
           const memo = String(rawMemo || ""); // 明示的に文字列変換してクラッシュ防止
@@ -1904,8 +1907,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             if (fallbackC) result.cash = parseInt(fallbackC[1]) || 0;
           }
 
-          // ブラケット形式のタグをすべて削除したものを純粋な備考(text)とする
-          result.text = memo.replace(/\[[^\]]*[:：][^\]]*\]/g, "").trim();
+          // 特定の金融タグのみを正確に除去（[メモ] 等のユーザーブラケットは保護）
+          result.text = memo.replace(FINANCE_TAG_RE, "").trim();
           return result;
         };
 
@@ -2147,9 +2150,10 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
 
         const handleSaveEdit = async () => {
           setLoading(true);
-          // 備考欄に金融情報を再注入して保存
+          // 備考欄から金融タグのみを除去して、最新の値を再注入
+          const cleanMemo = (editData.memo || "").replace(FINANCE_TAG_RE, "").trim();
           const memoWithFinance =
-            (editData.memo || "").replace(/\[.*\]/g, "").trim() +
+            cleanMemo +
             (editData.medal20 ? `\n[20スロ: ${editData.medal20}枚]` : "") +
             (editData.medal5 ? `\n[5スロ: ${editData.medal5}枚]` : "") +
             (editData.pachi4 ? `\n[4パチ: ${editData.pachi4}枚]` : "") +
@@ -2160,8 +2164,10 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
           const savePayload = {
             ID: editData.ID,
             日付: editData.日付,
-            報告者: editData.報告者,
+            名前: editData.報告者, // スプレッドシートのヘッダー名に合わせる
+            報告者: editData.報告者, // サイドバー表示用にも残す
             店舗名: editData.店舗名,
+            稼動内容: editData.details, // スプレッドシートのヘッダー名に合わせる
             details: editData.details,
             rawHours: editData.rawHours || editData.稼働時間,
             medal20: safeParseFinance(editData.medal20),
@@ -2174,6 +2180,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             parentReceived: safeParseFinance(editData.parentReceived),
             remaining: safeParseFinance(editData.remaining),
             memo: memoWithFinance,
+            備考: memoWithFinance,
           };
           try {
             await fetch(GAS_URL, {
@@ -2193,7 +2200,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             });
             setReports(
               reports.map((r) =>
-                r.ID === editData.ID ? { ...savePayload } : r
+                String(r.ID) === String(editData.ID) ? { ...r, ...savePayload } : r
               )
             );
             alert("変更を保存しました");
@@ -2215,7 +2222,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             exchange: safeParseFinance(editData.exchange),
             handover: safeParseFinance(editData.handover),
             remaining: safeParseFinance(editData.remaining),
-            text: (editData.memo || "").replace(/\[.*\]/g, "").trim(),
+            text: (editData.memo || "").replace(FINANCE_TAG_RE, "").trim(),
           };
 
           const memoWithFinance =
