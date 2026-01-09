@@ -354,11 +354,11 @@
                       >
                         <div className="flex justify-between items-start mb-4 md:mb-6">
                           <div className="space-y-0.5">
-                            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">
-                              <HighlightText text={item.date} query={search} />
-                            </span>
-                            <h3 className="text-sm md:text-base font-black italic tracking-tight">
+                            <h3 className="text-sm md:text-base font-black italic tracking-tight flex items-baseline gap-2 flex-wrap">
                               <HighlightText text={item.name} query={search} />
+                              <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest opacity-70">
+                                <HighlightText text={item.date} query={search} />
+                              </span>
                             </h3>
                           </div>
                           <div className="bg-slate-900 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black italic shrink-0">
@@ -375,24 +375,26 @@
                       <div className="bg-slate-50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-slate-100 space-y-3 md:space-y-4">
                             {String(item.details || "").split("\n").filter(Boolean).map((line, lIdx) => {
                               const analysis = analyzeLine(line, item.metadata);
-                              return (
-                                <div key={lIdx} className="space-y-1 pb-2 md:pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
-                                  <div className="text-[10px] md:text-[11px] font-bold text-slate-600 leading-relaxed">
-                                    <HighlightText text={line} query={search} />
-                                  </div>
-                                  {analysis && (
-                                    <div className="flex items-center gap-2">
-                                      <span className={`w-1.5 h-1.5 rounded-full bg-indigo-500`}></span>
-                                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">
+                                return (
+                                  <div key={lIdx} className="space-y-1 pb-2 md:pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
+                                    {analysis && (
+                                      <div className="text-[9px] font-black text-purple-600 uppercase tracking-tighter flex items-center gap-1.5">
+                                        <span className="w-1 h-1 rounded-full bg-purple-400"></span>
                                         {analysis.machine}
-                                      </span>
-                                      <span className="text-[10px] font-black text-[#0076FF] italic">
-                                        {analysis.ev !== 0 ? `${analysis.ev > 0 ? "+" : ""}${analysis.ev.toLocaleString()}円` : "---"}
-                                      </span>
+                                      </div>
+                                    )}
+                                    <div className="flex justify-between items-start gap-2">
+                                      <div className="text-[10px] md:text-[11px] font-bold text-slate-600 leading-relaxed flex-1">
+                                        <HighlightText text={line} query={search} />
+                                      </div>
+                                      {analysis && (
+                                        <div className="text-[10px] font-black text-[#0076FF] italic shrink-0">
+                                          {analysis.ev !== 0 ? `${analysis.ev > 0 ? "+" : ""}${analysis.ev.toLocaleString()}円` : "---"}
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
-                              );
+                                  </div>
+                                );
                             })}
                           </div>
                           <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-100">
