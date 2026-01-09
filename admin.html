@@ -172,24 +172,36 @@
 
       function ArchiveLibrary({ archive, onClose }) {
         const [search, setSearch] = useState("");
-        const filtered = (archive || []).filter(
-          (item) =>
-            item && (item.details || item.store || item.name) && (
-              !search ||
-              String(item.details || "").toLowerCase().includes(search.toLowerCase()) ||
-              String(item.store || "").toLowerCase().includes(search.toLowerCase()) ||
-              String(item.name || "").toLowerCase().includes(search.toLowerCase())
-            )
-        );
+        const filtered = (archive || []).filter((item) => {
+          if (!item || (!item.details && !item.store && !item.name)) return false;
+          if (!search.trim()) return true;
+          
+          // スペース（半角・全角）で分割してキーワード配列を作成
+          const keywords = search.trim().toLowerCase().split(/[\s　]+/).filter(Boolean);
+          const searchableText = `${item.details} ${item.store} ${item.name} ${item.date}`.toLowerCase();
+          
+          // すべてのキーワードが含まれているかチェック (AND検索)
+          return keywords.every(kw => searchableText.includes(kw));
+        });
 
         // テキストをハイライト表示するコンポーネント
         const HighlightText = ({ text, query }) => {
-          if (!query || !text) return <span>{text}</span>;
-          const parts = String(text).split(new RegExp(`(${query})`, "gi"));
+          if (!query.trim() || !text) return <span>{text}</span>;
+          
+          const keywords = query.trim().split(/[\s　]+/).filter(Boolean);
+          if (keywords.length === 0) return <span>{text}</span>;
+
+          // キーワードを正規表現用にエスケープして結合
+          const escapedKeywords = keywords.map(kw => kw.replace(/[.*+?^${}()|[\]\s\\]/g, "\\$&"));
+          const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
+          
+          const parts = String(text).split(regex);
+          const lowerKeywords = keywords.map(kw => kw.toLowerCase());
+
           return (
             <span>
               {parts.map((part, i) =>
-                part.toLowerCase() === query.toLowerCase() ? (
+                lowerKeywords.includes(part.toLowerCase()) ? (
                   <span key={i} className="bg-yellow-200 border-b-2 border-yellow-400 font-bold px-0.5 rounded-sm">
                     {part}
                   </span>
