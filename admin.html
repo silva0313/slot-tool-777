@@ -1957,6 +1957,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
         const [archive, setArchive] = useState([]);
         const [showLibrary, setShowLibrary] = useState(false);
         const [suggestedEv, setSuggestedEv] = useState(null);
+        const [aiNormalization, setAiNormalization] = useState(null);
+        const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
         const [syncInfo, setSyncInfo] = useState("");
         const [checkedIds, setCheckedIds] = useState([]);
         const [editData, setEditData] = useState(null);
@@ -2334,10 +2336,27 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                 ev: existingEv
               });
               if (report.ID) setSelectedId(report.ID);
+              if (content) fetchAiNormalization(content);
             }
           } catch (e) {
             console.error("Analysis Error:", e);
             alert("解析エラーが発生しました。\n理由: " + e.message);
+          }
+        };
+
+        const fetchAiNormalization = async (details) => {
+          setIsAiAnalyzing(true);
+          setAiNormalization(null);
+          try {
+            const res = await fetch(`${GAS_URL}?action=getAISuggestion&details=${encodeURIComponent(details)}`);
+            const data = await res.json();
+            if (data && !data.error) {
+              setAiNormalization(data);
+            }
+          } catch (e) {
+            console.error("AI Normalization Error:", e);
+          } finally {
+            setIsAiAnalyzing(false);
           }
         };
 
@@ -2644,6 +2663,79 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                 <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-20">
                   <div className="bg-slate-900 rounded-[2.5rem] p-10 lg:p-14 text-white shadow-xl relative overflow-hidden">
                     <div className="flex flex-col gap-8">
+                      {/* --- Gemini AI Analysis UI --- */}
+                      {(isAiAnalyzing || aiNormalization) && (
+                        <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] space-y-6 animate-fadeIn relative overflow-hidden">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <span className={`text-xl ${isAiAnalyzing ? "animate-spin" : ""}`}>
+                                {isAiAnalyzing ? "✨" : "🤖"}
+                              </span>
+                              <div>
+                                <h4 className="text-[10px] font-black text-[#00E0FF] uppercase tracking-[0.2em]">
+                                  Gemini 3 Flash {isAiAnalyzing ? "Analyzing..." : "Intelligence Insight"}
+                                </h4>
+                                {!isAiAnalyzing && <p className="text-[8px] text-slate-500 font-bold uppercase mt-0.5">Confidence: HIGH (Free Tier Active)</p>}
+                              </div>
+                            </div>
+                            {isAiAnalyzing && (
+                              <div className="flex gap-1">
+                                <span className="w-1.5 h-1.5 bg-[#00E0FF] rounded-full animate-bounce"></span>
+                                <span className="w-1.5 h-1.5 bg-[#00E0FF] rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                <span className="w-1.5 h-1.5 bg-[#00E0FF] rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                              </div>
+                            )}
+                          </div>
+
+                          {aiNormalization && !isAiAnalyzing && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <div className="text-[9px] font-black text-slate-500 uppercase ml-1 tracking-widest">Normalizing: Machine</div>
+                                  <div className="bg-white/10 px-4 py-3 rounded-2xl text-xs font-black border border-white/5 text-white italic">
+                                    {aiNormalization.machine}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="text-[9px] font-black text-slate-500 uppercase ml-1 tracking-widest">Normalizing: Store</div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex-1 bg-white/10 px-4 py-3 rounded-2xl text-xs font-black border border-white/5 text-white italic truncate">
+                                      {aiNormalization.store}
+                                    </div>
+                                    {editData.店舗名 !== aiNormalization.store && aiNormalization.store !== "該当なし" && (
+                                      <button
+                                        onClick={() => setEditData({ ...editData, 店舗名: aiNormalization.store })}
+                                        className="bg-[#0076FF] hover:bg-[#0060FF] text-white px-4 py-3 rounded-2xl text-[9px] font-black transition-all shadow-lg active:scale-95 shrink-0"
+                                      >
+                                        Update Store
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <div className="text-[9px] font-black text-rose-500 uppercase ml-1 tracking-widest">Series Check</div>
+                                  <div className="bg-rose-500/5 p-4 rounded-2xl text-[10px] font-bold text-slate-400 leading-relaxed italic border border-rose-500/10">
+                                    {aiNormalization.series_check}
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="text-[9px] font-black text-slate-500 uppercase ml-1 tracking-widest">Context Summary</div>
+                                  <div className="bg-white/5 p-4 rounded-2xl text-[10px] font-bold text-slate-500 leading-relaxed border border-white/5">
+                                    {aiNormalization.parsed_context}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Decorative Background Element */}
+                          <div className="absolute -bottom-10 -right-10 text-8xl font-black italic opacity-[0.03] pointer-events-none transform -rotate-12">
+                            FLASH
+                          </div>
+                        </div>
+                      )}
                       <div>
                         <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
                           <div className="flex justify-between items-center mb-3 px-1">
