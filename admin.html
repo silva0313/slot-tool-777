@@ -155,6 +155,65 @@
             item.name.toLowerCase().includes(search.toLowerCase())
         );
 
+        // 各行を解析して期待値を算出する簡易関数
+        const analyzeLine = (line) => {
+          if (!line.trim()) return null;
+          const dict = window.LATEST_DICT || [];
+          const master = window.HOKUTO_MASTER?.["設定１相当"] || {};
+          
+          const found = dict.find((d) => {
+            const keywords = (d.キーワード || "").split(/[,，、]/).map(k => k.trim()).filter(Boolean);
+            return keywords.some(k => line.includes(k));
+          });
+
+          if (!found) return null;
+
+          let ev = 0;
+          let machine = found.機種名;
+
+          // 符号の正規化
+          const normLine = line.replace(/[＋]/g, "+").replace(/[－ー―ー−−‐-]/g, "-");
+          const allNums = (normLine.match(/-?\d+/g) || []).map(Number);
+
+          if (machine === "スマスロ北斗の拳") {
+            const gMatch = normLine.match(/(\d+)\s*[Gg]/);
+            const sMatch = normLine.match(/([+-]?\d+)\s*[枚枚]/);
+            const gCount = gMatch ? parseInt(gMatch[1]) : (allNums[0] || 0);
+            const diff = sMatch ? parseInt(sMatch[1]) : (allNums[1] || 0);
+
+            const getRangeName = (d) => {
+              if (d < -1400) return "-1400枚未満";
+              if (d <= -1001) return "-1400～-1001枚";
+              if (d <= -601) return "-1000～-601枚";
+              if (d <= -401) return "-600～-401枚";
+              if (d <= -301) return "-400～-301枚";
+              if (d <= -201) return "-300～-201枚";
+              if (d <= -101) return "-200～-101枚";
+              if (d <= -1) return "-100～-1枚";
+              if (d <= 99) return "±0～+99枚";
+              if (d <= 199) return "+100～+199枚";
+              if (d <= 299) return "+200～+299枚";
+              if (d <= 399) return "+300～+399枚";
+              if (d <= 599) return "+400～+599枚";
+              if (d <= 799) return "+600～+799枚";
+              if (d <= 999) return "+800～+999枚";
+              if (d <= 1199) return "+1000～+1199枚";
+              if (d <= 1399) return "+1200～+1399枚";
+              if (d <= 1999) return "+1400～+1999枚";
+              return "+2000枚以上";
+            };
+            const targetName = getRangeName(diff);
+            const normalize = (k) => k.replace(/[±枚（）()\[\]\s　]/g, "").replace(/[〜〜~]/g, "～").trim();
+            const normTarget = normalize(targetName);
+            const selected = Object.keys(master).find((sh) => normalize(sh) === normTarget);
+            if (selected) ev = matchEvInRange(gCount, master[selected]);
+          } else {
+            ev = 0; 
+          }
+
+          return { machine, ev };
+        };
+
         return (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn text-slate-900">
             <div className="bg-white rounded-[3rem] w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl overflow-hidden border-4 border-white">
@@ -219,8 +278,36 @@
                                {item.store}
                              </span>
                           </div>
-                          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-[11px] font-bold leading-relaxed text-slate-600 line-clamp-4 group-hover:line-clamp-none transition-all">
-                            {item.details}
+                          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
+                            {item.details.split("\n").filter(Boolean).map((line, lIdx) => {
+                              const analysis = analyzeLine(line);
+                              return (
+                                <div key={lIdx} className="space-y-1 pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
+                                  <div className="text-[11px] font-bold text-slate-600 leading-relaxed">
+                                    {line}
+                                  </div>
+                                  {analysis && (
+                                    <div className="flex items-center gap-2">
+                                      <span className={`w-1.5 h-1.5 rounded-full bg-indigo-500`}></span>
+                                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">
+                                        {analysis.machine}
+                                      </span>
+                                      <span className="text-[10px] font-black text-[#0076FF] italic">
+                                        {analysis.ev > 0 ? `+${analysis.ev.toLocaleString()}円` : "---"}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-100">
+                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                               Total Approved EV
+                             </div>
+                             <div className="text-lg font-black italic text-indigo-600 tracking-tighter">
+                               {item.ev.toLocaleString()}円
+                             </div>
                           </div>
                         </div>
                       </div>
@@ -1919,6 +2006,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
 
             setReports(repData);
             setDictionary(dictData.dictionary || []);
+            window.LATEST_DICT = dictData.dictionary || [];
             setStrategyData(stData);
             setArchive(archData);
             window.HOKUTO_MASTER = dictData.data;
