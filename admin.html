@@ -145,13 +145,38 @@
         "https://script.google.com/macros/s/AKfycbzPIDjd4AXjH5FLFltk_cwNJM7NMG5WLDsS4Q3LgCSkL_gXX7s0NA3jm7UckOGdzQeQlQ/exec";
       const APP_PASS = "nogawa";
 
+      // 北斗の期待値レンジ計算用共通関数
+      const matchEvInRange = (val, mData) => {
+        if (mData === undefined || mData === null) return 0;
+        const gKeys = Object.keys(mData)
+          .map(Number)
+          .filter((n) => !isNaN(n))
+          .sort((a, b) => a - b);
+        if (gKeys.length === 0) return 0;
+        if (mData[val] !== undefined) return mData[val];
+        if (val <= gKeys[0]) return mData[gKeys[0]];
+        if (val >= gKeys[gKeys.length - 1])
+          return mData[gKeys[gKeys.length - 1]];
+        const lower = [...gKeys].reverse().find((k) => k <= val);
+        const upper = gKeys.find((k) => k >= val);
+        if (lower !== undefined && upper !== undefined) {
+          const lowEv = mData[lower];
+          const upEv = mData[upper];
+          if (lower === upper) return lowEv;
+          const ev =
+            lowEv + ((upEv - lowEv) * (val - lower)) / (upper - lower);
+          return Math.round(ev);
+        }
+        return 0;
+      };
+
       function ArchiveLibrary({ archive, onClose }) {
         const [search, setSearch] = useState("");
         const filtered = (archive || []).filter(
           (item) =>
-            item && item.details && (
+            item && (item.details || item.store || item.name) && (
               !search ||
-              String(item.details).toLowerCase().includes(search.toLowerCase()) ||
+              String(item.details || "").toLowerCase().includes(search.toLowerCase()) ||
               String(item.store || "").toLowerCase().includes(search.toLowerCase()) ||
               String(item.name || "").toLowerCase().includes(search.toLowerCase())
             )
@@ -2185,29 +2210,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
           return parseFloat(s) || 0;
         };
 
-        const matchEvInRange = (val, mData) => {
-          if (mData === undefined || mData === null) return 0;
-          const gKeys = Object.keys(mData)
-            .map(Number)
-            .filter((n) => !isNaN(n))
-            .sort((a, b) => a - b);
-          if (gKeys.length === 0) return 0;
-          if (mData[val] !== undefined) return mData[val];
-          if (val <= gKeys[0]) return mData[gKeys[0]];
-          if (val >= gKeys[gKeys.length - 1])
-            return mData[gKeys[gKeys.length - 1]];
-          const lower = [...gKeys].reverse().find((k) => k <= val);
-          const upper = gKeys.find((k) => k >= val);
-          if (lower !== undefined && upper !== undefined) {
-            const lowEv = mData[lower];
-            const upEv = mData[upper];
-            if (lower === upper) return lowEv;
-            const ev =
-              lowEv + ((upEv - lowEv) * (val - lower)) / (upper - lower);
-            return Math.round(ev);
-          }
-          return 0;
-        };
+
 
         const handleAnalyze = (report, mode, isInitial) => {
           if (isInitial) setSuggestedEv(null);
@@ -2313,9 +2316,9 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                   }
                 }
                 if (isInitial && match.machine && match.machine !== "スマスロ北斗の拳" && match.machine !== "その他") {
-                  const history = archive.filter(h => h.details.includes(match.machine) || h.machine === match.machine);
+                  const history = (archive || []).filter(h => h && (String(h.details || "").includes(match.machine) || h.machine === match.machine));
                   if (history.length > 0) {
-                    const best = history.find(h => h.details === line) || history[0];
+                    const best = history.find(h => h && h.details === line) || history[0];
                     if (best && best.ev) setSuggestedEv({ ev: best.ev, date: best.date, name: best.name });
                   }
                 }
