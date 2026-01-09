@@ -354,14 +354,14 @@
                       >
                         <div className="flex justify-between items-start mb-4 md:mb-6">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className="bg-slate-100 text-slate-800 text-[10px] px-2 py-0.5 rounded-full font-black border border-slate-200 shrink-0">
+                            <h3 className="text-sm md:text-base font-black italic tracking-tight text-slate-900 flex items-center gap-2 flex-wrap">
+                              <span className="truncate">
+                                <HighlightText text={item.name} query={search} />
+                              </span>
+                              <span className="bg-slate-100 text-slate-800 text-[9px] px-2 py-0.5 rounded-full font-black border border-slate-200 shrink-0 opacity-70">
                                 <HighlightText text={item.date || "日付未設定"} query={search} />
                               </span>
-                              <h3 className="text-sm md:text-base font-black italic tracking-tight text-slate-900 truncate flex-1">
-                                <HighlightText text={item.name} query={search} />
-                              </h3>
-                            </div>
+                            </h3>
                           </div>
                           <div className="bg-slate-900 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black italic shrink-0">
                             {(item.ev || 0).toLocaleString()}円
@@ -3175,7 +3175,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                   <input
                                     type="number"
                                     value={log.ev || ""}
-                                    placeholder={suggestedEv ? String(suggestedEv.ev) : ""}
+                                    placeholder={log.prediction ? String(log.prediction.ev) : "0"}
                                     onChange={(e) => {
                                       const n = [...logs];
                                       n[i].ev = parseInt(e.target.value) || 0;
