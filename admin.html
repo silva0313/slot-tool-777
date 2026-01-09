@@ -147,12 +147,14 @@
 
       function ArchiveLibrary({ archive, onClose }) {
         const [search, setSearch] = useState("");
-        const filtered = archive.filter(
+        const filtered = (archive || []).filter(
           (item) =>
-            !search ||
-            item.details.toLowerCase().includes(search.toLowerCase()) ||
-            item.store.toLowerCase().includes(search.toLowerCase()) ||
-            item.name.toLowerCase().includes(search.toLowerCase())
+            item && item.details && (
+              !search ||
+              String(item.details).toLowerCase().includes(search.toLowerCase()) ||
+              String(item.store || "").toLowerCase().includes(search.toLowerCase()) ||
+              String(item.name || "").toLowerCase().includes(search.toLowerCase())
+            )
         );
 
         // 各行を解析して期待値を算出する簡易関数
@@ -166,7 +168,23 @@
             return keywords.some(k => line.includes(k));
           });
 
-          if (!found) return null;
+          // 【追加】メタデータ（事前に計算保存された内訳）があればそれを使う
+          if (window.CURRENT_METADATA) {
+            try {
+              const meta = typeof window.CURRENT_METADATA === 'string' ? JSON.parse(window.CURRENT_METADATA) : window.CURRENT_METADATA;
+              const match = meta.find(m => m.line === line);
+              if (match) return { machine: match.machine, ev: match.ev };
+            } catch(e) {}
+          }
+
+          if (!found) {
+            // 【Gemini 提案のフォールバック】金額らしき文字列があれば拾う
+            const moneyMatch = line.replace(/[＋]/g, "+").replace(/[－ー―ー−−‐-]/g, "-").match(/([+-]?\d+)(?:円|ev|EV)/i);
+            if (moneyMatch) {
+               return { machine: "不明機種", ev: parseInt(moneyMatch[1]) };
+            }
+            return null;
+          }
 
           let ev = 0;
           let machine = found.機種名;
@@ -203,12 +221,18 @@
               return "+2000枚以上";
             };
             const targetName = getRangeName(diff);
-            const normalize = (k) => k.replace(/[±枚（）()\[\]\s　]/g, "").replace(/[〜〜~]/g, "～").trim();
+            const normalize = (k) => String(k || "").replace(/[±枚（）()\[\]\s　]/g, "").replace(/[〜〜~]/g, "～").trim();
             const normTarget = normalize(targetName);
-            const selected = Object.keys(master).find((sh) => normalize(sh) === normTarget);
-            if (selected) ev = matchEvInRange(gCount, master[selected]);
+            const selected = Object.keys(master || {}).find((sh) => normalize(sh) === normTarget);
+            if (selected && master) ev = matchEvInRange(gCount, master[selected]);
           } else {
-            ev = 0; 
+            // 【Gemini 提案】北斗以外でも金額が明記されていれば拾う
+            const moneyMatch = normLine.match(/([+-]?\d+)(?:円|ev|EV)/i);
+            if (moneyMatch) {
+              ev = parseInt(moneyMatch[1]);
+            } else {
+              ev = 0;
+            }
           }
 
           return { machine, ev };
@@ -278,35 +302,38 @@
                                {item.store}
                              </span>
                           </div>
-                          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
-                            {item.details.split("\n").filter(Boolean).map((line, lIdx) => {
-                              const analysis = analyzeLine(line);
-                              return (
-                                <div key={lIdx} className="space-y-1 pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
-                                  <div className="text-[11px] font-bold text-slate-600 leading-relaxed">
-                                    {line}
-                                  </div>
-                                  {analysis && (
-                                    <div className="flex items-center gap-2">
-                                      <span className={`w-1.5 h-1.5 rounded-full bg-indigo-500`}></span>
-                                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">
-                                        {analysis.machine}
-                                      </span>
-                                      <span className="text-[10px] font-black text-[#0076FF] italic">
-                                        {analysis.ev > 0 ? `+${analysis.ev.toLocaleString()}円` : "---"}
-                                      </span>
+                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
+                            {(() => {
+                              window.CURRENT_METADATA = item.metadata;
+                              return String(item.details || "").split("\n").filter(Boolean).map((line, lIdx) => {
+                                const analysis = analyzeLine(line);
+                                return (
+                                  <div key={lIdx} className="space-y-1 pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
+                                    <div className="text-[11px] font-bold text-slate-600 leading-relaxed">
+                                      {line}
                                     </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                                    {analysis && (
+                                      <div className="flex items-center gap-2">
+                                        <span className={`w-1.5 h-1.5 rounded-full bg-indigo-500`}></span>
+                                        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">
+                                          {analysis.machine}
+                                        </span>
+                                        <span className="text-[10px] font-black text-[#0076FF] italic">
+                                          {analysis.ev !== 0 ? `${analysis.ev > 0 ? "+" : ""}${analysis.ev.toLocaleString()}円` : "---"}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                           <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-100">
                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                Total Approved EV
                              </div>
                              <div className="text-lg font-black italic text-indigo-600 tracking-tighter">
-                               {item.ev.toLocaleString()}円
+                               {(item.ev || 0).toLocaleString()}円
                              </div>
                           </div>
                         </div>
@@ -2429,8 +2456,9 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             medal5: safeParseFinance(editData.medal5),
             pachi4: safeParseFinance(editData.pachi4),
             memo: editData.memo,
-            details: editData.稼働内容 || editData.details,
+            details: editData.稼動内容 || editData.details,
             imageUrls: editData.imageUrls, // 画像URLを保持
+            metadata: JSON.stringify(logs.map(l => ({ line: l.text, machine: l.machine, ev: l.ev }))) // 解析メタデータを追加
           };
           setLoading(true);
           try {
