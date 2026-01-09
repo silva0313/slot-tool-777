@@ -157,9 +157,9 @@
             )
         );
 
-        // 各行を解析して期待値を算出する簡易関数
-        const analyzeLine = (line) => {
-          if (!line.trim()) return null;
+        // 各行を解析して期待値を算出する関数（引数でメタデータを受け取るように改善）
+        const analyzeLine = (line, metadata) => {
+          if (!line || !line.trim()) return null;
           const dict = window.LATEST_DICT || [];
           const master = window.HOKUTO_MASTER?.["設定１相当"] || {};
           
@@ -168,13 +168,17 @@
             return keywords.some(k => line.includes(k));
           });
 
-          // 【追加】メタデータ（事前に計算保存された内訳）があればそれを使う
-          if (window.CURRENT_METADATA) {
+          // 【修正】メタデータ（事前に計算保存された内訳）があればそれを使う
+          if (metadata) {
             try {
-              const meta = typeof window.CURRENT_METADATA === 'string' ? JSON.parse(window.CURRENT_METADATA) : window.CURRENT_METADATA;
-              const match = meta.find(m => m.line === line);
-              if (match) return { machine: match.machine, ev: match.ev };
-            } catch(e) {}
+              const meta = typeof metadata === 'string' ? (metadata.trim() ? JSON.parse(metadata) : null) : metadata;
+              if (Array.isArray(meta)) {
+                const match = meta.find(m => m && m.line === line);
+                if (match) return { machine: match.machine, ev: match.ev };
+              }
+            } catch(e) {
+              console.warn("Metadata parse error", e);
+            }
           }
 
           if (!found) {
@@ -235,7 +239,7 @@
             }
           }
 
-          return { machine, ev };
+          return { machine: machine || "不明", ev: ev || 0 };
         };
 
         return (
@@ -292,7 +296,7 @@
                             </h3>
                           </div>
                           <div className="bg-slate-900 text-white px-4 py-2 rounded-2xl text-[10px] font-black italic">
-                            {item.ev.toLocaleString()}円
+                            {(item.ev || 0).toLocaleString()}円
                           </div>
                         </div>
                         <div className="space-y-4">
@@ -303,30 +307,27 @@
                              </span>
                           </div>
                       <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
-                            {(() => {
-                              window.CURRENT_METADATA = item.metadata;
-                              return String(item.details || "").split("\n").filter(Boolean).map((line, lIdx) => {
-                                const analysis = analyzeLine(line);
-                                return (
-                                  <div key={lIdx} className="space-y-1 pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
-                                    <div className="text-[11px] font-bold text-slate-600 leading-relaxed">
-                                      {line}
-                                    </div>
-                                    {analysis && (
-                                      <div className="flex items-center gap-2">
-                                        <span className={`w-1.5 h-1.5 rounded-full bg-indigo-500`}></span>
-                                        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">
-                                          {analysis.machine}
-                                        </span>
-                                        <span className="text-[10px] font-black text-[#0076FF] italic">
-                                          {analysis.ev !== 0 ? `${analysis.ev > 0 ? "+" : ""}${analysis.ev.toLocaleString()}円` : "---"}
-                                        </span>
-                                      </div>
-                                    )}
+                            {String(item.details || "").split("\n").filter(Boolean).map((line, lIdx) => {
+                              const analysis = analyzeLine(line, item.metadata);
+                              return (
+                                <div key={lIdx} className="space-y-1 pb-3 border-b border-slate-200/50 last:border-0 last:pb-0">
+                                  <div className="text-[11px] font-bold text-slate-600 leading-relaxed">
+                                    {line}
                                   </div>
-                                );
-                              });
-                            })()}
+                                  {analysis && (
+                                    <div className="flex items-center gap-2">
+                                      <span className={`w-1.5 h-1.5 rounded-full bg-indigo-500`}></span>
+                                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">
+                                        {analysis.machine}
+                                      </span>
+                                      <span className="text-[10px] font-black text-[#0076FF] italic">
+                                        {analysis.ev !== 0 ? `${analysis.ev > 0 ? "+" : ""}${analysis.ev.toLocaleString()}円` : "---"}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                           <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-100">
                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
