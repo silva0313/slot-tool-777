@@ -2386,13 +2386,27 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                   color: "bg-slate-400",
                   source: "",
                 };
-                const foundDict = dictionary.find((d) => {
+                // 「最長一致」による機種特定ロジック
+                let bestMatch = null;
+                let longestKeywordLen = 0;
+
+                dictionary.forEach((d) => {
                   const keywords = (d.キーワード || "")
                     .split(/[,，、]/)
-                    .map((k) => k.trim())
+                    .map((k) => k.trim().toLowerCase())
                     .filter(Boolean);
-                  return keywords.some((k) => line.includes(k));
+                  
+                  keywords.forEach(k => {
+                    // 部分一致ではなく最長一致を採用することで「トラブル」と「ラブ」の衝突を回避
+                    if (line.toLowerCase().includes(k)) {
+                      if (k.length > longestKeywordLen) {
+                        longestKeywordLen = k.length;
+                        bestMatch = d;
+                      }
+                    }
+                  });
                 });
+                const foundDict = bestMatch;
                 if (foundDict) {
                   match.machine = foundDict.機種名;
                   match.color = foundDict.色コード;
@@ -3320,17 +3334,18 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                       // 北斗は専用ロジック(1G単位)があるため、この汎用リセット提案からは除外する
                                       if (machine === "スマスロ北斗の拳") return null;
                                       
-                                      // 1. 朝一リセ即時確定 (スプシ連動 + 倍数判定)
-                                      const rm = resetMaster.find(m => {
-                                        // 辞書(dictionary)からもキーワードを探す
-                                        const dictEntry = dictionary.find(d => d.機種名 === m.機種名);
-                                        const dictKeywords = dictEntry ? (dictEntry.キーワード || "").split(/[,，、]/).map(k => k.trim().toLowerCase()).filter(Boolean) : [];
-                                        const masterKeywords = (m.キーワード || "").split(/[,，、]/).map(k => k.trim().toLowerCase()).filter(Boolean);
-                                        const allKeywords = [...new Set([...masterKeywords, ...dictKeywords])];
-                                        return allKeywords.some(k => line.includes(k));
-                                      });
+                                      // 1. 朝一リセ即時確定 (タグ優先判定)
+                                      // 特定済みの機種名 (machine) と一致するマスタのみを検索対象にする
+                                      const rm = resetMaster.find(m => m.機種名 === machine);
 
                                       if (rm) {
+                                        // リセットを示唆する共通用語 または マスタ固有キーワードが含まれているか
+                                        const commonWords = ["リセ", "リセット", "設定変更", "変更後", "朝一", "短縮", "天国"];
+                                        const mKeywords = (rm.キーワード || "").split(/[,，、]/).map(k => k.trim().toLowerCase()).filter(Boolean);
+                                        const allResetWords = [...new Set([...commonWords, ...mKeywords])];
+                                        
+                                        const isResetContext = allResetWords.some(k => line.includes(k));
+                                        if (!isResetContext) return null; // リセット文脈でなければサジェストスキップ
                                         const unitPrice = parseInt(rm.単価) || 0;
                                         // 倍数抽出: "×3", "*2", "5個" などに対応
                                         const multMatch = line.match(/[×*]\s*(\d+)|(\d+)\s*個/);
