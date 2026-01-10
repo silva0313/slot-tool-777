@@ -429,13 +429,14 @@
         dictionary,
         onSaveDict,
         strategyData,
-        onSaveStrategy,
+        resetMaster: initialResetMaster,
         onClose,
       }) {
         const [tab, setTab] = useState("dict");
         const [search, setSearch] = useState("");
         const [dictItems, setDictItems] = useState([...dictionary]);
         const [stData, setStData] = useState([...strategyData]);
+        const [rsMaster, setRsMaster] = useState([...initialResetMaster]);
         const [loading, setLoading] = useState(false);
         const saveAll = async () => {
           setLoading(true);
@@ -445,7 +446,11 @@
               mode: "no-cors",
               body: JSON.stringify({
                 action: "saveMasterAll",
-                data: { dictionary: dictItems, strategy: stData },
+                data: {
+                  dictionary: dictItems,
+                  strategy: stData,
+                  reset: rsMaster,
+                },
               }),
             });
             alert("全て保存しました");
@@ -479,27 +484,20 @@
                     }`}
                   />
                 </div>
-                <div className="flex gap-2 bg-slate-200 p-1 rounded-full w-full md:w-auto">
-                  <button
-                    onClick={() => setTab("dict")}
-                    className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${
-                      tab === "dict"
-                        ? "bg-[#0076FF] text-white shadow-md"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    機種辞書
-                  </button>
-                  <button
-                    onClick={() => setTab("strategy")}
-                    className={`flex-1 md:flex-none px-8 py-3 rounded-full text-xs font-black transition-all whitespace-nowrap ${
-                      tab === "strategy"
-                        ? "bg-[#0076FF] text-white shadow-md"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    狙い目（攻略）
-                  </button>
+                <div className="flex gap-2 bg-slate-200 p-1 rounded-full w-full md:w-auto overflow-x-auto">
+                  {["dict", "strategy", "reset"].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTab(t)}
+                      className={`flex-1 md:flex-none px-6 py-3 rounded-full text-[10px] font-black transition-all whitespace-nowrap ${
+                        tab === t
+                          ? "bg-[#0076FF] text-white shadow-md font-black"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      {t === "dict" ? "機種辞書" : t === "strategy" ? "攻略・狙い目" : "朝一期待値"}
+                    </button>
+                  ))}
                 </div>
                 <button
                   onClick={onClose}
@@ -691,6 +689,104 @@
                           </button>
                         </div>
                       ))}
+                  </div>
+                )}
+                {tab === "reset" && (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center mb-8 bg-rose-50 p-6 rounded-[2rem] border border-rose-100">
+                      <div>
+                        <h3 className="text-sm font-black text-rose-900 italic">
+                          朝一・リセット期待値マスタ
+                        </h3>
+                        <p className="text-[10px] font-bold text-rose-400 mt-1 uppercase font-black">
+                          Keywords are used for multiplier detection (e.g. ×3)
+                        </p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setRsMaster([
+                            ...rsMaster,
+                            {
+                              機種名: "",
+                              キーワード: "リセ,朝一",
+                              単価: 800,
+                              備考: "",
+                            },
+                          ])
+                        }
+                        className="bg-white text-rose-600 border border-rose-200 px-6 py-3 rounded-2xl text-[10px] font-black hover:bg-rose-50 transition-all shadow-sm"
+                      >
+                        + 新規設定追加
+                      </button>
+                    </div>
+                    {rsMaster.map((it, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6 relative group"
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">
+                              対象機種名 (マスタ照合用)
+                            </label>
+                            <input
+                              value={it.機種名}
+                              onChange={(e) => {
+                                const n = rsMaster.map((item, i) =>
+                                  i === idx ? { ...item, 機種名: e.target.value } : item
+                                );
+                                setRsMaster(n);
+                              }}
+                              className="w-full bg-white px-4 py-3 rounded-xl font-black text-sm outline-none border border-slate-200"
+                              placeholder="北斗, カバネリなど"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">
+                              期待値単価 (円)
+                            </label>
+                            <input
+                              type="number"
+                              value={it.単価}
+                              onChange={(e) => {
+                                const n = rsMaster.map((item, i) =>
+                                  i === idx ? { ...item, 単価: parseInt(e.target.value) || 0 } : item
+                                );
+                                setRsMaster(n);
+                              }}
+                              className="w-full bg-white px-4 py-3 rounded-xl font-black text-sm outline-none border border-slate-200 text-rose-600"
+                              placeholder="800"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">
+                            反応キーワード (カンマ区切り)
+                          </label>
+                          <input
+                            value={it.キーワード}
+                            onChange={(e) => {
+                              const n = rsMaster.map((item, i) =>
+                                i === idx ? { ...item, キーワード: e.target.value } : item
+                              );
+                              setRsMaster(n);
+                            }}
+                            className="w-full bg-white px-4 py-3 rounded-xl text-xs font-bold outline-none border border-slate-200"
+                            placeholder="例: 朝一,リセ,変更"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (window.confirm("この設定を削除しますか？")) {
+                              setRsMaster(rsMaster.filter((_, i) => i !== idx));
+                            }
+                          }}
+                          className="absolute -top-2 -right-2 w-8 h-8 bg-white border border-slate-200 text-slate-300 rounded-full flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 transition-all opacity-0 group-hover:opacity-100 shadow-sm"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -2098,7 +2194,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
               }
             };
 
-            const [repData, dictData, stData, archData] = await Promise.all([
+            const [repData, dictData, stData, archData, rMaster] = await Promise.all([
               fetchSafe("getPendingReports", []),
               fetchSafe("getHokutoMaster", {
                 data: { 設定１相当: {}, 優良店: {} },
@@ -2106,6 +2202,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
               }),
               fetchSafe("getStrategyData&name=ADMIN", []),
               fetchSafe("getArchiveData", []),
+              fetchSafe("getResetMaster", []),
             ]);
 
             setReports(repData);
@@ -2113,6 +2210,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             window.LATEST_DICT = dictData.dictionary || [];
             setStrategyData(stData);
             setArchive(archData);
+            setResetMaster(rMaster);
             window.HOKUTO_MASTER = dictData.data;
             const masterCount = Object.keys(
               dictData.data?.["設定１相当"] || {}
@@ -2146,12 +2244,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
           return "";
         };
 
-           // 朝一リセット期待値マスタ (Instant Confirmation Mode用)
-      const RESET_MASTER = {
-        "スマスロ北斗の拳": { "リセ": 800, "朝一": 800 },
-        "甲鉄城のカバネリ": { "リセ": 1000, "朝一": 1000 },
-        "スマスロ ゲゲゲの鬼太郎 覚醒": { "リセ": 1200, "朝一": 1200 }
-      };
+        // 朝一リセット期待値マスタ (State管理へ移行)
+        const [resetMaster, setResetMaster] = React.useState([]);
 
         // 金融タグ抽出・除去用の共通正規表現
         const FINANCE_TAG_RE = /\[(?:20スロ|5スロ|4パチ|本日投資|投資|投資額|cash|本日給料|給料|残投資金|残高)[:：][^\]]*\]/gi;
@@ -2614,6 +2708,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                   loadAll();
                 }}
                 strategyData={strategyData}
+                resetMaster={resetMaster}
                 onClose={() => setShowMaster(false)}
               />
             )}
@@ -3207,26 +3302,36 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                       // スマートサジェスト (Smart Suggest) ロジック
                                       const line = log.text.toLowerCase();
                                       const machine = log.machine;
+
+                                      // 北斗は専用ロジック(1G単位)があるため、この汎用リセット提案からは除外する
+                                      if (machine === "スマスロ北斗の拳") return null;
                                       
-                                      // 1. 朝一リセ即時確定
-                                      if (RESET_MASTER[machine]) {
-                                        const trigger = Object.keys(RESET_MASTER[machine]).find(k => line.includes(k));
-                                        if (trigger) {
-                                          const resetEv = RESET_MASTER[machine][trigger];
-                                          if (log.ev !== resetEv) {
-                                            return (
-                                              <div
-                                                onClick={() => {
-                                                  const n = [...logs];
-                                                  n[i].ev = resetEv;
-                                                  setLogs(n);
-                                                }}
-                                                className="mt-2 bg-rose-50 text-rose-600 text-[10px] font-black px-4 py-2 rounded-xl cursor-pointer shadow-sm hover:bg-rose-100 transition-all border border-rose-100 animate-fadeIn"
-                                              >
-                                                {resetEv.toLocaleString()}円
-                                              </div>
-                                            );
-                                          }
+                                      // 1. 朝一リセ即時確定 (スプシ連動 + 倍数判定)
+                                      const rm = resetMaster.find(m => {
+                                        const keywords = (m.キーワード || "").split(/[,，、]/).map(k => k.trim().toLowerCase()).filter(Boolean);
+                                        return keywords.some(k => line.includes(k));
+                                      });
+
+                                      if (rm) {
+                                        const unitPrice = parseInt(rm.単価) || 0;
+                                        // 倍数抽出: "×3", "*2", "5個" などに対応
+                                        const multMatch = line.match(/[×*]\s*(\d+)|(\d+)\s*個/);
+                                        const count = multMatch ? parseInt(multMatch[1] || multMatch[2]) : 1;
+                                        const resetEv = unitPrice * count;
+
+                                        if (log.ev !== resetEv) {
+                                          return (
+                                            <div
+                                              onClick={() => {
+                                                const n = [...logs];
+                                                n[i].ev = resetEv;
+                                                setLogs(n);
+                                              }}
+                                              className="mt-2 bg-rose-50 text-rose-600 text-[10px] font-black px-4 py-2 rounded-xl cursor-pointer shadow-sm hover:bg-rose-100 transition-all border border-rose-100 animate-fadeIn"
+                                            >
+                                              {resetEv.toLocaleString()}円 {count > 1 ? `(${unitPrice.toLocaleString()}×${count})` : ""}
+                                            </div>
+                                          );
                                         }
                                       }
 
