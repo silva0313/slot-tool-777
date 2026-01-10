@@ -427,9 +427,9 @@
 
       function MasterConsole({
         dictionary,
-        onSaveDict,
         strategyData,
         resetMaster: initialResetMaster,
+        onSave,
         onClose,
       }) {
         const [tab, setTab] = useState("dict");
@@ -454,7 +454,11 @@
               }),
             });
             alert("全て保存しました");
-            onSaveDict(dictItems); // 状態同期
+            onSave({
+              dictionary: dictItems,
+              strategy: stData,
+              reset: rsMaster,
+            });
             onClose();
           } catch (e) {
             alert("保存エラー: " + e.message);
@@ -2704,12 +2708,14 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             {showMaster && (
               <MasterConsole
                 dictionary={dictionary}
-                onSaveDict={(nd) => {
-                  setDictionary(nd);
-                  loadAll();
-                }}
                 strategyData={strategyData}
                 resetMaster={resetMaster}
+                onSave={(data) => {
+                  setDictionary(data.dictionary);
+                  setStrategyData(data.strategy);
+                  setResetMaster(data.reset);
+                  loadAll(); // 永続化後の再同期
+                }}
                 onClose={() => setShowMaster(false)}
               />
             )}
@@ -2818,10 +2824,15 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
               </div>
               <div className="p-6 border-t border-white/5 space-y-3">
                 <button
-                  onClick={() => setShowMaster(true)}
-                  className="w-full bg-blue-600/10 border border-blue-600/20 py-4 rounded-xl text-blue-400 text-[10px] font-black tracking-widest"
+                  onClick={() => !loading && setShowMaster(true)}
+                  disabled={loading}
+                  className={`w-full py-4 rounded-xl text-[10px] font-black tracking-widest transition-all ${
+                    loading 
+                      ? "bg-slate-800 text-slate-600 cursor-not-allowed" 
+                      : "bg-blue-600/10 border border-blue-600/20 text-blue-400 hover:bg-blue-600/20"
+                  }`}
                 >
-                  📖 MASTER CONSOLE
+                  {loading ? "⌛ SYNCING DATA..." : "📖 MASTER CONSOLE"}
                 </button>
                 <button
                   onClick={() => setShowSecurity(true)}
