@@ -495,7 +495,7 @@
                           : "text-slate-500 hover:text-slate-700"
                       }`}
                     >
-                      {t === "dict" ? "機種辞書" : t === "strategy" ? "攻略・狙い目" : "朝一期待値"}
+                      {t === "dict" ? "機種辞書" : t === "strategy" ? "攻略・狙い目" : "朝一台"}
                     </button>
                   ))}
                 </div>
@@ -507,7 +507,7 @@
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-8 custom-scroll">
-                {tab === "dict" ? (
+                {tab === "dict" && (
                   <div className="space-y-4">
                     <button
                       onClick={() =>
@@ -612,7 +612,8 @@
                         </div>
                       ))}
                   </div>
-                ) : (
+                )}
+                {tab === "strategy" && (
                   <div className="space-y-4">
                     <button
                       onClick={() =>
@@ -696,10 +697,10 @@
                     <div className="flex justify-between items-center mb-8 bg-rose-50 p-6 rounded-[2rem] border border-rose-100">
                       <div>
                         <h3 className="text-sm font-black text-rose-900 italic">
-                          朝一・リセット期待値マスタ
+                          朝一台マスタ
                         </h3>
                         <p className="text-[10px] font-bold text-rose-400 mt-1 uppercase font-black">
-                          Keywords are used for multiplier detection (e.g. ×3)
+                          Keywords are used for multiplier detection (e.g. ×3). Dictionary keywords are also used automatically.
                         </p>
                       </div>
                       <button
@@ -3308,8 +3309,12 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                       
                                       // 1. 朝一リセ即時確定 (スプシ連動 + 倍数判定)
                                       const rm = resetMaster.find(m => {
-                                        const keywords = (m.キーワード || "").split(/[,，、]/).map(k => k.trim().toLowerCase()).filter(Boolean);
-                                        return keywords.some(k => line.includes(k));
+                                        // 辞書(dictionary)からもキーワードを探す
+                                        const dictEntry = dictionary.find(d => d.機種名 === m.機種名);
+                                        const dictKeywords = dictEntry ? (dictEntry.キーワード || "").split(/[,，、]/).map(k => k.trim().toLowerCase()).filter(Boolean) : [];
+                                        const masterKeywords = (m.キーワード || "").split(/[,，、]/).map(k => k.trim().toLowerCase()).filter(Boolean);
+                                        const allKeywords = [...new Set([...masterKeywords, ...dictKeywords])];
+                                        return allKeywords.some(k => line.includes(k));
                                       });
 
                                       if (rm) {
@@ -3319,7 +3324,16 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                         const count = multMatch ? parseInt(multMatch[1] || multMatch[2]) : 1;
                                         const resetEv = unitPrice * count;
 
-                                        if (log.ev !== resetEv) {
+                                        // G数に基づいたサジェスト(±5G精度検索)がある場合はそちらを優先するため、ここではサジェストしない
+                                        // 例: ラブ嬢リセ200g 等の拾い直し時は、0g~90gの定額300円提案を抑制する
+                                        const gMatch = line.match(/(\d+)\s*[gG]/);
+                                        const hasHistoricalData = gMatch && archive && archive.some(h => {
+                                          if (h.machine !== machine || !h.metadata) return false;
+                                          const hGMatch = String(h.details || "").toLowerCase().match(/(\d+)\s*[gG]/);
+                                          return hGMatch && Math.abs(parseInt(hGMatch[1]) - parseInt(gMatch[1])) <= 5;
+                                        });
+
+                                        if (log.ev !== resetEv && !hasHistoricalData) {
                                           return (
                                             <div
                                               onClick={() => {
