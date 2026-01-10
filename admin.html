@@ -438,28 +438,28 @@
         const [stData, setStData] = useState([...strategyData]);
         const [rsMaster, setRsMaster] = useState([...initialResetMaster]);
         const [loading, setLoading] = useState(false);
-        const saveAll = async () => {
+        const handleSave = async () => {
           setLoading(true);
           try {
+            const payload = {
+              action: "saveMasterAll",
+              data: {}
+            };
+            if (tab === "dict") payload.data.dictionary = dictItems;
+            if (tab === "strategy") payload.data.strategy = stData;
+            if (tab === "reset") payload.data.reset = rsMaster;
+
             await fetch(GAS_URL, {
               method: "POST",
               mode: "no-cors",
-              body: JSON.stringify({
-                action: "saveMasterAll",
-                data: {
-                  dictionary: dictItems,
-                  strategy: stData,
-                  reset: rsMaster,
-                },
-              }),
+              body: JSON.stringify(payload),
             });
-            alert("全て保存しました");
+            alert("保存しました");
             onSave({
-              dictionary: dictItems,
-              strategy: stData,
-              reset: rsMaster,
+              dictionary: tab === "dict" ? dictItems : dictionary,
+              strategy: tab === "strategy" ? stData : strategyData,
+              reset: tab === "reset" ? rsMaster : initialResetMaster,
             });
-            onClose();
           } catch (e) {
             alert("保存エラー: " + e.message);
           } finally {
@@ -797,11 +797,13 @@
               </div>
               <div className="p-8 border-t border-slate-100 bg-slate-50 shrink-0">
                 <button
-                  onClick={saveAll}
+                  onClick={handleSave}
                   disabled={loading}
-                  className="w-full bg-[#0076FF] py-5 rounded-[2rem] text-white font-black shadow-xl active:scale-95 transition-all uppercase tracking-widest text-xs"
+                  className={`w-full py-5 rounded-[2rem] text-white font-black shadow-xl active:scale-95 transition-all uppercase tracking-widest text-xs ${
+                    tab === "reset" ? "bg-rose-600" : "bg-[#0076FF]"
+                  }`}
                 >
-                  {loading ? "保存中..." : "マスターデータを一括保存"}
+                  {loading ? "保存中..." : `${tab === "dict" ? "機種辞書" : tab === "strategy" ? "攻略情報" : "朝一台マスタ"}を保存`}
                 </button>
               </div>
             </div>
