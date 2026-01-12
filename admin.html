@@ -3694,7 +3694,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                               Math.abs(
                                                 parseInt(hGMatch[1]) -
                                                   parseInt(gMatch[1])
-                                              ) <= 5
+                                              ) <= 10
                                             );
                                           });
 
@@ -3737,7 +3737,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                                             .match(/(\d+)\s*[gG]/);
                                           if (!hGMatch) return false;
                                           const hG = parseInt(hGMatch[1]);
-                                          return Math.abs(hG - currentG) <= 5;
+                                          return Math.abs(hG - currentG) <= 10;
                                         });
 
                                         if (matches.length >= 10) {
