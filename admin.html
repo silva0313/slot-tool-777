@@ -2528,8 +2528,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
           if (!report || !window.HOKUTO_MASTER) return;
           try {
             const master = window.HOKUTO_MASTER[mode] || {};
-            // 内容のSource of Truth: 再解析時は現在のtextareaの内容(details)を優先
-            const content = String(report.details || report.稼動内容 || "");
+            // 内容のSource of Truth: 再解析時は現在のtextareaの内容(details)を絶対優先
+            const content = String(report.details || "");
             const lines = content.split("\n");
             let results = lines
               .map((line) => {
@@ -2771,14 +2771,21 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                   ]) || fin.remaining,
                 memo: getField(report, ["備考", "memo", "備考欄"]),
                 details: getField(report, [
+                  "details",
                   "稼動内容",
                   "稼働内容",
-                  "details",
                   "内容",
                 ]),
                 imageUrls:
                   getField(report, ["画像URL", "imageUrls", "images"]) || "",
                 ev: existingEv,
+              });
+              // 競合を防ぐため不要なキーを削除（聖域ロジック外）
+              setEditData(prev => {
+                const n = { ...prev };
+                delete n["稼動内容"];
+                delete n["内容"];
+                return n;
               });
               if (report.ID) setSelectedId(report.ID);
               if (content) fetchAiNormalization(content);
@@ -2880,7 +2887,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             medal5: safeParseFinance(editData.medal5),
             pachi4: safeParseFinance(editData.pachi4),
             memo: editData.memo,
-            details: editData.稼動内容 || editData.details,
+            details: editData.details,
             imageUrls: editData.imageUrls, // 画像URLを保持
             metadata: JSON.stringify(
               logs.map((l) => ({ line: l.text, machine: l.machine, ev: l.ev }))
