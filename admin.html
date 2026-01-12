@@ -2528,8 +2528,8 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
           if (!report || !window.HOKUTO_MASTER) return;
           try {
             const master = window.HOKUTO_MASTER[mode] || {};
-            // 内容のSource of Truth: 再解析時は現在のtextareaの内容(details)を絶対優先
-            const content = String(report.details || "");
+            // 内容のSource of Truth: 編集後(details)を優先し、なければ初期データ(稼動内容)を使用
+            const content = String(getField(report, ["details", "稼動内容", "稼働内容", "内容"]));
             const lines = content.split("\n");
             let results = lines
               .map((line) => {
