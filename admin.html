@@ -291,7 +291,10 @@
               if (Array.isArray(meta)) {
                 // 文字列の部分一致または完全一致で検索
                 const match = meta.find(
-                  (m) => m && (m.line === line || line.includes(m.machine))
+                  (m) =>
+                    m &&
+                    m.machine && // 機種名が存在する場合のみ
+                    (m.line === line || line.includes(m.machine))
                 );
                 if (match) return { machine: match.machine, ev: match.ev };
               }
