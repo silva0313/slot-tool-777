@@ -31,21 +31,38 @@
         width: 320px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 50;
-        height: 100vh;
+        height: 100dvh;
         position: fixed;
         left: -320px;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
       }
 
       .sidebar.open {
         left: 0;
       }
 
+      .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 45;
+        display: none;
+      }
+
+      .sidebar.open + .sidebar-backdrop {
+        display: block;
+      }
+
       .main {
         margin-left: 0;
         padding: 2rem;
-        min-height: 100vh;
+        min-height: 100dvh;
         width: 100%;
         transition: margin-left 0.3s;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
       }
 
       @media (min-width: 1024px) {
@@ -133,6 +150,14 @@
 
       .animate-fadeIn {
         animation: fadeIn 0.3s ease-out forwards;
+      }
+
+      /* スクロール最適化クラス */
+      .scroll-container {
+        height: 100%;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
       }
     </style>
   </head>
@@ -2941,7 +2966,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
           );
 
         return (
-          <div className="flex h-screen overflow-hidden">
+          <div className="flex h-[100dvh] overflow-hidden bg-slate-50">
             {showMaster && (
               <MasterConsole
                 dictionary={dictionary}
@@ -2972,7 +2997,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
               <span>管理者アプリ</span>
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="text-2xl"
+                className="text-2xl p-2 active:scale-90 transition-all"
               >
                 ☰
               </button>
@@ -2982,7 +3007,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
             >
               <div className="p-8 border-b border-white/5 flex justify-between items-center bg-slate-900 sticky top-0 z-10">
                 <div>
-                  <h1 className="text-2xl font-black text-white italic">
+                  <h1 className="text-2xl font-black text-white italic text-glow">
                     承認待ちリスト
                   </h1>
                   <p className="text-[10px] text-slate-500 font-bold mt-2 uppercase tracking-widest opacity-50 font-mono">
@@ -3006,7 +3031,7 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                   最新Ver.に更新 🔄
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto custom-scroll p-4 space-y-2">
+              <div className="flex-1 scroll-container custom-scroll p-4 space-y-2">
                 {reports.map((r) => (
                   <div
                     key={r.ID}
@@ -3091,7 +3116,14 @@ LINEで共有できる「文章レポート」と「HTML画像レポート」の
                 </button>
               </div>
             </div>
-            <div className="main custom-scroll overflow-y-auto">
+            {/* モバイル用バックドロップ */}
+            {isSidebarOpen && (
+              <div 
+                className="sidebar-backdrop"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+            )}
+            <div className="main scroll-container">
               {editData && reports.find((r) => r.ID === selectedId) ? (
                 <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-20">
                   {/* A: 報告カード */}
