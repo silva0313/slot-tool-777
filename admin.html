@@ -252,32 +252,29 @@
           );
         };
 
-        // 各行を解析して期待値を算出する関数（引数でメタデータを受け取るように改善）
-        const analyzeLine = (line, metadata) => {
-          if (!line || !line.trim()) return null;
+        // 各行を解析して期待値を算出する関数（メタデータのインデックス連動対応）
+        const analyzeLine = (line, metadata, lineIndex) => {
+          if (!line) return null;
           const dict = window.LATEST_DICT || [];
           const master = window.HOKUTO_MASTER?.["設定１相当"] || {};
 
           // 【修正】メタデータ（事前に計算保存された内訳）があればそれを使う
+          let meta = [];
           if (metadata) {
             try {
-              let meta = null;
-              if (typeof metadata === "string" && metadata.trim()) {
-                if (
-                  metadata.trim().startsWith("[") ||
-                  metadata.trim().startsWith("{")
-                ) {
+              if (typeof metadata === "string") {
+                if (metadata.startsWith("[") || metadata.startsWith("{")) {
                   meta = JSON.parse(metadata);
                 } else {
-                  // 手入力形式のパース (例: 北斗:1000, 番長:2000)
+                  // 簡易フォーマット (機種:期待値)
                   meta = metadata
-                    .split(/[,，、]/)
-                    .map((pair) => {
-                      const [m, e] = pair.split(/[:：]/);
-                      return m && e
+                    .split("\n")
+                    .map((m) => {
+                      const parts = m.split(":");
+                      return parts.length >= 2
                         ? {
-                            machine: m.trim(),
-                            ev: parseInt(e.replace(/[^\d-]/g, "")) || 0,
+                            machine: parts[0].trim(),
+                            ev: parseInt(parts[1].replace(/[^\d-]/g, "")) || 0,
                             line: m.trim(),
                           }
                         : null;
@@ -289,13 +286,19 @@
               }
 
               if (Array.isArray(meta)) {
-                // 文字列の部分一致または完全一致で検索
-                const match = meta.find(
+                // 1. 文言でのマッチング
+                let match = meta.find(
                   (m) =>
                     m &&
-                    m.machine && // 機種名が存在する場合のみ
+                    m.machine &&
                     (m.line === line || line.includes(m.machine))
                 );
+
+                // 2. フォールバック: 行インデックスでのマッチング (スプシ直接編集対応)
+                if (!match && lineIndex !== undefined && meta[lineIndex]) {
+                  match = meta[lineIndex];
+                }
+
                 if (match) return { machine: match.machine, ev: match.ev };
               }
             } catch (e) {
@@ -460,7 +463,8 @@
                               .map((line, lIdx) => {
                                 const analysis = analyzeLine(
                                   line,
-                                  item.metadata
+                                  item.metadata,
+                                  lIdx // インデックスを渡す
                                 );
                                 return (
                                   <div
