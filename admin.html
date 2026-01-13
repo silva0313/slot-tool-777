@@ -1827,20 +1827,22 @@
               const currentIdx = sortedSameMember.findIndex(l => l.ID === item.ID);
               const prevItem = currentIdx > 0 ? sortedSameMember[currentIdx - 1] : null;
 
-              if (prevItem) {
-                const prevStoreInfo = storeMaster.find(s => s.name === (prevItem.店舗名 || "")) || storeInfo;
-                const pr20 = 1000 / (parseFloat(prevStoreInfo.m20) || 50);
-                const pr5 = 1000 / (parseFloat(prevStoreInfo.m5) || 200);
-                const pr4 = 1000 / (parseFloat(prevStoreInfo.p4) || 250);
-                const prevAsset = (parseFloat(prevItem.残投資金) || 0) + 
-                                  (parseFloat(prevItem["20スロ"]) || 0) * pr20 + 
-                                  (parseFloat(prevItem["5スロ"]) || 0) * pr5 + 
-                                  (parseFloat(prevItem["4パチ"]) || 0) * pr4;
-                p = currentAsset - prevAsset;
-              } else {
-                p = (parseFloat(item.換金額) || 0) - (parseFloat(item.本日投資) || 0);
+                if (prevItem) {
+                  const prevStoreInfo = storeMaster.find(s => s.name === (prevItem.店舗名 || "")) || storeInfo;
+                  const pr20 = 1000 / (parseFloat(prevStoreInfo.m20) || 50);
+                  const pr5 = 1000 / (parseFloat(prevStoreInfo.m5) || 200);
+                  const pr4 = 1000 / (parseFloat(prevStoreInfo.p4) || 250);
+                  const prevAsset = (parseFloat(prevItem.残投資金) || 0) + 
+                                    (parseFloat(prevItem["20スロ"]) || 0) * pr20 + 
+                                    (parseFloat(prevItem["5スロ"]) || 0) * pr5 + 
+                                    (parseFloat(prevItem["4パチ"]) || 0) * pr4;
+                  // シンプルに前回との総資産差分
+                  p = currentAsset - prevAsset;
+                } else {
+                  // 初回は換金 - 投資
+                  p = (parseFloat(item.換金額) || 0) - (parseFloat(item.本日投資) || 0);
+                }
               }
-            }
 
             const ev = parseFloat(item.期待値) || 0;
             const h = parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
