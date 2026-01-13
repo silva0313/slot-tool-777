@@ -1695,19 +1695,20 @@
           localStorage.getItem("kpi_prompt") ||
             `【タスク】
 スロット軍団のKPI分析・戦略レポートを作成してください。
-提供された稼働ログを「経営者」および「軍団長」の視点で解析し、収益の最大化に向けた具体的な提言を行ってください。
+提供された稼働ログを「経営者」および「軍団長」の視点で深く解析し、収益の最大化に向けた具体的な提言を行ってください。
 
 【分析のコア基準】
 - 店舗分析を「最優先」とする。店舗ごとの期待値時給（質）と実収支時給（結果）を比較すること。
-- 人物分析では、単純なランキングに加え「立ち回り貢献」を評価する。
+- 人物分析では、期待値の積み上げ（仕事量）と実収支の乖離に注目する。
+- 期待値は積めているのに実収支が著しく低い場合、「やめどきのミス（続行判断の甘さ）」「引き以外の人為的要因」の可能性を厳しく指摘すること。
 - 数値の背景にある「物語（なぜそうなったか）」をデータから推測すること。
 
 【組織・役割】
 - 運営（親）：矢萩、菊地
   ※打ち子へ台をパス（高期待値を譲渡）し、自らは「期待値の低い残り時間」や「保険台」を打つ。
   ※低時給は「打ち子の稼働機会を最大化させた証」として称賛すべき数値である。
-- 実行部隊（部下）：高宮、京平、前野、だいち、りゅう（現在休み中）
-  ※京平：土日専門のスペシャリスト。
+- 実行部隊（部下）：高宮、京平、前野、りゅう（現在休み中）
+  ※京平：土日専門
 
 【店舗属性】
 - メイン店舗（生命線）：野川、駒岡
@@ -1719,26 +1720,22 @@
 1. チームパフォーマンス（期待値 vs 実収支）の乖離分析。
 2. 店舗別QOL（時給）：どの店舗が最も「楽に、高く積めるか」を判定。
 3. 機種別分析：北斗の依存度と、他機種でのフォロー状況。
-4. 曜日・期間トレンド：野川の日曜起点分析、平日と土日の収支格差。
-5. 人物貢献度：誰が最も「高い期待値を奪取したか（期待値）」と「現場を支えたか（実収支）」。
+4. 曜日・期間トレンド：平日 vs 土日祝（祝日は土日と同様の稼働増とみなす）の収支格差。
+5. 人物貢献度 & リスク管理：
+   - 誰が最も「高い期待値を奪取したか（期待値）」と「現場を支えたか（実収支）」。
+   - 期待値と実収支が著しく乖離しているメンバーへの「やめどき」や「立ち回り」に関する具体的注意。
 
 【出力形式】
-
 1. LINE用レポート（即共有・コピペ用）
    - 見出しを「🚀」「📊」「📍」「👹」等の絵文字で強調。
    - 結論から書き、次に詳細。
+   - 分析結果に基づいた具体的なネクストアクション（攻めるべき店舗や注意すべき人物）を提示。
    - 最後に「軍団長への提言」を1行で記載。
-
-2. HTML画像レポート（スマホビジュアル版）
-   - max-width: 500px, 視認性の高いダーク／バイオレット系のグラデーション。
-   - 「今週のMVP店舗」と「今週のMVPメンバー」を大きく表示。
-   - 時給をバッジスタイルで強調。
 
 【実行プロセス】
 1. 提供データの統計（平均・最大値・乖離率）を算出。
 2. 背景事情（台パス等）を考慮したインサイトを言語化。
 3. LINEレポート生成。
-4. HTMLレポート生成。
 
 これで分析を開始してください。`
         );
@@ -1851,8 +1848,7 @@
                                        (parseFloat(prevItem["5スロ"]) || 0) * pr5 + 
                                        (parseFloat(prevItem["4パチ"]) || 0) * pr4;
                   
-                  // 純粋な台の実収支 (給料経費抜き / 資産変動ベース):
-                  // (現在総資産[メダル+残金] + 給料 + 手渡し) - (前回総資産[メダル+残金] + 投資 + 受取)
+                  // 純粋な台の実収支
                   p = (currentAsset + salary + handover) - (prevAssetVal + cash + received);
                 } else {
                   // 初回は 換金 - 投資
@@ -1863,7 +1859,6 @@
             const ev = parseFloat(item.期待値) || 0;
             const h = parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
             const name = item.名前 || item.報告者 || "不明";
-            const machine = item.機種 || (item.稼動内容 ? String(item.稼動内容).split(/[ \n]/)[0] : "不明");
             const dt = new Date(item.日付);
             const day = dt.getDay();
             const isWeekend = day === 0 || day === 6;
@@ -1871,21 +1866,43 @@
             kpi.total.profit += p;
             kpi.total.ev += ev;
             kpi.total.hours += h;
-            if (!kpi.members[name])
-              kpi.members[name] = { p: 0, ev: 0, h: 0 };
+
+            if (!kpi.members[name]) kpi.members[name] = { p: 0, ev: 0, h: 0 };
             kpi.members[name].p += p;
             kpi.members[name].ev += ev;
             kpi.members[name].h += h;
-            if (!kpi.stores[item.店舗名])
-              kpi.stores[item.店舗名] = { p: 0, ev: 0, h: 0 };
+
+            if (!kpi.stores[item.店舗名]) kpi.stores[item.店舗名] = { p: 0, ev: 0, h: 0 };
             kpi.stores[item.店舗名].p += p;
             kpi.stores[item.店舗名].ev += ev;
             kpi.stores[item.店舗名].h += h;
-            if (!kpi.machines[machine])
-              kpi.machines[machine] = { p: 0, ev: 0, h: 0 };
-            kpi.machines[machine].p += p;
-            kpi.machines[machine].ev += ev;
-            kpi.machines[machine].h += h;
+
+            // --- 機種名正規化 & 解析メタデータ対応 ---
+            const normalizeMachine = (m) => {
+              if (!m) return "不明";
+              // 「北斗」を含むが「転生」を含まないものだけを主要機種「スマスロ北斗の拳」として統合
+              if (m.includes("北斗") && !m.includes("転生")) return "スマスロ北斗の拳"; 
+              return m;
+            };
+
+            // 解析メタデータがある場合は詳細に集計
+            let meta = [];
+            try {
+              if (item.解析メタデータ) meta = JSON.parse(item.解析メタデータ);
+            } catch(e) {}
+
+            if (meta.length > 0) {
+              meta.forEach(m => {
+                const machineName = normalizeMachine(m.machine);
+                if (!kpi.machines[machineName]) kpi.machines[machineName] = { p: 0, ev: 0, h: 0 };
+                kpi.machines[machineName].ev += (parseFloat(m.ev) || 0);
+              });
+            } else {
+              // メタデータがない場合は行の頭から推測
+              const machine = normalizeMachine(item.機種 || (item.稼動内容 ? String(item.稼動内容).split(/[ \n]/)[0] : "不明"));
+              if (!kpi.machines[machine]) kpi.machines[machine] = { p: 0, ev: 0, h: 0 };
+              kpi.machines[machine].ev += ev;
+            }
 
             kpi.days[day].p += p;
             kpi.days[day].ev += ev;
@@ -1939,9 +1956,9 @@
               const h_real = s.p / (s.h || 1);
               const h_ev = s.ev / (s.h || 1);
               const gap = h_real - h_ev;
-              if (gap > 5000) return `・${n}: 【優良】期待値以上に実収支が出ており、台の質が極めて高い可能性があります。さらに攻める価値あり。`;
-              if (gap < -5000) return `・${n}: 【警戒】期待値欠損が激しいです。立ち回りや交換率、あるいは「引き」以外の要因を再点検してください。`;
-              return `・${n}: 期待値通りの安定稼働です。`;
+              if (gap > 2000) return `・${n}: 【優良】期待値以上に実収支が伸びており、質が高いです。`;
+              if (gap < -2000) return `・${n}: 【警戒】期待値欠損が目立ちます。交換率やムラを要確認。`;
+              return `・${n}: 期待値ベースで堅実な推移です。`;
             }).slice(0, 3).join("\n");
 
           const memberEfficiency = Object.entries(kpi.members)
@@ -2258,9 +2275,7 @@ ${Object.entries(kpi.members)
                                       {s.ev.toLocaleString()}
                                     </td>
                                     <td className="p-4 text-right">
-                                      {s.p > 0
-                                        ? `${s.p.toLocaleString()}`
-                                        : "-"}
+                                      {s.p.toLocaleString()}
                                     </td>
                                   </tr>
                                 ))}
