@@ -1695,11 +1695,22 @@
 
 これで分析を開始してください。`
         );
-        const [activeTab, setActiveTab] = React.useState("stats"); // stats, report, prompt
+        const [activeTab, setActiveTab] = React.useState("stats"); // stats, report, prompt, history
         const [reportResult, setReportResult] = React.useState({
           text: "",
           html: "",
         });
+        const [history, setHistory] = React.useState(() => {
+          try {
+            return JSON.parse(localStorage.getItem("kpi_report_history") || "[]");
+          } catch (e) {
+            return [];
+          }
+        });
+
+        React.useEffect(() => {
+          localStorage.setItem("kpi_report_history", JSON.stringify(history));
+        }, [history]);
 
         React.useEffect(() => {
           const today = new Date();
@@ -1810,15 +1821,35 @@
           const topStore = Object.entries(kpi.stores).sort(
             (a, b) => b[1].p / (b[1].h || 1) - a[1].p / (a[1].h || 1)
           )[0];
-          const lineText = `【KPI分析レポート】🚀\n期間: ${range.start} 〜 ${
-            range.end
-          }\n(前期間比: ${
-            pChange > 0 ? "+" : ""
-          }${pChange.toLocaleString()}円)\n━━━━━━━━━━━━━━\n📊 チーム全体成績\n・総期待値: ${kpi.total.ev.toLocaleString()}円\n・実収支: ${kpi.total.profit.toLocaleString()}円\n・総稼働: ${
-            kpi.total.hours
-          }h\n・平均時給: ${Math.round(
-            kpi.total.profit / (kpi.total.hours || 1)
-          ).toLocaleString()}円\n\n🏆 メンバー別分析 (期待値順)\n${Object.entries(kpi.members)
+
+          // --- 戦略的インサイト生成 (高精度化) ---
+          const storeStrategy = Object.entries(kpi.stores)
+            .map(([n, s]) => {
+              const h_real = s.p / (s.h || 1);
+              const h_ev = s.ev / (s.h || 1);
+              const gap = h_real - h_ev;
+              if (gap > 5000) return `・${n}: 【優良】期待値以上に実収支が出ており、台の質が極めて高い可能性があります。さらに攻める価値あり。`;
+              if (gap < -5000) return `・${n}: 【警戒】期待値欠損が激しいです。立ち回りや交換率、あるいは「引き」以外の要因を再点検してください。`;
+              return `・${n}: 期待値通りの安定稼働です。`;
+            }).slice(0, 3).join("\n");
+
+          const memberEfficiency = Object.entries(kpi.members)
+            .sort((a, b) => (b[1].ev / (b[1].h || 1)) - (a[1].ev / (a[1].h || 1)))
+            .map(([n, s], i) => `${i + 1}位 ${n} (${Math.round(s.ev / (s.h || 1)).toLocaleString()}円/h)`)
+            .slice(0, 3).join(" > ");
+
+          const lineText = `【KPI分析レポート】🚀
+期間: ${range.start} 〜 ${range.end}
+(前期間比: ${pChange > 0 ? "+" : ""}${pChange.toLocaleString()}円)
+━━━━━━━━━━━━━━
+📊 チーム全体成績
+・総期待値: ${kpi.total.ev.toLocaleString()}円
+・実収支: ${kpi.total.profit.toLocaleString()}円
+・総稼働: ${kpi.total.hours}h
+・平均時給: ${Math.round(kpi.total.profit / (kpi.total.hours || 1)).toLocaleString()}円
+
+🏆 メンバー別分析 (期待値順)
+${Object.entries(kpi.members)
             .sort((a, b) => b[1].ev - a[1].ev)
             .map(([n, s], i) => {
               const hourly = Math.round(s.p / (s.h || 1));
@@ -1852,13 +1883,26 @@
                   (kpi.machines["スマスロ北斗の拳"].ev / kpi.total.ev) * 100
                 )
               : 0
-          }%\n\n💡 重要な発見・提言\n・店舗「${
+          }%\n\n💡 戦略的提言 (インサイト)\n【店舗戦略】\n${storeStrategy}\n\n【期待値獲得効率ランキング】\n${memberEfficiency}\n\n📍店舗「${
             topStore?.[0] || "不明"
-          }」が高い期待値効率を維持しています。\n・${
-            bestDay?.d || "特定"
-          }曜日の稼働集約により、さらなる収支向上が見込めるデータが出ています。`;
+          }」を基軸とした${bestDay?.d || "特定"}曜日の集中稼働を推奨します。`;
 
-          setReportResult({ text: lineText, html: "" });
+          const result = { text: lineText, html: "" };
+          setReportResult(result);
+
+          // 履歴に保存
+          const newHistoryItem = {
+            id: Date.now(),
+            date: new Date().toLocaleString("ja-JP"),
+            range: `${range.start}〜${range.end}`,
+            text: lineText,
+            summary: {
+              profit: kpi.total.profit,
+              ev: kpi.total.ev
+            }
+          };
+          setHistory(prev => [newHistoryItem, ...prev].slice(0, 50)); // 最大50件
+
           setActiveTab("report");
         };
         const filtered = React.useMemo(() => {
@@ -1967,7 +2011,7 @@
               </div>
 
               <div className="flex bg-slate-100 p-1 shrink-0">
-                {["stats", "report", "prompt"].map((t) => (
+                {["stats", "report", "history", "prompt"].map((t) => (
                   <button
                     key={t}
                     onClick={() => setActiveTab(t)}
@@ -1981,6 +2025,8 @@
                       ? "Dashboard 📊"
                       : t === "report"
                       ? "Report 📝"
+                      : t === "history"
+                      ? "History ⌛"
                       : "Prompt ⚙️"}
                   </button>
                 ))}
@@ -2224,6 +2270,77 @@
                     <p className="text-center text-[10px] font-black text-slate-400 uppercase italic">
                       ※このグラフィックエリアをスクショして共有してください
                     </p>
+                  </div>
+                )}
+
+                {activeTab === "history" && (
+                  <div className="p-10 space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-black italic uppercase">
+                        Report History
+                      </h3>
+                      {history.length > 0 && (
+                        <button
+                          onClick={() => {
+                            if (confirm("全ての履歴を削除しますか？"))
+                              setHistory([]);
+                          }}
+                          className="text-rose-500 font-black text-[10px] uppercase border-b-2 border-rose-500"
+                        >
+                          Clear All History
+                        </button>
+                      )}
+                    </div>
+                    {history.length === 0 ? (
+                      <div className="text-center py-20 text-slate-300 font-black italic">
+                        No history found.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4">
+                        {history.map((h) => (
+                          <div
+                            key={h.id}
+                            className="bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-all flex justify-between items-center group"
+                          >
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-black text-[#0076FF]">
+                                {h.date}
+                              </div>
+                              <div className="text-sm font-black text-slate-700">
+                                {h.range}
+                              </div>
+                              <div className="text-[10px] font-bold text-slate-400">
+                                Profit: {h.summary.profit.toLocaleString()}円 /
+                                EV: {h.summary.ev.toLocaleString()}円
+                              </div>
+                            </div>
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => {
+                                  setReportResult({ text: h.text, html: "" });
+                                  setActiveTab("report");
+                                }}
+                                className="bg-slate-900 text-white px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest"
+                              >
+                                View
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm("この履歴を削除しますか？")) {
+                                    setHistory((prev) =>
+                                      prev.filter((i) => i.id !== h.id)
+                                    );
+                                  }
+                                }}
+                                className="bg-slate-100 text-slate-400 hover:text-rose-500 px-5 py-2 rounded-xl text-[9px] font-black uppercase transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
