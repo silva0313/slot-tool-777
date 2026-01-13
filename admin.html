@@ -1915,128 +1915,81 @@
           return kpi;
         };
 
-        const generateReport = () => {
-          const kpi = calculateKPIs(filtered);
+        const generateReport = async () => {
+          setLoading(true);
+          try {
+            const kpi = calculateKPIs(filtered);
+            
+            // 期間比較用データの準備
+            const sDate = new Date(range.start);
+            const eDate = new Date(range.end);
+            const diffDays = Math.ceil((eDate - sDate) / (1000 * 60 * 60 * 24)) + 1;
+            const prevStart = new Date(sDate);
+            prevStart.setDate(sDate.getDate() - diffDays);
+            const prevEnd = new Date(sDate);
+            prevEnd.setDate(sDate.getDate() - 1);
+            const prevFiltered = data.filter((d) => {
+              const dt = new Date(d.日付);
+              return dt >= prevStart && dt <= prevEnd;
+            });
+            const prevKpi = calculateKPIs(prevFiltered);
 
-          // 期間比較ロジック (直前の同期間)
-          const sDate = new Date(range.start);
-          const eDate = new Date(range.end);
-          const diffDays =
-            Math.ceil((eDate - sDate) / (1000 * 60 * 60 * 24)) + 1;
-          const prevStart = new Date(sDate);
-          prevStart.setDate(sDate.getDate() - diffDays);
-          const prevEnd = new Date(sDate);
-          prevEnd.setDate(sDate.getDate() - 1);
+            // AIに送信する統計情報の要約
+            const statsSummary = {
+              period: { start: range.start, end: range.end, days: diffDays },
+              total: kpi.total,
+              comparison_prev_period: {
+                profit_diff: kpi.total.profit - prevKpi.total.profit,
+                ev_diff: kpi.total.ev - prevKpi.total.ev
+              },
+              members: kpi.members,
+              stores: kpi.stores,
+              machines: kpi.machines,
+              day_of_week: kpi.days.map((s, i) => ({ 
+                day: ["日", "月", "火", "水", "木", "金", "土"][i], 
+                rate: Math.round(s.p / (s.h || 1)) 
+              })).filter(s => s.rate !== 0),
+              type_stats: kpi.types
+            };
 
-          const prevFiltered = data.filter((d) => {
-            const dt = new Date(d.日付);
-            return dt >= prevStart && dt <= prevEnd;
-          });
-          const prevKpi = calculateKPIs(prevFiltered);
-          const pChange = kpi.total.profit - prevKpi.total.profit;
+            // GASのAI解析APIを呼び出し
+            const res = await fetch(GAS_URL, {
+              method: "POST",
+              body: JSON.stringify({
+                action: "runKPIAnalysis",
+                data: {
+                  prompt: prompt,
+                  stats: statsSummary
+                }
+              })
+            });
+            
+            const json = await res.json();
+            if (json.status !== "success") throw new Error(json.result || "AI解析に失敗しました");
 
-          // 曜日と言語の辞書
-          const dayJP = ["日", "月", "火", "水", "木", "金", "土"];
-          const dayStats = kpi.days
-            .map((s, i) => ({
-              d: dayJP[i],
-              h: s.h,
-              rate: Math.round(s.p / (s.h || 1)),
-            }))
-            .filter((s) => s.h > 0);
-          const bestDay = dayStats.sort((a, b) => b.rate - a.rate)[0];
+            const aiText = json.result;
+            const result = { text: aiText, html: "" };
+            setReportResult(result);
 
-          const topStore = Object.entries(kpi.stores).sort(
-            (a, b) => b[1].p / (b[1].h || 1) - a[1].p / (a[1].h || 1)
-          )[0];
-
-          // --- 戦略的インサイト生成 (高精度化) ---
-          const storeStrategy = Object.entries(kpi.stores)
-            .map(([n, s]) => {
-              const h_real = s.p / (s.h || 1);
-              const h_ev = s.ev / (s.h || 1);
-              const gap = h_real - h_ev;
-              if (gap > 2000) return `・${n}: 【優良】期待値以上に実収支が伸びており、質が高いです。`;
-              if (gap < -2000) return `・${n}: 【警戒】期待値欠損が目立ちます。交換率やムラを要確認。`;
-              return `・${n}: 期待値ベースで堅実な推移です。`;
-            }).slice(0, 3).join("\n");
-
-          const memberEfficiency = Object.entries(kpi.members)
-            .sort((a, b) => (b[1].ev / (b[1].h || 1)) - (a[1].ev / (a[1].h || 1)))
-            .map(([n, s], i) => `${i + 1}位 ${n} (${Math.round(s.ev / (s.h || 1)).toLocaleString()}円/h)`)
-            .slice(0, 3).join(" > ");
-
-          let filterHeader = "";
-          if (selectedMember || selectedStore) {
-            filterHeader = `\n(絞り込み: ${selectedMember || "全員"} / ${selectedStore || "全店舗"})`;
+            // 履歴に保存
+            const newHistoryItem = {
+              id: Date.now(),
+              date: new Date().toLocaleString("ja-JP"),
+              range: `${range.start}〜${range.end}`,
+              text: aiText,
+              summary: {
+                profit: kpi.total.profit,
+                ev: kpi.total.ev
+              }
+            };
+            setHistory(prev => [newHistoryItem, ...prev].slice(0, 50));
+            setActiveTab("report");
+          } catch (e) {
+            console.error("AI Analysis Error:", e);
+            alert("AI解析中にエラーが発生しました: " + e.message);
+          } finally {
+            setLoading(false);
           }
-
-          const lineText = `【KPI分析レポート】🚀${filterHeader}
-期間: ${range.start} 〜 ${range.end}
-(前期間比: ${pChange > 0 ? "+" : ""}${pChange.toLocaleString()}円)
-━━━━━━━━━━━━━━
-📊 チーム全体成績
-・総期待値: ${kpi.total.ev.toLocaleString()}円
-・実収支: ${kpi.total.profit.toLocaleString()}円
-・総稼働: ${kpi.total.hours}h
-・平均時給: ${Math.round(kpi.total.profit / (kpi.total.hours || 1)).toLocaleString()}円
-
-🏆 メンバー別分析 (期待値順)
-${Object.entries(kpi.members)
-            .sort((a, b) => b[1].ev - a[1].ev)
-            .map(([n, s], i) => {
-              const hourly = Math.round(s.p / (s.h || 1));
-              return `${i + 1}. ${n}: ${s.ev.toLocaleString()}円 (${
-                s.p > 0 ? s.p.toLocaleString() + "円" : "--"
-              } / ${s.h}h / ${hourly.toLocaleString()}円/h)`;
-            })
-            .join("\n")}\n\n※管理者は「台パス」により期待値時給が低く出る傾向があります。\n\n📍 店舗別時給分析\n${Object.entries(
-            kpi.stores
-          )
-            .sort((a, b) => b[1].p / (b[1].h || 1) - a[1].p / (a[1].h || 1))
-            .map(
-              ([n, s]) =>
-                `・${n}: ${Math.round(s.p / (s.h || 1)).toLocaleString()}円/h`
-            )
-            .join(
-              "\n"
-            )}\n特に「野川」は日曜基準のおすすめ週間の影響を注視する必要があります。\n\n📅 トレンド分析\n・最高時給曜日: ${
-            bestDay?.d || "-"
-          }曜日 (${(
-            bestDay?.rate || 0
-          ).toLocaleString()}円/h)\n・平日時給: ${Math.round(
-            kpi.types.weekday.p / (kpi.types.weekday.h || 1)
-          ).toLocaleString()}円/h\n・土日時給: ${Math.round(
-            kpi.types.weekend.p / (kpi.types.weekend.h || 1)
-          ).toLocaleString()}円/h\n\n👹 北斗重要分析\n・期待値累計: ${(
-            kpi.machines["スマスロ北斗の拳"]?.ev || 0
-          ).toLocaleString()}円\n・稼働貢献: ${
-            kpi.machines["スマスロ北斗の拳"]
-              ? Math.round(
-                  (kpi.machines["スマスロ北斗の拳"].ev / kpi.total.ev) * 100
-                )
-              : 0
-          }%\n\n💡 戦略的提言 (インサイト)\n【店舗戦略】\n${storeStrategy}\n\n【期待値獲得効率ランキング】\n${memberEfficiency}\n\n📍店舗「${
-            topStore?.[0] || "不明"
-          }」を基軸とした${bestDay?.d || "特定"}曜日の集中稼働を推奨します。`;
-
-          const result = { text: lineText, html: "" };
-          setReportResult(result);
-
-          // 履歴に保存
-          const newHistoryItem = {
-            id: Date.now(),
-            date: new Date().toLocaleString("ja-JP"),
-            range: `${range.start}〜${range.end}`,
-            text: lineText,
-            summary: {
-              profit: kpi.total.profit,
-              ev: kpi.total.ev
-            }
-          };
-          setHistory(prev => [newHistoryItem, ...prev].slice(0, 50)); // 最大50件
-
-          setActiveTab("report");
         };
         const memberList = React.useMemo(() => {
           const members = new Set();
