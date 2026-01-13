@@ -1750,9 +1750,11 @@
             },
           };
           items.forEach((d) => {
-            const p = parseFloat(d.実収支) || 0;
+            const p = parseFloat(d.実収支) || (parseFloat(d.換金額) || 0) - (parseFloat(d.本日投資) || 0);
             const ev = parseFloat(d.期待値) || 0;
-            const h = parseFloat(d.時間) || 0;
+            const h = parseFloat(d.稼働時間) || parseFloat(d.時間) || 0;
+            const name = d.名前 || d.報告者 || "不明";
+            const machine = d.機種 || (d.稼動内容 ? String(d.稼動内容).split(/[ \n]/)[0] : "不明");
             const dt = new Date(d.日付);
             const day = dt.getDay();
             const isWeekend = day === 0 || day === 6;
@@ -1760,21 +1762,21 @@
             kpi.total.profit += p;
             kpi.total.ev += ev;
             kpi.total.hours += h;
-            if (!kpi.members[d.報告者])
-              kpi.members[d.報告者] = { p: 0, ev: 0, h: 0 };
-            kpi.members[d.報告者].p += p;
-            kpi.members[d.報告者].ev += ev;
-            kpi.members[d.報告者].h += h;
+            if (!kpi.members[name])
+              kpi.members[name] = { p: 0, ev: 0, h: 0 };
+            kpi.members[name].p += p;
+            kpi.members[name].ev += ev;
+            kpi.members[name].h += h;
             if (!kpi.stores[d.店舗名])
               kpi.stores[d.店舗名] = { p: 0, ev: 0, h: 0 };
             kpi.stores[d.店舗名].p += p;
             kpi.stores[d.店舗名].ev += ev;
             kpi.stores[d.店舗名].h += h;
-            if (!kpi.machines[d.機種])
-              kpi.machines[d.機種] = { p: 0, ev: 0, h: 0 };
-            kpi.machines[d.機種].p += p;
-            kpi.machines[d.機種].ev += ev;
-            kpi.machines[d.機種].h += h;
+            if (!kpi.machines[machine])
+              kpi.machines[machine] = { p: 0, ev: 0, h: 0 };
+            kpi.machines[machine].p += p;
+            kpi.machines[machine].ev += ev;
+            kpi.machines[machine].h += h;
 
             kpi.days[day].p += p;
             kpi.days[day].ev += ev;
@@ -1923,17 +1925,18 @@ ${Object.entries(kpi.members)
             store: {},
           };
           filtered.forEach((d) => {
-            const p = parseFloat(d.実収支) || 0;
+            const p = parseFloat(d.実収支) || (parseFloat(d.換金額) || 0) - (parseFloat(d.本日投資) || 0);
             const ev = parseFloat(d.期待値) || 0;
-            const h = parseFloat(d.時間) || 0;
+            const h = parseFloat(d.稼働時間) || parseFloat(d.時間) || 0;
+            const name = d.名前 || d.報告者 || "不明";
             res.totalProfit += p;
             res.totalEv += ev;
             res.totalHours += h;
-            if (!res.person[d.報告者])
-              res.person[d.報告者] = { p: 0, ev: 0, h: 0 };
-            res.person[d.報告者].p += p;
-            res.person[d.報告者].ev += ev;
-            res.person[d.報告者].h += h;
+            if (!res.person[name])
+              res.person[name] = { p: 0, ev: 0, h: 0 };
+            res.person[name].p += p;
+            res.person[name].ev += ev;
+            res.person[name].h += h;
             if (!res.store[d.店舗名])
               res.store[d.店舗名] = { p: 0, ev: 0, h: 0 };
             res.store[d.店舗名].p += p;
@@ -1965,7 +1968,7 @@ ${Object.entries(kpi.members)
             <div className="bg-white rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden text-slate-900">
               <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
                 <h2 className="text-2xl font-black italic uppercase">
-                  KPI Analytics
+                  KPIアナリティクス
                 </h2>
                 <button
                   onClick={onClose}
@@ -1977,7 +1980,7 @@ ${Object.entries(kpi.members)
               <div className="p-8 bg-slate-50 border-b border-slate-100 flex flex-wrap gap-4 items-end shrink-0">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2">
-                    Start Date
+                    開始日
                   </label>
                   <input
                     type="date"
@@ -1990,7 +1993,7 @@ ${Object.entries(kpi.members)
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-2">
-                    End Date
+                    終了日
                   </label>
                   <input
                     type="date"
@@ -2006,7 +2009,7 @@ ${Object.entries(kpi.members)
                   disabled={loading}
                   className="bg-[#0076FF] text-white px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg disabled:opacity-50"
                 >
-                  {loading ? "Loading..." : "Analyze Data"}
+                  {loading ? "読み込み中..." : "データを解析する"}
                 </button>
               </div>
 
@@ -2022,12 +2025,12 @@ ${Object.entries(kpi.members)
                     }`}
                   >
                     {t === "stats"
-                      ? "Dashboard 📊"
+                      ? "ダッシュボード 📊"
                       : t === "report"
-                      ? "Report 📝"
+                      ? "レポート出力 📝"
                       : t === "history"
-                      ? "History ⌛"
-                      : "Prompt ⚙️"}
+                      ? "分析履歴 ⌛"
+                      : "プロンプト設定 ⚙️"}
                   </button>
                 ))}
               </div>
@@ -2038,7 +2041,7 @@ ${Object.entries(kpi.members)
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl">
                         <div className="text-[10px] font-black opacity-40 uppercase">
-                          Total Profit
+                          総実収支
                         </div>
                         <div className="text-4xl font-black italic">
                           {stats.totalProfit.toLocaleString()}
@@ -2047,7 +2050,7 @@ ${Object.entries(kpi.members)
                       </div>
                       <div className="bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-sm">
                         <div className="text-[10px] font-black text-slate-400 uppercase">
-                          Total EV
+                          総期待値
                         </div>
                         <div className="text-4xl font-black italic text-[#0076FF]">
                           {stats.totalEv.toLocaleString()}
@@ -2056,7 +2059,7 @@ ${Object.entries(kpi.members)
                       </div>
                       <div className="bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-sm">
                         <div className="text-[10px] font-black text-slate-400 uppercase">
-                          Avg Hourly
+                          平均実時給
                         </div>
                         <div className="text-4xl font-black italic text-emerald-600">
                           {Math.round(
@@ -2069,15 +2072,15 @@ ${Object.entries(kpi.members)
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                       <div className="space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-widest px-2">
-                          Member Ranking (EV)
+                          メンバー別期待値ランキング
                         </h3>
                         <div className="bg-slate-50 border border-slate-100 rounded-[2.5rem] overflow-hidden">
                           <table className="w-full text-xs">
                             <thead className="bg-slate-100 text-[10px] font-black text-slate-400 uppercase">
                               <tr>
-                                <th className="p-4 text-left">Name</th>
-                                <th className="p-4 text-right">EV</th>
-                                <th className="p-4 text-right">Profit</th>
+                                <th className="p-4 text-left">名前</th>
+                                <th className="p-4 text-right">期待値</th>
+                                <th className="p-4 text-right">実収支</th>
                               </tr>
                             </thead>
                             <tbody className="font-bold">
@@ -2105,15 +2108,15 @@ ${Object.entries(kpi.members)
                       </div>
                       <div className="space-y-4">
                         <h3 className="text-xs font-black uppercase tracking-widest px-2">
-                          Store Ranking (Profit)
+                          店舗別実収支ランキング
                         </h3>
                         <div className="bg-slate-50 border border-slate-100 rounded-[2.5rem] overflow-hidden">
                           <table className="w-full text-xs">
                             <thead className="bg-slate-100 text-[10px] font-black text-slate-400 uppercase">
                               <tr>
-                                <th className="p-4 text-left">Store</th>
-                                <th className="p-4 text-right">Hourly</th>
-                                <th className="p-4 text-right">Total P</th>
+                                <th className="p-4 text-left">店舗</th>
+                                <th className="p-4 text-right">時給</th>
+                                <th className="p-4 text-right">総益</th>
                               </tr>
                             </thead>
                             <tbody className="font-bold">
@@ -2211,7 +2214,7 @@ ${Object.entries(kpi.members)
                         <div className="grid grid-cols-2 gap-4 text-center">
                           <div className="bg-white/10 p-6 rounded-3xl border border-white/5">
                             <div className="text-[9px] font-black opacity-50 uppercase mb-2">
-                              Total EV
+                              総期待値
                             </div>
                             <div className="text-2xl font-black text-[#00E0FF]">
                               {stats.totalEv.toLocaleString()}
@@ -2219,7 +2222,7 @@ ${Object.entries(kpi.members)
                           </div>
                           <div className="bg-white/10 p-6 rounded-3xl border border-white/5">
                             <div className="text-[9px] font-black opacity-50 uppercase mb-2">
-                              Total Profit
+                              総実収支
                             </div>
                             <div className="text-2xl font-black text-[#00FF85]">
                               {stats.totalProfit.toLocaleString()}
@@ -2228,9 +2231,9 @@ ${Object.entries(kpi.members)
                         </div>
                         <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5 backdrop-blur-md">
                           <div className="text-xs font-black mb-4 flex items-center justify-between">
-                            <span>STORE HOURLY RANKING</span>
+                            <span>店舗別時給ランキング</span>
                             <span className="text-[10px] opacity-40 italic">
-                              Sorted by Real-Time ROI
+                              実収支ROI順
                             </span>
                           </div>
                           <div className="space-y-3">
