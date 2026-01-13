@@ -196,8 +196,9 @@
       };
 
       function ArchiveLibrary({ archive, onClose }) {
-        const [nameFilter, setNameFilter] = useState("");
-        const [storeFilter, setStoreFilter] = useState("");
+        const [search, setSearch] = React.useState("");
+        const [nameFilter, setNameFilter] = React.useState("");
+        const [storeFilter, setStoreFilter] = React.useState("");
 
         const nameList = React.useMemo(() => {
           const names = new Set();
