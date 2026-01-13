@@ -1965,7 +1965,10 @@
             });
             
             const json = await res.json();
-            if (json.status !== "success") throw new Error(json.result || "AI解析に失敗しました");
+            if (json.status !== "success") {
+              const errorMsg = json.message || json.result || "AI解析に失敗しました";
+              throw new Error(errorMsg);
+            }
 
             const aiText = json.result;
             const result = { text: aiText, html: "" };
@@ -1986,7 +1989,7 @@
             setActiveTab("report");
           } catch (e) {
             console.error("AI Analysis Error:", e);
-            alert("AI解析中にエラーが発生しました: " + e.message);
+            alert("⚠️ AI解析エラーが発生しました:\n" + e.message + "\n\n(クォータ制限、またはモデルの一次的エラーの可能性があります)");
           } finally {
             setLoading(false);
           }
@@ -2283,7 +2286,7 @@
                         onClick={generateReport}
                         className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] font-black shadow-2xl hover:scale-105 transition-all text-xs tracking-widest"
                       >
-                        高度分析レポートを生成してLINEへ
+                        レポートを生成
                       </button>
                     </div>
                   </div>
