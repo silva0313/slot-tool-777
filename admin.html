@@ -1749,13 +1749,55 @@
               weekend: { p: 0, ev: 0, h: 0 },
             },
           };
-          items.forEach((d) => {
-            const p = parseFloat(d.実収支) || (parseFloat(d.換金額) || 0) - (parseFloat(d.本日投資) || 0);
-            const ev = parseFloat(d.期待値) || 0;
-            const h = parseFloat(d.稼働時間) || parseFloat(d.時間) || 0;
-            const name = d.名前 || d.報告者 || "不明";
-            const machine = d.機種 || (d.稼動内容 ? String(d.稼動内容).split(/[ \n]/)[0] : "不明");
-            const dt = new Date(d.日付);
+
+          // 店舗換金率情報の取得 (店舗マスタから)
+          const storeMaster = JSON.parse(localStorage.getItem("kpi_store_master") || "[]");
+
+          items.forEach((item) => {
+            // --- 優先順位: 1. 前回比較実収支列 (永続化データ), 2. 資産推移計算, 3. 換金-投資 ---
+            let p = parseFloat(item.前回比較実収支) || 0;
+            
+            if (p === 0) {
+              // 永続化データがない場合のみ動的に算出
+              const name = item.名前 || item.報告者 || "不明";
+              const storeName = item.店舗名 || "";
+              const storeInfo = storeMaster.find(s => s.name === storeName) || { m20: 50, m5: 200, p4: 250 };
+              const r20 = 1000 / (parseFloat(storeInfo.m20) || 50);
+              const r5 = 1000 / (parseFloat(storeInfo.m5) || 200);
+              const r4 = 1000 / (parseFloat(storeInfo.p4) || 250);
+
+              const currentAsset = (parseFloat(item.残投資金) || 0) + 
+                                   (parseFloat(item["20スロ"]) || 0) * r20 + 
+                                   (parseFloat(item["5スロ"]) || 0) * r5 + 
+                                   (parseFloat(item["4パチ"]) || 0) * r4;
+              
+              // 同一メンバーの前回資産を探す (フィルタリング前の全データから)
+              const sortedSameMember = data
+                .filter(l => (l.名前 || l.報告者) === name)
+                .sort((a, b) => new Date(a.日付) - new Date(b.日付));
+              const currentIdx = sortedSameMember.findIndex(l => l.ID === item.ID);
+              const prevItem = currentIdx > 0 ? sortedSameMember[currentIdx - 1] : null;
+
+              if (prevItem) {
+                const prevStoreInfo = storeMaster.find(s => s.name === (prevItem.店舗名 || "")) || storeInfo;
+                const pr20 = 1000 / (parseFloat(prevStoreInfo.m20) || 50);
+                const pr5 = 1000 / (parseFloat(prevStoreInfo.m5) || 200);
+                const pr4 = 1000 / (parseFloat(prevStoreInfo.p4) || 250);
+                const prevAsset = (parseFloat(prevItem.残投資金) || 0) + 
+                                  (parseFloat(prevItem["20スロ"]) || 0) * pr20 + 
+                                  (parseFloat(prevItem["5スロ"]) || 0) * pr5 + 
+                                  (parseFloat(prevItem["4パチ"]) || 0) * pr4;
+                p = currentAsset - prevAsset;
+              } else {
+                p = (parseFloat(item.換金額) || 0) - (parseFloat(item.本日投資) || 0);
+              }
+            }
+
+            const ev = parseFloat(item.期待値) || 0;
+            const h = parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
+            const name = item.名前 || item.報告者 || "不明";
+            const machine = item.機種 || (item.稼動内容 ? String(item.稼動内容).split(/[ \n]/)[0] : "不明");
+            const dt = new Date(item.日付);
             const day = dt.getDay();
             const isWeekend = day === 0 || day === 6;
 
@@ -1767,11 +1809,11 @@
             kpi.members[name].p += p;
             kpi.members[name].ev += ev;
             kpi.members[name].h += h;
-            if (!kpi.stores[d.店舗名])
-              kpi.stores[d.店舗名] = { p: 0, ev: 0, h: 0 };
-            kpi.stores[d.店舗名].p += p;
-            kpi.stores[d.店舗名].ev += ev;
-            kpi.stores[d.店舗名].h += h;
+            if (!kpi.stores[item.店舗名])
+              kpi.stores[item.店舗名] = { p: 0, ev: 0, h: 0 };
+            kpi.stores[item.店舗名].p += p;
+            kpi.stores[item.店舗名].ev += ev;
+            kpi.stores[item.店舗名].h += h;
             if (!kpi.machines[machine])
               kpi.machines[machine] = { p: 0, ev: 0, h: 0 };
             kpi.machines[machine].p += p;
@@ -1917,34 +1959,16 @@ ${Object.entries(kpi.members)
           });
         }, [data, range]);
         const stats = React.useMemo(() => {
-          const res = {
-            totalProfit: 0,
-            totalEv: 0,
-            totalHours: 0,
-            person: {},
-            store: {},
+          // calculateKPIs を利用して stats を生成 (ロック同期させるため)
+          const kpi = calculateKPIs(filtered);
+          return {
+            totalProfit: kpi.total.profit,
+            totalEv: kpi.total.ev,
+            totalHours: kpi.total.hours,
+            person: kpi.members,
+            store: kpi.stores,
           };
-          filtered.forEach((d) => {
-            const p = parseFloat(d.実収支) || (parseFloat(d.換金額) || 0) - (parseFloat(d.本日投資) || 0);
-            const ev = parseFloat(d.期待値) || 0;
-            const h = parseFloat(d.稼働時間) || parseFloat(d.時間) || 0;
-            const name = d.名前 || d.報告者 || "不明";
-            res.totalProfit += p;
-            res.totalEv += ev;
-            res.totalHours += h;
-            if (!res.person[name])
-              res.person[name] = { p: 0, ev: 0, h: 0 };
-            res.person[name].p += p;
-            res.person[name].ev += ev;
-            res.person[name].h += h;
-            if (!res.store[d.店舗名])
-              res.store[d.店舗名] = { p: 0, ev: 0, h: 0 };
-            res.store[d.店舗名].p += p;
-            res.store[d.店舗名].ev += ev;
-            res.store[d.店舗名].h += h;
-          });
-          return res;
-        }, [filtered]);
+        }, [filtered, data]); // dataも監視対象にする (enriched計算のため)
         const copyReport = () => {
           const text = `【KPI分析レポート】\n期間: ${range.start} 〜 ${
             range.end
