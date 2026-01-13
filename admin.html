@@ -2562,6 +2562,17 @@ ${Object.entries(kpi.members)
 
         const formatDateLocal = (dateStr) => {
           if (!dateStr) return "";
+          // すでに yyyy-MM-dd か yyyy/MM/dd の形式なら、標準化して返す（タイムゾーン変換を避ける）
+          const match = String(dateStr).match(
+            /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/
+          );
+          if (match) {
+            const y = match[1];
+            const m = match[2].padStart(2, "0");
+            const day = match[3].padStart(2, "0");
+            return `${y}-${m}-${day}`;
+          }
+
           const d = new Date(dateStr);
           if (isNaN(d.getTime())) return dateStr;
           const y = d.getFullYear();
