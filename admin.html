@@ -196,10 +196,31 @@
       };
 
       function ArchiveLibrary({ archive, onClose }) {
-        const [search, setSearch] = useState("");
+        const [nameFilter, setNameFilter] = useState("");
+        const [storeFilter, setStoreFilter] = useState("");
+
+        const nameList = React.useMemo(() => {
+          const names = new Set();
+          const targetData = storeFilter ? (archive || []).filter(d => d.store === storeFilter) : (archive || []);
+          targetData.forEach(item => { if(item.name) names.add(item.name); });
+          return Array.from(names).sort();
+        }, [archive, storeFilter]);
+
+        const storeList = React.useMemo(() => {
+          const stores = new Set();
+          const targetData = nameFilter ? (archive || []).filter(d => d.name === nameFilter) : (archive || []);
+          targetData.forEach(item => { if(item.store) stores.add(item.store); });
+          return Array.from(stores).sort();
+        }, [archive, nameFilter]);
+
         const filtered = (archive || []).filter((item) => {
           if (!item || (!item.details && !item.store && !item.name))
             return false;
+            
+          const matchName = !nameFilter || item.name === nameFilter;
+          const matchStore = !storeFilter || item.store === storeFilter;
+          if (!matchName || !matchStore) return false;
+
           if (!search.trim()) return true;
 
           // スペース（半角・全角）で分割してキーワード配列を作成
@@ -400,16 +421,34 @@
                       Archive
                     </h2>
                   </div>
-                  <div className="flex-1 max-w-md relative group">
+                  <div className="flex-1 max-w-sm relative group">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-xs">
                       🔍
                     </span>
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="w-full bg-white border border-slate-200 pl-9 pr-4 py-2 md:py-3 rounded-full text-xs font-bold outline-none focus:border-indigo-500 transition-all shadow-sm"
-                      placeholder="機種・店舗・内容..."
+                      className="w-full bg-white border border-slate-200 pl-9 pr-4 py-2 rounded-full text-[10px] md:text-xs font-bold outline-none focus:border-indigo-500 transition-all shadow-sm"
+                      placeholder="内容検索..."
                     />
+                  </div>
+                  <div className="flex flex-wrap gap-1 md:gap-2">
+                    <select
+                      value={nameFilter}
+                      onChange={(e) => setNameFilter(e.target.value)}
+                      className="bg-white border border-slate-200 px-2 md:px-3 py-1.5 md:py-2 rounded-xl text-[8px] md:text-[10px] font-bold outline-none focus:border-indigo-500 max-w-[80px] md:max-w-none"
+                    >
+                      <option value="">全員</option>
+                      {nameList.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                    <select
+                      value={storeFilter}
+                      onChange={(e) => setStoreFilter(e.target.value)}
+                      className="bg-white border border-slate-200 px-2 md:px-3 py-1.5 md:py-2 rounded-xl text-[8px] md:text-[10px] font-bold outline-none focus:border-indigo-500 max-w-[80px] md:max-w-none"
+                    >
+                      <option value="">全店</option>
+                      {storeList.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
                   </div>
                 </div>
                 <button
@@ -1714,6 +1753,8 @@
             return [];
           }
         });
+        const [selectedMember, setSelectedMember] = React.useState("");
+        const [selectedStore, setSelectedStore] = React.useState("");
 
         React.useEffect(() => {
           localStorage.setItem("kpi_report_history", JSON.stringify(history));
@@ -1889,7 +1930,12 @@
             .map(([n, s], i) => `${i + 1}位 ${n} (${Math.round(s.ev / (s.h || 1)).toLocaleString()}円/h)`)
             .slice(0, 3).join(" > ");
 
-          const lineText = `【KPI分析レポート】🚀
+          let filterHeader = "";
+          if (selectedMember || selectedStore) {
+            filterHeader = `\n(絞り込み: ${selectedMember || "全員"} / ${selectedStore || "全店舗"})`;
+          }
+
+          const lineText = `【KPI分析レポート】🚀${filterHeader}
 期間: ${range.start} 〜 ${range.end}
 (前期間比: ${pChange > 0 ? "+" : ""}${pChange.toLocaleString()}円)
 ━━━━━━━━━━━━━━
@@ -1956,15 +2002,37 @@ ${Object.entries(kpi.members)
 
           setActiveTab("report");
         };
+        const memberList = React.useMemo(() => {
+          const members = new Set();
+          const targetData = selectedStore ? data.filter(d => d.店舗名 === selectedStore) : data;
+          targetData.forEach(d => {
+            const name = d.名前 || d.報告者;
+            if (name) members.add(name);
+          });
+          return Array.from(members).sort();
+        }, [data, selectedStore]);
+
+        const storeList = React.useMemo(() => {
+          const stores = new Set();
+          const targetData = selectedMember ? data.filter(d => (d.名前 || d.報告者) === selectedMember) : data;
+          targetData.forEach(d => {
+            if (d.店舗名) stores.add(d.店舗名);
+          });
+          return Array.from(stores).sort();
+        }, [data, selectedMember]);
+
         const filtered = React.useMemo(() => {
           if (!range.start || !range.end) return [];
           const s = new Date(range.start);
           const e = new Date(range.end);
           return data.filter((d) => {
             const dt = new Date(d.日付);
-            return dt >= s && dt <= e;
+            const inRange = dt >= s && dt <= e;
+            const matchMember = !selectedMember || (d.名前 || d.報告者) === selectedMember;
+            const matchStore = !selectedStore || d.店舗名 === selectedStore;
+            return inRange && matchMember && matchStore;
           });
-        }, [data, range]);
+        }, [data, range, selectedMember, selectedStore]);
         const stats = React.useMemo(() => {
           // calculateKPIs を利用して stats を生成 (ロック同期させるため)
           const kpi = calculateKPIs(filtered);
@@ -2035,10 +2103,44 @@ ${Object.entries(kpi.members)
                     className="bg-white px-4 py-2 rounded-xl font-bold border border-slate-200 outline-none"
                   />
                 </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2">
+                    人物フィルター
+                  </label>
+                  <select
+                    value={selectedMember}
+                    onChange={(e) => setSelectedMember(e.target.value)}
+                    className="bg-white px-4 py-2 rounded-xl font-bold border border-slate-200 outline-none w-[140px] text-xs cursor-pointer hover:border-[#0076FF] transition-colors"
+                  >
+                    <option value="">全員表示</option>
+                    {memberList.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center justify-between">
+                    <span>店舗フィルター</span>
+                    {(selectedMember || selectedStore) && (
+                      <button 
+                        onClick={() => { setSelectedMember(""); setSelectedStore(""); }}
+                        className="text-[8px] text-rose-500 font-bold border-b border-rose-500 leading-none"
+                      >
+                        RESET
+                      </button>
+                    )}
+                  </label>
+                  <select
+                    value={selectedStore}
+                    onChange={(e) => setSelectedStore(e.target.value)}
+                    className="bg-white px-4 py-2 rounded-xl font-bold border border-slate-200 outline-none w-[140px] text-xs cursor-pointer hover:border-[#0076FF] transition-colors"
+                  >
+                    <option value="">全店舗表示</option>
+                    {storeList.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
                 <button
                   onClick={load}
                   disabled={loading}
-                  className="bg-[#0076FF] text-white px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg disabled:opacity-50"
+                  className="bg-[#0076FF] text-white px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg disabled:opacity-50 h-[42px]"
                 >
                   {loading ? "読み込み中..." : "データを解析する"}
                 </button>
