@@ -1804,9 +1804,10 @@
 
           items.forEach((item) => {
             // --- 優先順位: 1. 前回比較実収支列 (永続化データ), 2. 資産推移計算, 3. 換金-投資 ---
-            let p = parseFloat(item.前回比較実収支) || 0;
+            const rawP = item.前回比較実収支;
+            let p = (rawP !== undefined && rawP !== null && String(rawP).trim() !== "") ? parseFloat(rawP) : null;
             
-            if (p === 0) {
+            if (p === null) {
               // 永続化データがない場合のみ動的に算出
               const name = item.名前 || item.報告者 || "不明";
               const storeName = item.店舗名 || "";
@@ -1821,9 +1822,11 @@
                                    (parseFloat(item["4パチ"]) || 0) * r4;
               
               // 同一メンバーの前回資産を探す (フィルタリング前の全データから)
+              const parseDt = (v) => v ? new Date(String(v).split("(")[0].trim()) : new Date(0);
               const sortedSameMember = data
                 .filter(l => (l.名前 || l.報告者) === name)
-                .sort((a, b) => new Date(a.日付) - new Date(b.日付));
+                .sort((a, b) => parseDt(a.日付) - parseDt(b.日付) || String(a.ID).localeCompare(String(b.ID)));
+              
               const currentIdx = sortedSameMember.findIndex(l => l.ID === item.ID);
               const prevItem = currentIdx > 0 ? sortedSameMember[currentIdx - 1] : null;
 
