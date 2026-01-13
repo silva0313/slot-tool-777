@@ -1830,20 +1830,27 @@
               const currentIdx = sortedSameMember.findIndex(l => l.ID === item.ID);
               const prevItem = currentIdx > 0 ? sortedSameMember[currentIdx - 1] : null;
 
+                const salary = parseFloat(item.本日の給料) || parseFloat(item.salary) || 0;
+                const handover = parseFloat(item.手渡し額) || 0;
+                const cash = parseFloat(item.本日投資) || 0;
+                const received = parseFloat(item.親受取額) || 0;
+
                 if (prevItem) {
                   const prevStoreInfo = storeMaster.find(s => s.name === (prevItem.店舗名 || "")) || storeInfo;
                   const pr20 = 1000 / (parseFloat(prevStoreInfo.m20) || 50);
                   const pr5 = 1000 / (parseFloat(prevStoreInfo.m5) || 200);
                   const pr4 = 1000 / (parseFloat(prevStoreInfo.p4) || 250);
-                  const prevAsset = (parseFloat(prevItem.残投資金) || 0) + 
-                                    (parseFloat(prevItem["20スロ"]) || 0) * pr20 + 
-                                    (parseFloat(prevItem["5スロ"]) || 0) * pr5 + 
-                                    (parseFloat(prevItem["4パチ"]) || 0) * pr4;
-                  // シンプルに前回との総資産差分
-                  p = currentAsset - prevAsset;
+                  const prevAssetVal = (parseFloat(prevItem.残投資金) || 0) + 
+                                       (parseFloat(prevItem["20スロ"]) || 0) * pr20 + 
+                                       (parseFloat(prevItem["5スロ"]) || 0) * pr5 + 
+                                       (parseFloat(prevItem["4パチ"]) || 0) * pr4;
+                  
+                  // 純粋な台の実収支 (給料経費抜き / 資産変動ベース):
+                  // (現在総資産[メダル+残金] + 給料 + 手渡し) - (前回総資産[メダル+残金] + 投資 + 受取)
+                  p = (currentAsset + salary + handover) - (prevAssetVal + cash + received);
                 } else {
-                  // 初回は換金 - 投資
-                  p = (parseFloat(item.換金額) || 0) - (parseFloat(item.本日投資) || 0);
+                  // 初回は 換金 - 投資
+                  p = (parseFloat(item.換金額) || 0) - cash;
                 }
               }
 
