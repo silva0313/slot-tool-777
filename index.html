@@ -133,24 +133,34 @@
             const [user, setUser] = useState(null);
             const [tempName, setTempName] = useState("");
             const [activeTab, setActiveTab] = useState("log");
-            const [logs, setLogs] = useState([]);
+                        const [logs, setLogs] = useState([]); // 自由入力ログ（最終的には各店舗へ紐付け or 共通ログとして扱う）
             const [strategies, setStrategies] = useState([]); // 攻略データ
             const [search, setSearch] = useState(""); // 検索ワード
             const [logInput, setLogInput] = useState({ machine: "", detail: "" });
-            const [reportInput, setReportInput] = useState({
+
+            // 店舗ごとの入力項目
+            const initialStore = {
+                id: Date.now(),
                 store: "",
-                hours: "",
-                date: new Date().toISOString().split('T')[0],
                 medal20: "",
                 medal5: "",
                 pachi4: "",
                 cash: "",
-                memo: "",
-                salary: "",
-                remainingCash: "",
                 exchange: "",
                 handover: "",
-                parentReceived: "" // 【新規】親から受け取った現金額
+                memo: "",
+                logs: [] // その店舗に紐付いたログ
+            };
+
+            const [stores, setStores] = useState([initialStore]);
+
+            // 1日の共通項目
+            const [reportInput, setReportInput] = useState({
+                date: new Date().toISOString().split('T')[0],
+                hours: "",
+                salary: "",
+                parentReceived: "",
+                remainingCash: ""
             });
             const [status, setStatus] = useState("");
             const [submitting, setSubmitting] = useState(false);
@@ -178,12 +188,45 @@
 
                     const saved = localStorage.getItem("u_v7");
                     if (saved) setUser(JSON.parse(saved));
-                    const savedLogs = localStorage.getItem("l_v7");
+                                        const savedLogs = localStorage.getItem("l_v7");
                     if (savedLogs) setLogs(JSON.parse(savedLogs));
+
+                    // 複数店舗対応の読み込み
+                    const savedStores = localStorage.getItem("s_v8");
+                    if (savedStores) {
+                        setStores(JSON.parse(savedStores));
+                    } else {
+                        // 移行期間：古い単一店舗形式があれば移行
+                        const savedRep = localStorage.getItem("r_v7");
+                        if (savedRep) {
+                            const parsed = JSON.parse(savedRep);
+                            if (parsed.store) {
+                                setStores([{
+                                    ...initialStore,
+                                    store: parsed.store,
+                                    medal20: parsed.medal20,
+                                    medal5: parsed.medal5,
+                                    pachi4: parsed.pachi4,
+                                    cash: parsed.cash,
+                                    exchange: parsed.exchange,
+                                    handover: parsed.handover,
+                                    memo: parsed.memo
+                                }]);
+                            }
+                        }
+                    }
+
                     const savedRep = localStorage.getItem("r_v7");
                     if (savedRep) {
                         const parsed = JSON.parse(savedRep);
-                        setReportInput(prev => ({ ...prev, ...parsed }));
+                        setReportInput(prev => ({
+                            ...prev,
+                            date: parsed.date || prev.date,
+                            hours: parsed.hours || "",
+                            salary: parsed.salary || "",
+                            parentReceived: parsed.parentReceived || "",
+                            remainingCash: parsed.remainingCash || ""
+                        }));
                     }
                 } catch (e) {
                     console.error("Storage load error:", e);
@@ -221,10 +264,11 @@
                 checkLock();
             }, []);
 
-            useEffect(() => {
+                        useEffect(() => {
                 localStorage.setItem("l_v7", JSON.stringify(logs));
+                localStorage.setItem("s_v8", JSON.stringify(stores));
                 localStorage.setItem("r_v7", JSON.stringify(reportInput));
-            }, [logs, reportInput]);
+            }, [logs, stores, reportInput]);
 
             const verifyPass = (e) => {
                 e.preventDefault();
@@ -362,74 +406,132 @@
                 return parseFloat(s) || 0;
             };
 
-            const addLog = () => {
+                        const addLog = (storeId = null) => {
                 if (!logInput.machine || !logInput.detail) return;
-                setLogs([...logs, { ...logInput, id: Date.now() }]);
+                const newLog = { ...logInput, id: Date.now() };
+                if (storeId) {
+                    setStores(prev => prev.map(s => s.id === storeId ? { ...s, logs: [...(s.logs || []), newLog] } : s));
+                } else {
+                    // 全体ログ（後で店舗に振り分ける用）
+                    setLogs([...logs, newLog]);
+                }
                 setLogInput({ machine: "", detail: "" });
             };
 
-            const removeLog = (id) => setLogs(logs.filter(l => l.id !== id));
+            const removeLog = (id, storeId = null) => {
+                if (storeId) {
+                    setStores(prev => prev.map(s => s.id === storeId ? { ...s, logs: s.logs.filter(l => l.id !== id) } : s));
+                } else {
+                    setLogs(logs.filter(l => l.id !== id));
+                }
+            };
+
+            const moveLogToStore = (log, fromStoreId, toStoreId) => {
+                if (fromStoreId === toStoreId) return;
+
+                if (fromStoreId === "common") {
+                    setLogs(prev => prev.filter(l => l.id !== log.id));
+                } else {
+                    setStores(prev => prev.map(s => s.id === fromStoreId ? { ...s, logs: s.logs.filter(l => l.id !== log.id) } : s));
+                }
+
+                setStores(prev => prev.map(s => s.id === toStoreId ? { ...s, logs: [...(s.logs || []), log] } : s));
+            };
+
+            const addStore = () => {
+                setStores([...stores, { ...initialStore, id: Date.now() }]);
+            };
+
+            const removeStore = (id) => {
+                if (stores.length <= 1) return;
+                showConfirm("店舗の削除", "この店舗の入力内容がすべて削除されます。よろしいですか？", () => {
+                    setStores(prev => prev.filter(s => s.id !== id));
+                });
+            };
+
+            const updateStoreField = (id, field, value) => {
+                setStores(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+            };
 
             // 画像機能削除済み (handleFileSelect & compressImage)
 
             const submit = async () => {
-                if (logs.length === 0 || !reportInput.store) return showAlert("不備があります", "ログ履歴、または店舗名が入力されておりません。");
+                // バリデーション
+                const invalidStore = stores.find(s => !s.store);
+                if (invalidStore) return showAlert("不備があります", "店舗名が入力されていないカードがあります。");
 
-                const m20 = parseFinance(reportInput.medal20);
-                const m5 = parseFinance(reportInput.medal5);
-                const p4 = parseFinance(reportInput.pachi4);
-                const c = parseFinance(reportInput.cash);
-                const s = parseFinance(reportInput.salary);
-                const r = parseFinance(reportInput.remainingCash);
+                const totalLogs = stores.reduce((sum, s) => sum + (s.logs ? s.logs.length : 0), 0) + logs.length;
+                if (totalLogs === 0) return showAlert("不備があります", "ログ履歴が1件もありません。");
 
-                const pr = Number(reportInput.parentReceived || 0);
+                const calculatedHours = parseHours(reportInput.hours);
+                const salary = parseFinance(reportInput.salary);
+                const parentReceived = parseFinance(reportInput.parentReceived);
+                const remainingCash = parseFinance(reportInput.remainingCash);
+
+                // 全店舗の集計
+                const summary = stores.reduce((acc, s) => {
+                    acc.medal20 += parseFinance(s.medal20);
+                    acc.medal5 += parseFinance(s.medal5);
+                    acc.pachi4 += parseFinance(s.pachi4);
+                    acc.investment += parseFinance(s.cash);
+                    acc.exchange += parseFinance(s.exchange);
+                    return acc;
+                }, { medal20: 0, medal5: 0, pachi4: 0, investment: 0, exchange: 0 });
 
                 const checkMsg = `
 【送信内容の最終確認】
 稼働日: ${reportInput.date}
-店舗名: ${reportInput.store}
-20スロ: ${m20}枚 / 5スロ: ${m5}枚 / 4パチ: ${p4}玉
+店舗数: ${stores.length}店舗
 ------------------------
-投資: ${c}円
-換金: ${reportInput.exchange || 0}円
-親から受取: ${pr}円
-親へ手渡し: ${reportInput.handover || 0}円
-本日の給料: ${s}円
+[合計値]
+投資: ${summary.investment.toLocaleString()}円
+換金: ${summary.exchange.toLocaleString()}円
+20スロ: ${summary.medal20.toLocaleString()}枚
+5スロ: ${summary.medal5.toLocaleString()}枚
+4パチ: ${summary.pachi4.toLocaleString()}玉
 ------------------------
-財布の残高: ${r}円
+稼働時間: ${calculatedHours}h
+本日の給料: ${salary.toLocaleString()}円
+親から受取: ${parentReceived.toLocaleString()}円
+財布の残高: ${remainingCash.toLocaleString()}円
 
-この内容で間違いありませんか？
+この内容で一括送信します。よろしいですか？
 `.trim();
 
                 showConfirm("報告送信の最終点検", checkMsg, async () => {
                     setSubmitting(true);
-                    const logText = logs.map(l => `${l.machine} ${l.detail}`).join("\n");
-                    const calculatedHours = parseHours(reportInput.hours);
-
-                    const payload = {
-                        date: reportInput.date,
-                        name: user.displayName,
-                        store: reportInput.store,
-                        details: logText,
-                        hours: calculatedHours,
-                        rawHours: reportInput.hours,
-                        medal20: m20,
-                        medal5: m5,
-                        pachi4: p4,
-                        cash: c,
-                        salary: s,
-                        exchange: Number(reportInput.exchange || 0),
-                        handover: Number(reportInput.handover || 0),
-                        parentReceived: pr, // 【送信】親受取額をGASへ送る
-                        remaining: r,
-                        memo: reportInput.memo,
-                        images: [] // 画像機能廃止のため空配列で固定
-                    };
+                    
                     try {
-                        // 【通信耐性強化】単純リクエスト（Simple Request）方式
-                        // ブラウザの OPTIONS (プリフライト) チェックを回避し、確実な着弾を保証します
-                        // 【通信の極限安定化】URLエンコードを介さず、生の JSON 文字列を直接送信します
-                        // これにより大容量データ（画像等）のパースエラーを防止します
+                        // 店舗データの整形
+                        const storePayloads = stores.map(s => ({
+                            store: s.store,
+                            details: (s.logs || []).map(l => `${l.machine} ${l.detail}`).join("\n"),
+                            medal20: parseFinance(s.medal20),
+                            medal5: parseFinance(s.medal5),
+                            pachi4: parseFinance(s.pachi4),
+                            cash: parseFinance(s.cash),
+                            exchange: parseFinance(s.exchange),
+                            handover: parseFinance(s.handover),
+                            memo: s.memo
+                        }));
+
+                        // 共通ログ（未接続）があれば最初の店舗に混ぜるか、別途処理（今回は最初の店舗へ）
+                        if (logs.length > 0 && storePayloads.length > 0) {
+                            const unlinkedLogText = logs.map(l => `${l.machine} ${l.detail}`).join("\n");
+                            storePayloads[0].details = unlinkedLogText + (storePayloads[0].details ? "\n" + storePayloads[0].details : "");
+                        }
+
+                        const payload = {
+                            date: reportInput.date,
+                            name: user.displayName,
+                            hours: calculatedHours,
+                            rawHours: reportInput.hours,
+                            salary: salary,
+                            parentReceived: parentReceived,
+                            remaining: remainingCash,
+                            stores: storePayloads // 複数店舗データを配列で送る
+                        };
+
                         const bodyData = JSON.stringify({ action: "submitReport", data: payload });
 
                         const res = await fetch(`${GAS_URL}`, {
@@ -445,45 +547,31 @@
                         }
 
                         setStatus("正常に送信されました。本日もお疲れ様でした。");
+                        
+                        // ステートリセット
                         setLogs([]);
+                        setStores([initialStore]);
                         setReportInput({
-                            store: "", hours: "", date: new Date().toISOString().split('T')[0],
-                            medal20: "", medal5: "", pachi4: "", cash: "", memo: "", salary: "", remainingCash: "",
-                            exchange: "", handover: "", parentReceived: ""
+                            date: new Date().toISOString().split('T')[0],
+                            hours: "",
+                            salary: "",
+                            parentReceived: "",
+                            remainingCash: ""
                         });
+                        
                         localStorage.removeItem("l_v7");
+                        localStorage.removeItem("s_v8");
                         localStorage.removeItem("r_v7");
                         setActiveTab("log");
+                        window.scrollTo(0, 0);
                         setTimeout(() => setStatus(""), 5000);
+
                     } catch (e) {
                         console.error("Submit error:", e);
-                        let extra = "";
-                        let errorTitle = "送信エラー (システム障害)";
-                        let isSyntaxError = e.name === "SyntaxError" || e.message.includes("Unexpected token") || e.message.includes("JSON");
-
-                        // JSONパースエラー（HTMLが返ってきた場合）
-                        if (isSyntaxError) {
-                            errorTitle = "送信エラー (通信/サーバーダウン)";
-                            try {
-                                const errorText = await res.text();
-                                extra = `\n[Server Response (先頭)]: ${errorText.substring(0, 100)}`;
-                            } catch (re) { }
-                        }
-                        // サーバーからの明示的なエラーメッセージ（JSON）
-                        else {
-                            errorTitle = "送信エラー (サーバー拒否)";
-                        }
-
-                        // エラー内容に応じたメッセージ構築
-                        let msgBody = `報告が届いていない可能性があります。\n原因: ${e.message}${extra}`;
-
-                        if (isSyntaxError) {
-                            msgBody += `\n\n※「Response: <」や「Response: P」と出る場合は、Google側のアクセス過多や権限切れです。数分置いて再試行してください。`;
-                        }
-
-                        showAlert(errorTitle, msgBody);
+                        showAlert("送信エラー", `報告が届いていない可能性があります。\n原因: ${e.message}`);
+                    } finally {
+                        setSubmitting(false);
                     }
-                    finally { setSubmitting(false); }
                 });
             };
 
@@ -577,128 +665,179 @@
                                     </div>
                                 )}
 
-                                {activeTab === 'log' && (
+                                                                        {activeTab === 'log' && (
                                     <div className="space-y-6 animate-fadeIn">
-                                        <section className="card p-4 space-y-4 shadow-xl border-indigo-500/10">
-                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">台移動・稼働ログ入力</div>
-                                            <div className="space-y-3">
-                                                <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark font-bold py-3 text-base" placeholder="機種名 (例: 北斗)" />
-                                                <div className="flex gap-2">
-                                                    <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark py-3" placeholder="G数・リセ・状況など" />
-                                                    <button onClick={addLog} className="bg-indigo-600 w-14 h-12 rounded-xl font-black text-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-all">+</button>
-                                                </div>
-                                            </div>
-                                            <p className="text-[9px] text-slate-500 font-bold px-1 italic">※台を移動するたびに、ここに「北斗 650～」のようにメモしてください。</p>
-                                        </section>
-
-                                        <section className="space-y-3">
-                                            <div className="flex justify-between items-center px-1">
-                                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">現在のログ履歴 / {logs.length}件</div>
-                                                {logs.length > 0 && <button onClick={() => showConfirm("ログのリセット", "現在記録されている全てのログを削除します。よろしいですか？", () => setLogs([]))} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">全削除</button>}
-                                            </div>
-                                            <div className="space-y-2">
-                                                {logs.length === 0 ? (
-                                                    <div className="py-16 text-center card bg-slate-800/20 border-dashed">
-                                                        <div className="text-3xl mb-2 opacity-20">📝</div>
-                                                        <div className="text-slate-600 text-[10px] font-black uppercase tracking-widest leading-relaxed">まだログがありません<br />上の入力欄から追加してください</div>
-                                                    </div>
-                                                ) : (
-                                                    [...logs].reverse().map(l => (
-                                                        <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-indigo-500 shadow-sm animate-fadeIn">
-                                                            <div className="min-w-0 flex-1 pr-4">
-                                                                <div className="font-black text-sm text-indigo-100 truncate">{l.machine}</div>
-                                                                <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
-                                                            </div>
-                                                            <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-10 h-10 flex items-center justify-center text-2xl transition-colors">×</button>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </section>
-
-                                        <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10">
-                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">詳細情報の入力</div>
+                                        {/* 1. 共通設定（日付・稼働時間など） */}
+                                        <section className="card p-5 space-y-4 shadow-xl border-indigo-500/10">
+                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">基本情報</div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">稼働日</label>
                                                     <input type="date" value={reportInput.date} onChange={e => setReportInput({ ...reportInput, date: e.target.value })} className="input-dark py-3 font-bold text-xs" />
                                                 </div>
                                                 <div>
-                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">店舗名</label>
-                                                    <input value={reportInput.store} onChange={e => setReportInput({ ...reportInput, store: e.target.value })} className="input-dark font-bold text-base" placeholder="例: マルハン〇〇店" />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <div>
                                                     <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">稼働時間</label>
-                                                    <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-2" placeholder="8:40~21:10" />
+                                                    <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-3" placeholder="8:40~21:10" />
                                                     <div className="text-[8px] text-slate-600 mt-1 font-bold italic">計算結果: {parseHours(reportInput.hours)}h</div>
                                                 </div>
+                                            </div>
+                                        </section>
 
-                                                <div className="bg-slate-900/40 p-5 rounded-2xl border border-white/5 space-y-4 shadow-inner">
-                                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">最終枚数 / 球数</div>
-                                                    <div className="space-y-4">
-                                                        <div className="relative group">
-                                                            <div className="absolute -top-2 left-3 bg-slate-800 px-2 text-[8px] font-black text-rose-500 z-10 group-focus-within:text-rose-400 transition-colors uppercase tracking-widest">20スロ</div>
-                                                            <input type="text" inputmode="numeric" value={reportInput.medal20} onChange={e => setReportInput({ ...reportInput, medal20: e.target.value })} className="input-dark py-3 font-bold text-center border-rose-500/20 focus:border-rose-500/50" placeholder="例: 2500枚" />
-                                                        </div>
-                                                        <div className="relative group">
-                                                            <div className="absolute -top-2 left-3 bg-slate-800 px-2 text-[8px] font-black text-indigo-500 z-10 group-focus-within:text-indigo-400 transition-colors uppercase tracking-widest">5スロ</div>
-                                                            <input type="text" inputmode="numeric" value={reportInput.medal5} onChange={e => setReportInput({ ...reportInput, medal5: e.target.value })} className="input-dark py-3 font-bold text-center border-indigo-500/20 focus:border-indigo-500/50" placeholder="例: 1000枚" />
-                                                        </div>
-                                                        <div className="relative group">
-                                                            <div className="absolute -top-2 left-3 bg-slate-800 px-2 text-[8px] font-black text-emerald-500 z-10 group-focus-within:text-emerald-400 transition-colors uppercase tracking-widest">4円パチ</div>
-                                                            <input type="text" inputmode="numeric" value={reportInput.pachi4} onChange={e => setReportInput({ ...reportInput, pachi4: e.target.value })} className="input-dark py-3 font-bold text-center border-emerald-500/20 focus:border-emerald-500/50" placeholder="例: 5000玉" />
-                                                        </div>
-                                                    </div>
+                                        {/* 2. 共通ログ入力（浮いているログ） */}
+                                        {logs.length > 0 && (
+                                            <section className="space-y-3">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest">未接続のログ / {logs.length}件</div>
+                                                    <button onClick={() => setLogs([])} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">クリア</button>
                                                 </div>
-
-                                                {/* 【金銭収支】現金の動きを正確に記録するセクション */}
-                                                <div className="bg-slate-900/40 p-5 rounded-2xl border border-white/5 space-y-4 shadow-inner">
-                                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">金銭収支</div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-[9px] font-black text-rose-400 uppercase tracking-widest block mb-1.5 px-1">本日投資 (円)</label>
-                                                            <input type="text" inputmode="numeric" value={reportInput.cash} onChange={e => setReportInput({ ...reportInput, cash: e.target.value })} className="input-dark font-bold py-2 text-sm placeholder:opacity-30" placeholder="10000" />
+                                                <div className="space-y-2">
+                                                    {logs.map(l => (
+                                                        <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-rose-500 shadow-sm animate-fadeIn bg-rose-500/5">
+                                                            <div className="min-w-0 flex-1 pr-2">
+                                                                <div className="font-black text-sm text-rose-100 truncate">{l.machine}</div>
+                                                                <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <select
+                                                                    onChange={(e) => moveLogToStore(l, "common", Number(e.target.value))}
+                                                                    className="bg-slate-800 text-[9px] text-white p-1 rounded border border-white/10"
+                                                                >
+                                                                    <option value="">店舗へ振分</option>
+                                                                    {stores.map((s, idx) => (
+                                                                        <option key={s.id} value={s.id}>店舗{idx + 1}: {s.store || "(未入力)"}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-8 h-8 flex items-center justify-center text-xl">×</button>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">親から受取 (円)</label>
-                                                            <input type="text" inputmode="numeric" value={reportInput.parentReceived} onChange={e => setReportInput({ ...reportInput, parentReceived: e.target.value })} className="input-dark font-bold text-sm border-indigo-500/20 py-2 placeholder:opacity-30" placeholder="0" />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-1.5 px-1">換金額 (円)</label>
-                                                            <input type="text" inputmode="numeric" value={reportInput.exchange} onChange={e => setReportInput({ ...reportInput, exchange: e.target.value })} className="input-dark font-bold text-sm border-emerald-500/20 py-2 placeholder:opacity-30" placeholder="0" />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-black text-amber-400 uppercase tracking-widest block mb-1.5 px-1">親へ手渡し (円)</label>
-                                                            <input type="text" inputmode="numeric" value={reportInput.handover} onChange={e => setReportInput({ ...reportInput, handover: e.target.value })} className="input-dark font-bold text-sm border-amber-500/20 py-2 placeholder:opacity-30" placeholder="0" />
-                                                        </div>
-                                                        <div className="col-span-2">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 px-1 text-center">本日の給料</label>
-                                                            <input type="text" inputmode="numeric" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-black text-center text-sm border-slate-700/30 py-2 placeholder:opacity-30" placeholder="10000" />
-                                                        </div>
-                                                    </div>
-
-                                                    {/* 【残利益/残高】最終的な財布の状態 */}
-                                                    <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
-                                                        <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-1.5 px-1">最終的な残投資金</label>
-                                                        <input type="text" inputmode="numeric" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-lg border-indigo-500/30 py-2 text-center" placeholder="0" />
-                                                    </div>
+                                                    ))}
                                                 </div>
+                                            </section>
+                                        )}
 
+                                        {/* 3. 店舗ごとの入力カード */}
+                                        <div className="space-y-8">
+                                            {stores.map((store, index) => (
+                                                <div key={store.id} className="space-y-4 animate-fadeIn">
+                                                    <div className="flex justify-between items-end px-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${index === 0 ? 'bg-indigo-600' : 'bg-slate-700'} text-white`}>{index + 1}</div>
+                                                            <div className="text-xs font-black text-slate-300 uppercase tracking-widest">{index === 0 ? 'メイン店舗' : `追加店舗 ${index}`}</div>
+                                                        </div>
+                                                        {stores.length > 1 && (
+                                                            <button onClick={() => removeStore(store.id)} className="text-[10px] font-black text-rose-500 bg-rose-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all">この店舗を削除</button>
+                                                        )}
+                                                    </div>
+
+                                                    <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10 transition-all focus-within:border-indigo-500/40">
+                                                        <div>
+                                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">店舗名</label>
+                                                            <input value={store.store} onChange={e => updateStoreField(store.id, "store", e.target.value)} className="input-dark font-black text-base" placeholder="例: マルハン〇〇店" />
+                                                        </div>
+
+                                                        {/* 店舗内ログ入力 */}
+                                                        <div className="bg-slate-900/60 p-4 rounded-xl space-y-3 border border-indigo-500/5">
+                                                            <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest px-1">台移動ログ（{store.store || `店舗${index + 1}`}）</div>
+                                                            <div className="flex gap-2">
+                                                                <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark bg-slate-950/50 py-2 text-xs" placeholder="機種 (北斗など)" />
+                                                                <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark bg-slate-950/50 py-2 text-xs" placeholder="メモ" />
+                                                                <button onClick={() => addLog(store.id)} className="bg-indigo-600 w-10 h-10 rounded-lg font-black text-xl flex items-center justify-center shadow-lg active:scale-90 transition-all">+</button>
+                                                            </div>
+
+                                                            <div className="space-y-2 mt-2">
+                                                                {(store.logs || []).map(l => (
+                                                                    <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-indigo-500 bg-slate-900/40 py-2 pr-2 animate-fadeIn">
+                                                                        <div className="min-w-0 flex-1 pl-1 truncate">
+                                                                            <span className="font-black text-xs text-indigo-100">{l.machine}</span>
+                                                                            <span className="text-[10px] text-slate-400 ml-2">{l.detail}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1">
+                                                                            {stores.length > 1 && (
+                                                                                <button
+                                                                                    onClick={() => moveLogToStore(l, store.id, stores[index === 0 ? 1 : 0].id)}
+                                                                                    title="他店舗へ移動"
+                                                                                    className="text-indigo-400 hover:text-indigo-300 w-8 h-8 flex items-center justify-center text-sm"
+                                                                                >⇄</button>
+                                                                            )}
+                                                                            <button onClick={() => removeLog(l.id, store.id)} className="text-slate-600 hover:text-rose-500 w-8 h-8 flex items-center justify-center text-xl">×</button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 数値入力エリア */}
+                                                        <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5 space-y-4 shadow-inner">
+                                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">最終枚数 / 球数</div>
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                <div className="relative">
+                                                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-rose-500 z-10 uppercase">20s</div>
+                                                                    <input type="text" inputmode="numeric" value={store.medal20} onChange={e => updateStoreField(store.id, "medal20", e.target.value)} className="input-dark py-2 text-center text-xs border-rose-500/20" placeholder="枚数" />
+                                                                </div>
+                                                                <div className="relative">
+                                                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-indigo-500 z-10 uppercase">5s</div>
+                                                                    <input type="text" inputmode="numeric" value={store.medal5} onChange={e => updateStoreField(store.id, "medal5", e.target.value)} className="input-dark py-2 text-center text-xs border-indigo-500/20" placeholder="枚数" />
+                                                                </div>
+                                                                <div className="relative">
+                                                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-emerald-500 z-10 uppercase">4p</div>
+                                                                    <input type="text" inputmode="numeric" value={store.pachi4} onChange={e => updateStoreField(store.id, "pachi4", e.target.value)} className="input-dark py-2 text-center text-xs border-emerald-500/20" placeholder="玉数" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <div>
+                                                                    <label className="text-[9px] font-black text-rose-400 uppercase tracking-widest block mb-1.5 px-1">本日投資 (円)</label>
+                                                                    <input type="text" inputmode="numeric" value={store.cash} onChange={e => updateStoreField(store.id, "cash", e.target.value)} className="input-dark font-bold py-2 text-xs" placeholder="0" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-1.5 px-1">換金額 (円)</label>
+                                                                    <input type="text" inputmode="numeric" value={store.exchange} onChange={e => updateStoreField(store.id, "exchange", e.target.value)} className="input-dark font-bold py-2 text-xs placeholder:opacity-30" placeholder="0" />
+                                                                </div>
+                                                                <div className="col-span-2">
+                                                                    <label className="text-[9px] font-black text-amber-400 uppercase tracking-widest block mb-1.5 px-1">親へ手渡し (円)</label>
+                                                                    <input type="text" inputmode="numeric" value={store.handover} onChange={e => updateStoreField(store.id, "handover", e.target.value)} className="input-dark font-bold text-xs border-amber-500/20 py-2" placeholder="0" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 px-1">店別メモ</label>
+                                                                <textarea value={store.memo} onChange={e => updateStoreField(store.id, "memo", e.target.value)} className="input-dark h-16 text-[11px] bg-slate-950/30" placeholder="店ごとの環境など..."></textarea>
+                                                            </div>
+                                                        </div>
+                                                    </section>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* 店舗追加ボタン */}
+                                        <button onClick={addStore} className="w-full py-4 border-2 border-dashed border-indigo-500/30 rounded-2xl flex items-center justify-center gap-2 text-indigo-400 hover:bg-indigo-500/5 transition-all group">
+                                            <span className="text-2xl group-active:scale-125 transition-transform">+</span>
+                                            <span className="text-xs font-black uppercase tracking-widest">店舗をもう一つ追加する</span>
+                                        </button>
+
+                                        {/* 4. まとめ情報（給料・残投資金など） */}
+                                        <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10">
+                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">1日のまとめ・精算</div>
+                                            <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">メモ・備考</label>
-                                                    <textarea value={reportInput.memo} onChange={e => setReportInput({ ...reportInput, memo: e.target.value })} className="input-dark h-24 text-xs leading-relaxed" placeholder="環境や立ち回りなど..."></textarea>
+                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">親から受取 (円)</label>
+                                                    <input type="text" inputmode="numeric" value={reportInput.parentReceived} onChange={e => setReportInput({ ...reportInput, parentReceived: e.target.value })} className="input-dark font-bold text-sm border-indigo-500/20 py-2" placeholder="0" />
                                                 </div>
-
-                                                {/* 画像添付機能削除済み */}
+                                                <div>
+                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">本日の給料 (円)</label>
+                                                    <input type="text" inputmode="numeric" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-black text-sm border-slate-700/30 py-2" placeholder="0" />
+                                                </div>
                                             </div>
 
-                                            <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg ${submitting ? 'opacity-50' : ''}`}>
-                                                {submitting ? '送信中...' : '報告を送信して終了する'}
+                                            <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
+                                                <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-1.5 px-1 text-center">最終的な財布の残投資金</label>
+                                                <input type="text" inputmode="numeric" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-xl border-indigo-500/30 py-2 text-center" placeholder="0" />
+                                            </div>
+
+                                            <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg mt-4 ${submitting ? 'opacity-50' : ''}`}>
+                                                {submitting ? '送信中...' : '全店舗の報告をまとめて送信'}
                                             </button>
-                                            <p className="text-[10px] text-slate-600 text-center font-bold pb-10">※送信するとログ履歴はリセットされます</p>
+                                            <p className="text-[10px] text-slate-600 text-center font-bold">※送信すると入力内容はリセットされます</p>
                                         </section>
                                     </div>
                                 )}
