@@ -696,7 +696,7 @@
                                                             <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest px-1">台移動ログ（{store.store || `店舗${index + 1}`}）</div>
                                                             <div className="flex gap-2">
                                                                 <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark bg-slate-950/50 py-2 text-xs" placeholder="機種 (北斗など)" />
-                                                                <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark bg-slate-950/50 py-2 text-xs" placeholder="メモ" />
+                                                                <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark bg-slate-950/50 py-2 text-xs" placeholder="内容（リセ200など）" />
                                                                 <button onClick={() => addLog(store.id)} className="bg-indigo-600 w-10 h-10 rounded-lg font-black text-xl flex items-center justify-center shadow-lg active:scale-90 transition-all">+</button>
                                                             </div>
 
