@@ -1818,51 +1818,66 @@
             let p = (rawP !== undefined && rawP !== null && String(rawP).trim() !== "") ? parseFloat(rawP) : null;
             
             if (p === null) {
-              // 永続化データがない場合のみ動的に算出
-              const name = item.名前 || item.報告者 || "不明";
-              const storeName = item.店舗名 || "";
-              const storeInfo = storeMaster.find(s => s.name === storeName) || { m20: 50, m5: 200, p4: 250 };
-              const r20 = 1000 / (parseFloat(storeInfo.m20) || 50);
-              const r5 = 1000 / (parseFloat(storeInfo.m5) || 200);
-              const r4 = 1000 / (parseFloat(storeInfo.p4) || 250);
-
-              const currentAsset = (parseFloat(item.残投資金) || 0) + 
-                                   (parseFloat(item["20スロ"]) || 0) * r20 + 
-                                   (parseFloat(item["5スロ"]) || 0) * r5 + 
-                                   (parseFloat(item["4パチ"]) || 0) * r4;
-              
-              // 同一メンバーの前回資産を探す (フィルタリング前の全データから)
-              const parseDt = (v) => v ? new Date(String(v).split("(")[0].trim()) : new Date(0);
-              const sortedSameMember = data
-                .filter(l => (l.名前 || l.報告者) === name)
+              // 1. 同一店舗の前回資産を探す (メダル増減用)
+              const parseDt = (v) => {
+                if (!v) return new Date(0);
+                const s = String(v).split("(")[0].trim().replace(/\//g, "-");
+                return new Date(s);
+              };
+              const sameMember = data.filter(l => (l.名前 || l.報告者) === name);
+              const sortedSameStore = sameMember
+                .filter(l => l.店舗名 === storeName)
                 .sort((a, b) => parseDt(a.日付) - parseDt(b.日付) || String(a.ID).localeCompare(String(b.ID)));
               
-              const currentIdx = sortedSameMember.findIndex(l => l.ID === item.ID);
-              const prevItem = currentIdx > 0 ? sortedSameMember[currentIdx - 1] : null;
+              const currentStoreIdx = sortedSameStore.findIndex(l => l.ID === item.ID);
+              const prevStoreItem = currentStoreIdx > 0 ? sortedSameStore[currentStoreIdx - 1] : null;
 
-                const salary = parseFloat(item.本日の給料) || parseFloat(item.salary) || 0;
-                const handover = parseFloat(item.手渡し額) || 0;
-                const cash = parseFloat(item.本日投資) || 0;
-                const received = parseFloat(item.親受取額) || 0;
+              // 2. 同一メンバーの「前回現金(Wallet)」を探す (別IDの最新の残投資金)
+              const sortedAll = sameMember
+                .sort((a, b) => parseDt(a.日付) - parseDt(b.日付) || String(a.ID).localeCompare(String(b.ID)));
+              const myIdx = sortedAll.findIndex(l => l.ID === item.ID);
+              const prevWalletItem = sortedAll
+                .slice(0, myIdx)
+                .reverse()
+                .find(l => l.ID !== item.ID && String(l.残投資金 || "").trim() !== "");
 
-                if (prevItem) {
-                  const prevStoreInfo = storeMaster.find(s => s.name === (prevItem.店舗名 || "")) || storeInfo;
-                  const pr20 = 1000 / (parseFloat(prevStoreInfo.m20) || 50);
-                  const pr5 = 1000 / (parseFloat(prevStoreInfo.m5) || 200);
-                  const pr4 = 1000 / (parseFloat(prevStoreInfo.p4) || 250);
-                  const prevAssetVal = (parseFloat(prevItem.残投資金) || 0) + 
-                                       (parseFloat(prevItem["20スロ"]) || 0) * pr20 + 
-                                       (parseFloat(prevItem["5スロ"]) || 0) * pr5 + 
-                                       (parseFloat(prevItem["4パチ"]) || 0) * pr4;
-                  
-                  // 純粋な台の実収支 (給料経費抜き / 資産変動ベース):
-                  // (現在総資産[メダル+残金] + 給料 + 手渡し) - (前回総資産[メダル+残金] + 投資 + 受取)
-                  p = (currentAsset + salary + handover) - (prevAssetVal + cash + received);
-                } else {
-                  // 初回は 換金 - 投資
-                  p = (parseFloat(item.換金額) || 0) - cash;
-                }
+              const salary = parseFloat(item.本日の給料) || parseFloat(item.salary) || 0;
+              const handover = parseFloat(item.手渡し額) || 0;
+              const cash = parseFloat(item.本日投資) || 0;
+              const received = parseFloat(item.親受取額) || 0;
+              // メイン行（Wallet計算対象）の判定: 稼働時間が入力されている行を基準にする
+              const isWalletRow = (parseFloat(item.稼働時間) || 0) > 0 || salary > 0;
+
+              let prevMedalVal = 0;
+              if (prevStoreItem) {
+                const ps = storeMaster.find(s => s.name === storeName) || { m20: 50, m5: 200, p4: 250 };
+                const pr20 = 1000 / (parseFloat(ps.m20) || 46);
+                const pr5 = 1000 / (parseFloat(ps.m5) || 178);
+                const pr4 = 1000 / (parseFloat(ps.p4) || 250);
+                prevMedalVal = (parseFloat(prevStoreItem["20スロ"]) || 0) * pr20 + 
+                               (parseFloat(prevStoreItem["5スロ"]) || 0) * pr5 + 
+                               (parseFloat(prevStoreItem["4パチ"]) || 0) * pr4;
               }
+
+              const currentMedalVal = (parseFloat(item["20スロ"]) || 0) * r20 + 
+                                    (parseFloat(item["5スロ"]) || 0) * r5 + 
+                                    (parseFloat(item["4パチ"]) || 0) * r4;
+              
+              const storeProfit = currentMedalVal - (prevMedalVal + cash);
+
+              if (isWalletRow) {
+                const prevCashVal = prevWalletItem ? (parseFloat(prevWalletItem.残投資金) || 0) : 0;
+                const currentCash = parseFloat(item.残投資金) || 0;
+                const walletProfit = (currentCash + salary + handover) - (prevCashVal + received);
+                p = storeProfit + walletProfit;
+              } else {
+                p = storeProfit;
+              }
+
+              if (!prevStoreItem && !prevWalletItem) {
+                p = (parseFloat(item.換金額) || 0) - cash;
+              }
+            }
 
             const ev = parseFloat(item.期待値) || 0;
             const h = parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
@@ -2563,6 +2578,7 @@ ${Object.entries(kpi.members)
         const [strategyData, setStrategyData] = useState([]);
         const [archive, setArchive] = useState([]);
         const [showLibrary, setShowLibrary] = useState(false);
+        const [resetMaster, setResetMaster] = useState([]);
 
         const [aiNormalization, setAiNormalization] = useState(null);
         const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
