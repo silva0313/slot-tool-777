@@ -3072,7 +3072,7 @@ ${Object.entries(kpi.members)
                 salary: getField(firstItem, ["本日の給料", "salary"]) || fin.salary,
                 remaining: getField(firstItem, ["残投資金", "remaining"]) || fin.remaining,
                 memo: getField(firstItem, ["備考", "memo"]),
-                details: report.details || firstItem.details,
+                details: content,
                 imageUrls: report.imageUrls || firstItem.imageUrls || "",
                 ev: existingEv,
               });
