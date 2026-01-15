@@ -1827,15 +1827,18 @@
             
             if (p === null) {
               // 1. 同一店舗の前回資産を探す (メダル増減用)
-              const parseDt = (v) => {
-                if (!v) return new Date(0);
-                const s = String(v).split("(")[0].trim().replace(/\//g, "-");
-                return new Date(s);
-              };
-              const sameMember = data.filter(l => (l.名前 || l.報告者) === name);
-              const sortedSameStore = sameMember
-                .filter(l => l.店舗名 === storeName)
-                .sort((a, b) => parseDt(a.日付) - parseDt(b.日付) || String(a.ID).localeCompare(String(b.ID)));
+                const parseDt = (v) => {
+                  try {
+                    if (!v) return new Date(0);
+                    const s = String(v).split("(")[0].trim().replace(/\//g, "-");
+                    const d = new Date(s);
+                    return isNaN(d.getTime()) ? new Date(0) : d;
+                  } catch(e) { return new Date(0); }
+                };
+                const sameMember = (data || []).filter(l => l && (l.名前 || l.報告者) === name);
+                const sortedSameStore = sameMember
+                  .filter(l => l && l.店舗名 === storeName)
+                  .sort((a, b) => parseDt(a.日付) - parseDt(b.日付) || String(a.ID || "").localeCompare(String(b.ID || "")));
               
               const currentStoreIdx = sortedSameStore.findIndex(l => l.ID === item.ID);
               const prevStoreItem = currentStoreIdx > 0 ? sortedSameStore[currentStoreIdx - 1] : null;
@@ -2603,6 +2606,7 @@ ${Object.entries(kpi.members)
         const [syncInfo, setSyncInfo] = useState("");
         const [checkedIds, setCheckedIds] = useState([]);
         const [editData, setEditData] = useState(null);
+        const [aiNormalization, setAiNormalization] = useState(null);
 
         const formatDateLocal = (dateStr) => {
           if (!dateStr) return "";
@@ -2676,16 +2680,18 @@ ${Object.entries(kpi.members)
 
             // --- 報告データのグルーピング (ID単位) ---
             const grouped = (pending || []).reduce((acc, curr) => {
-              const id = String(curr.ID);
+              if (!curr) return acc;
+              const id = String(curr.ID || curr.id || "unknown-" + Math.random());
               if (!acc[id]) {
                 acc[id] = {
                   ...curr,
+                  ID: id,
                   items: [curr],
                 };
               } else {
                 acc[id].items.push(curr);
                 // 表示用の店舗名を連結 (ユニークにする)
-                const stores = acc[id].items.map(i => i.店舗名 || i.store).filter(Boolean);
+                const stores = (acc[id].items || []).map(i => i.店舗名 || i.store).filter(Boolean);
                 acc[id].店舗名 = Array.from(new Set(stores)).join(" / ");
               }
               return acc;
@@ -2699,17 +2705,16 @@ ${Object.entries(kpi.members)
             setArchive(archive || []);
             setResetMaster(resetMaster || []);
             window.HOKUTO_MASTER = hokuto?.data || {
-              設定１相当: {},
-              優良店: {},
+              "設定１相当": {},
+              "優良店": {},
             };
 
-            // 聖域ロジック（北斗）の整合性チェック
             const masterCount = Object.keys(
-              hokuto?.data?.["設定１相当"] || {}
+              (hokuto?.data || {})["設定１相当"] || {}
             ).length;
             setSyncInfo(
               `✅ 同期完了: 報告${
-                (pending || []).length
+                (groupedArray || []).length
               }件 / マスタ${masterCount}枚`
             );
           } catch (e) {
@@ -2862,9 +2867,14 @@ ${Object.entries(kpi.members)
         };
 
         const handleAnalyze = (report, mode, isInitial) => {
-          if (!report || !window.HOKUTO_MASTER) return;
+          if (!report) return;
+          if (!window.HOKUTO_MASTER) {
+            console.warn("HOKUTO_MASTER not loaded yet.");
+            // マスタがない場合は最小限の表示だけ許可
+          }
           try {
-            const master = window.HOKUTO_MASTER[mode] || {};
+            const masterMode = mode || "設定１相当";
+            const master = (window.HOKUTO_MASTER || {})[masterMode] || {};
             // 内容のSource of Truth: 編集後(details)を優先し、なければ初期データ(稼動内容)を使用
             const content = String(getField(report, ["details", "稼動内容", "稼働内容", "内容"]));
             const lines = content.split("\n");
@@ -3067,7 +3077,8 @@ ${Object.entries(kpi.members)
                 ev: existingEv,
               });
               setStoreIdx(0);
-              if (report.ID) setSelectedId(report.ID);
+              setAiNormalization(null); // 前の解析結果をクリア
+              if (report.ID) setSelectedId(String(report.ID));
               if (content) fetchAiNormalization(content);
             }
           } catch (e) {
@@ -3353,15 +3364,20 @@ ${Object.entries(kpi.members)
                 </button>
               </div>
               <div className="flex-1 scroll-container custom-scroll p-4 space-y-2">
-                {reports.map((r) => (
+                {(!reports || reports.length === 0) ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] opacity-30 text-center space-y-4">
+                    <div className="text-4xl">📭</div>
+                    <div>No Pending Reports</div>
+                  </div>
+                ) : reports.map((r) => (
                   <div
-                    key={r.ID}
+                    key={String(r.ID)}
                     onClick={() => {
                       handleAnalyze(r, evMode, true);
                       setIsSidebarOpen(false);
                     }}
                     className={`p-5 rounded-[1.5rem] cursor-pointer transition-all ${
-                      selectedId === r.ID
+                      String(selectedId) === String(r.ID)
                         ? "bg-[#0076FF] text-white shadow-xl translate-x-1"
                         : "hover:bg-white/5 text-slate-400"
                     }`}
@@ -3445,7 +3461,7 @@ ${Object.entries(kpi.members)
               />
             )}
             <div className="main scroll-container">
-              {editData && reports.find((r) => r.ID === selectedId) ? (
+              {editData && reports && reports.find((r) => String(r.ID) === String(selectedId)) ? (
                 <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-20">
                   {/* A: 報告カード */}
                   <div className="bg-slate-900 rounded-[2.5rem] p-10 lg:p-14 text-white shadow-xl relative overflow-hidden border border-white/10">
