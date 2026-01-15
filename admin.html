@@ -202,22 +202,30 @@
 
         const nameList = React.useMemo(() => {
           const names = new Set();
-          const targetData = storeFilter ? (archive || []).filter(d => d.store === storeFilter) : (archive || []);
-          targetData.forEach(item => { if(item.name) names.add(item.name); });
+          const targetData = storeFilter
+            ? (archive || []).filter((d) => d.store === storeFilter)
+            : archive || [];
+          targetData.forEach((item) => {
+            if (item.name) names.add(item.name);
+          });
           return Array.from(names).sort();
         }, [archive, storeFilter]);
 
         const storeList = React.useMemo(() => {
           const stores = new Set();
-          const targetData = nameFilter ? (archive || []).filter(d => d.name === nameFilter) : (archive || []);
-          targetData.forEach(item => { if(item.store) stores.add(item.store); });
+          const targetData = nameFilter
+            ? (archive || []).filter((d) => d.name === nameFilter)
+            : archive || [];
+          targetData.forEach((item) => {
+            if (item.store) stores.add(item.store);
+          });
           return Array.from(stores).sort();
         }, [archive, nameFilter]);
 
         const filtered = (archive || []).filter((item) => {
           if (!item || (!item.details && !item.store && !item.name))
             return false;
-            
+
           const matchName = !nameFilter || item.name === nameFilter;
           const matchStore = !storeFilter || item.store === storeFilter;
           if (!matchName || !matchStore) return false;
@@ -440,7 +448,11 @@
                       className="bg-white border border-slate-200 px-2 md:px-3 py-1.5 md:py-2 rounded-xl text-[8px] md:text-[10px] font-bold outline-none focus:border-indigo-500 max-w-[80px] md:max-w-none"
                     >
                       <option value="">全員</option>
-                      {nameList.map(n => <option key={n} value={n}>{n}</option>)}
+                      {nameList.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
                     </select>
                     <select
                       value={storeFilter}
@@ -448,7 +460,11 @@
                       className="bg-white border border-slate-200 px-2 md:px-3 py-1.5 md:py-2 rounded-xl text-[8px] md:text-[10px] font-bold outline-none focus:border-indigo-500 max-w-[80px] md:max-w-none"
                     >
                       <option value="">全店</option>
-                      {storeList.map(s => <option key={s} value={s}>{s}</option>)}
+                      {storeList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -541,15 +557,23 @@
                                 総期待値
                               </div>
                               <div className="text-xl font-black italic text-[#0076FF] tracking-tighter drop-shadow-sm">
-                                {(item.ev || 0).toLocaleString()} <span className="text-xs">円</span>
+                                {(item.ev || 0).toLocaleString()}{" "}
+                                <span className="text-xs">円</span>
                               </div>
                             </div>
                             <div className="flex items-center justify-between pt-1 border-t border-dashed border-slate-100">
                               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 前回比較実収支
                               </div>
-                              <div className={`text-xl font-black italic tracking-tighter drop-shadow-sm ${item.profit >= 0 ? "text-[#00FF85]" : "text-rose-500"}`}>
-                                {(item.profit || 0).toLocaleString()} <span className="text-xs">円</span>
+                              <div
+                                className={`text-xl font-black italic tracking-tighter drop-shadow-sm ${
+                                  item.profit >= 0
+                                    ? "text-[#00FF85]"
+                                    : "text-rose-500"
+                                }`}
+                              >
+                                {(item.profit || 0).toLocaleString()}{" "}
+                                <span className="text-xs">円</span>
                               </div>
                             </div>
                           </div>
@@ -1333,14 +1357,14 @@
                         onClick={() =>
                           setStores([
                             ...stores,
-                            {
-                              店舗名: "",
-                              m20: "",
-                              m5: "",
-                              p4: "",
-                              キーワード: "",
-                              備考: "",
-                            },
+                              {
+                                店舗名: "",
+                                m20: "",
+                                m5: "",
+                                p4: "",
+                                キーワード: "",
+                                攻略メモ: "",
+                              },
                           ])
                         }
                         className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase shadow-lg hover:bg-emerald-700 transition-all"
@@ -1354,7 +1378,7 @@
                           key={idx}
                           className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center group"
                         >
-                          <div className="flex-1 space-y-2">
+                          <div className="flex-1 w-full space-y-3">
                             <input
                               value={s.店舗名}
                               onChange={(e) => {
@@ -1362,7 +1386,7 @@
                                 ns[idx].店舗名 = e.target.value;
                                 setStores(ns);
                               }}
-                              className="w-full bg-slate-50 p-4 rounded-xl font-bold text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+                              className="w-full bg-slate-50 p-4 rounded-xl font-bold text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 shadow-inner"
                               placeholder="正式名称 (例: マルハン野川)"
                             />
                             <input
@@ -1372,68 +1396,78 @@
                                 ns[idx].キーワード = e.target.value;
                                 setStores(ns);
                               }}
-                              className="w-full bg-slate-50 p-3 rounded-lg font-bold text-[10px] outline-none border border-slate-100 placeholder:text-slate-300"
+                              className="w-full bg-slate-50 p-3 rounded-xl font-bold text-[10px] outline-none border border-slate-100 placeholder:text-slate-300 focus:bg-white"
                               placeholder="キーワード (例: 野川, nogawa)"
                             />
+                            <textarea
+                              value={s.攻略メモ}
+                              onChange={(e) => {
+                                const ns = [...stores];
+                                ns[idx].攻略メモ = e.target.value;
+                                setStores(ns);
+                              }}
+                              rows="3"
+                              className="w-full bg-slate-50 p-4 rounded-[1.5rem] font-medium text-xs outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 border border-slate-100 custom-scroll shadow-inner"
+                              placeholder="【攻略メモ】据リセ状況、エナ/軍団有無、プロ対策、店員対応など..."
+                            />
                           </div>
-                          <div className="grid grid-cols-3 gap-2 w-full md:w-auto">
-                            <div className="relative">
-                              <span className="absolute -top-2 left-2 text-[8px] font-black text-rose-500 bg-white px-1">
-                                20スロ(個/k)
-                              </span>
-                              <input
-                                value={s.m20}
-                                onChange={(e) => {
-                                  const ns = [...stores];
-                                  ns[idx].m20 = e.target.value;
-                                  setStores(ns);
-                                }}
-                                className="w-full md:w-20 bg-slate-50 p-3 rounded-xl font-mono text-xs text-center border border-slate-100"
-                                placeholder="46"
-                                title="1,000円あたりの枚数 (等価なら46, 5.2枚なら52)"
-                              />
+                          <div className="flex flex-col gap-4 w-full md:w-auto shrink-0">
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="relative">
+                                <span className="absolute -top-2 left-2 text-[8px] font-black text-rose-500 bg-white px-1">
+                                  20スロ
+                                </span>
+                                <input
+                                  value={s.m20}
+                                  onChange={(e) => {
+                                    const ns = [...stores];
+                                    ns[idx].m20 = e.target.value;
+                                    setStores(ns);
+                                  }}
+                                  className="w-full md:w-20 bg-slate-50 p-3 rounded-xl font-mono text-xs text-center border border-slate-100"
+                                  placeholder="46"
+                                />
+                              </div>
+                              <div className="relative">
+                                <span className="absolute -top-2 left-2 text-[8px] font-black text-indigo-500 bg-white px-1">
+                                  5スロ
+                                </span>
+                                <input
+                                  value={s.m5}
+                                  onChange={(e) => {
+                                    const ns = [...stores];
+                                    ns[idx].m5 = e.target.value;
+                                    setStores(ns);
+                                  }}
+                                  className="w-full md:w-20 bg-slate-50 p-3 rounded-xl font-mono text-xs text-center border border-slate-100"
+                                  placeholder="178"
+                                />
+                              </div>
+                              <div className="relative">
+                                <span className="absolute -top-2 left-2 text-[8px] font-black text-emerald-500 bg-white px-1">
+                                  4パチ
+                                </span>
+                                <input
+                                  value={s.p4}
+                                  onChange={(e) => {
+                                    const ns = [...stores];
+                                    ns[idx].p4 = e.target.value;
+                                    setStores(ns);
+                                  }}
+                                  className="w-full md:w-20 bg-slate-50 p-3 rounded-xl font-mono text-xs text-center border border-slate-100"
+                                  placeholder="250"
+                                />
+                              </div>
                             </div>
-                            <div className="relative">
-                              <span className="absolute -top-2 left-2 text-[8px] font-black text-indigo-500 bg-white px-1">
-                                5スロ(個/k)
-                              </span>
-                              <input
-                                value={s.m5}
-                                onChange={(e) => {
-                                  const ns = [...stores];
-                                  ns[idx].m5 = e.target.value;
-                                  setStores(ns);
-                                }}
-                                className="w-full md:w-20 bg-slate-50 p-3 rounded-xl font-mono text-xs text-center border border-slate-100"
-                                placeholder="178"
-                                title="1,000円あたりの枚数"
-                              />
-                            </div>
-                            <div className="relative">
-                              <span className="absolute -top-2 left-2 text-[8px] font-black text-emerald-500 bg-white px-1">
-                                4パチ(個/k)
-                              </span>
-                              <input
-                                value={s.p4}
-                                onChange={(e) => {
-                                  const ns = [...stores];
-                                  ns[idx].p4 = e.target.value;
-                                  setStores(ns);
-                                }}
-                                className="w-full md:w-20 bg-slate-50 p-3 rounded-xl font-mono text-xs text-center border border-slate-100"
-                                placeholder="250"
-                                title="1,000円あたりの玉数 (等価なら250, 28玉なら280)"
-                              />
-                            </div>
+                            <button
+                              onClick={() =>
+                                setStores(stores.filter((_, i) => i !== idx))
+                              }
+                              className="w-full bg-rose-50 text-rose-500 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-rose-100 transition-colors"
+                            >
+                              DELETE STORE
+                            </button>
                           </div>
-                          <button
-                            onClick={() =>
-                              setStores(stores.filter((_, i) => i !== idx))
-                            }
-                            className="text-slate-300 hover:text-rose-500 p-2 text-xl transition-colors"
-                          >
-                            ✕
-                          </button>
                         </div>
                       ))}
                     </div>
@@ -1746,7 +1780,9 @@
         });
         const [history, setHistory] = React.useState(() => {
           try {
-            return JSON.parse(localStorage.getItem("kpi_report_history") || "[]");
+            return JSON.parse(
+              localStorage.getItem("kpi_report_history") || "[]"
+            );
           } catch (e) {
             return [];
           }
@@ -1803,58 +1839,82 @@
           };
 
           // 店舗換金率情報の取得 (店舗マスタから)
-          const storeMaster = JSON.parse(localStorage.getItem("kpi_store_master") || "[]");
+          const storeMaster = JSON.parse(
+            localStorage.getItem("kpi_store_master") || "[]"
+          );
 
           items.forEach((item) => {
             // --- 優先順位: 1. 前回比較実収支列 (永続化データ), 2. 資産推移計算, 3. 換金-投資 ---
             const rawP = item.前回比較実収支;
-            let p = (rawP !== undefined && rawP !== null && String(rawP).trim() !== "") ? parseFloat(rawP) : null;
-            
+            let p =
+              rawP !== undefined && rawP !== null && String(rawP).trim() !== ""
+                ? parseFloat(rawP)
+                : null;
+
             if (p === null) {
               // 永続化データがない場合のみ動的に算出
               const name = item.名前 || item.報告者 || "不明";
               const storeName = item.店舗名 || "";
-              const storeInfo = storeMaster.find(s => s.name === storeName) || { m20: 50, m5: 200, p4: 250 };
+              const storeInfo = storeMaster.find(
+                (s) => s.name === storeName
+              ) || { m20: 50, m5: 200, p4: 250 };
               const r20 = 1000 / (parseFloat(storeInfo.m20) || 50);
               const r5 = 1000 / (parseFloat(storeInfo.m5) || 200);
               const r4 = 1000 / (parseFloat(storeInfo.p4) || 250);
 
-              const currentAsset = (parseFloat(item.残投資金) || 0) + 
-                                   (parseFloat(item["20スロ"]) || 0) * r20 + 
-                                   (parseFloat(item["5スロ"]) || 0) * r5 + 
-                                   (parseFloat(item["4パチ"]) || 0) * r4;
-              
+              const currentAsset =
+                (parseFloat(item.残投資金) || 0) +
+                (parseFloat(item["20スロ"]) || 0) * r20 +
+                (parseFloat(item["5スロ"]) || 0) * r5 +
+                (parseFloat(item["4パチ"]) || 0) * r4;
+
               // 同一メンバーの前回資産を探す (フィルタリング前の全データから)
-              const parseDt = (v) => v ? new Date(String(v).split("(")[0].trim()) : new Date(0);
+              const parseDt = (v) =>
+                v ? new Date(String(v).split("(")[0].trim()) : new Date(0);
               const sortedSameMember = data
-                .filter(l => (l.名前 || l.報告者) === name)
-                .sort((a, b) => parseDt(a.日付) - parseDt(b.日付) || String(a.ID).localeCompare(String(b.ID)));
-              
-              const currentIdx = sortedSameMember.findIndex(l => l.ID === item.ID);
-              const prevItem = currentIdx > 0 ? sortedSameMember[currentIdx - 1] : null;
+                .filter((l) => (l.名前 || l.報告者) === name)
+                .sort(
+                  (a, b) =>
+                    parseDt(a.日付) - parseDt(b.日付) ||
+                    String(a.ID).localeCompare(String(b.ID))
+                );
 
-                const salary = parseFloat(item.本日の給料) || parseFloat(item.salary) || 0;
-                const handover = parseFloat(item.手渡し額) || 0;
-                const cash = parseFloat(item.本日投資) || 0;
-                const received = parseFloat(item.親受取額) || 0;
+              const currentIdx = sortedSameMember.findIndex(
+                (l) => l.ID === item.ID
+              );
+              const prevItem =
+                currentIdx > 0 ? sortedSameMember[currentIdx - 1] : null;
 
-                if (prevItem) {
-                  const prevStoreInfo = storeMaster.find(s => s.name === (prevItem.店舗名 || "")) || storeInfo;
-                  const pr20 = 1000 / (parseFloat(prevStoreInfo.m20) || 50);
-                  const pr5 = 1000 / (parseFloat(prevStoreInfo.m5) || 200);
-                  const pr4 = 1000 / (parseFloat(prevStoreInfo.p4) || 250);
-                  const prevAssetVal = (parseFloat(prevItem.残投資金) || 0) + 
-                                       (parseFloat(prevItem["20スロ"]) || 0) * pr20 + 
-                                       (parseFloat(prevItem["5スロ"]) || 0) * pr5 + 
-                                       (parseFloat(prevItem["4パチ"]) || 0) * pr4;
-                  
-                  // 純粋な台の実収支
-                  p = (currentAsset + salary + handover) - (prevAssetVal + cash + received);
-                } else {
-                  // 初回は 換金 - 投資
-                  p = (parseFloat(item.換金額) || 0) - cash;
-                }
+              const salary =
+                parseFloat(item.本日の給料) || parseFloat(item.salary) || 0;
+              const handover = parseFloat(item.手渡し額) || 0;
+              const cash = parseFloat(item.本日投資) || 0;
+              const received = parseFloat(item.親受取額) || 0;
+
+              if (prevItem) {
+                const prevStoreInfo =
+                  storeMaster.find((s) => s.name === (prevItem.店舗名 || "")) ||
+                  storeInfo;
+                const pr20 = 1000 / (parseFloat(prevStoreInfo.m20) || 50);
+                const pr5 = 1000 / (parseFloat(prevStoreInfo.m5) || 200);
+                const pr4 = 1000 / (parseFloat(prevStoreInfo.p4) || 250);
+                const prevAssetVal =
+                  (parseFloat(prevItem.残投資金) || 0) +
+                  (parseFloat(prevItem["20スロ"]) || 0) * pr20 +
+                  (parseFloat(prevItem["5スロ"]) || 0) * pr5 +
+                  (parseFloat(prevItem["4パチ"]) || 0) * pr4;
+
+                // 純粋な台の実収支
+                p =
+                  currentAsset +
+                  salary +
+                  handover -
+                  (prevAssetVal + cash + received);
+              } else {
+                // 初回は 換金 - 投資
+                p = (parseFloat(item.換金額) || 0) - cash;
               }
+            }
 
             const ev = parseFloat(item.期待値) || 0;
             const h = parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
@@ -1872,7 +1932,8 @@
             kpi.members[name].ev += ev;
             kpi.members[name].h += h;
 
-            if (!kpi.stores[item.店舗名]) kpi.stores[item.店舗名] = { p: 0, ev: 0, h: 0 };
+            if (!kpi.stores[item.店舗名])
+              kpi.stores[item.店舗名] = { p: 0, ev: 0, h: 0 };
             kpi.stores[item.店舗名].p += p;
             kpi.stores[item.店舗名].ev += ev;
             kpi.stores[item.店舗名].h += h;
@@ -1881,7 +1942,8 @@
             const normalizeMachine = (m) => {
               if (!m) return "不明";
               // 「北斗」を含むが「転生」を含まないものだけを主要機種「スマスロ北斗の拳」として統合
-              if (m.includes("北斗") && !m.includes("転生")) return "スマスロ北斗の拳"; 
+              if (m.includes("北斗") && !m.includes("転生"))
+                return "スマスロ北斗の拳";
               return m;
             };
 
@@ -1889,18 +1951,25 @@
             let meta = [];
             try {
               if (item.解析メタデータ) meta = JSON.parse(item.解析メタデータ);
-            } catch(e) {}
+            } catch (e) {}
 
             if (meta.length > 0) {
-              meta.forEach(m => {
+              meta.forEach((m) => {
                 const machineName = normalizeMachine(m.machine);
-                if (!kpi.machines[machineName]) kpi.machines[machineName] = { p: 0, ev: 0, h: 0 };
-                kpi.machines[machineName].ev += (parseFloat(m.ev) || 0);
+                if (!kpi.machines[machineName])
+                  kpi.machines[machineName] = { p: 0, ev: 0, h: 0 };
+                kpi.machines[machineName].ev += parseFloat(m.ev) || 0;
               });
             } else {
               // メタデータがない場合は行の頭から推測
-              const machine = normalizeMachine(item.機種 || (item.稼動内容 ? String(item.稼動内容).split(/[ \n]/)[0] : "不明"));
-              if (!kpi.machines[machine]) kpi.machines[machine] = { p: 0, ev: 0, h: 0 };
+              const machine = normalizeMachine(
+                item.機種 ||
+                  (item.稼動内容
+                    ? String(item.稼動内容).split(/[ \n]/)[0]
+                    : "不明")
+              );
+              if (!kpi.machines[machine])
+                kpi.machines[machine] = { p: 0, ev: 0, h: 0 };
               kpi.machines[machine].ev += ev;
             }
 
@@ -1919,11 +1988,12 @@
           setLoading(true);
           try {
             const kpi = calculateKPIs(filtered);
-            
+
             // 期間比較用データの準備
             const sDate = new Date(range.start);
             const eDate = new Date(range.end);
-            const diffDays = Math.ceil((eDate - sDate) / (1000 * 60 * 60 * 24)) + 1;
+            const diffDays =
+              Math.ceil((eDate - sDate) / (1000 * 60 * 60 * 24)) + 1;
             const prevStart = new Date(sDate);
             prevStart.setDate(sDate.getDate() - diffDays);
             const prevEnd = new Date(sDate);
@@ -1940,16 +2010,18 @@
               total: kpi.total,
               comparison_prev_period: {
                 profit_diff: kpi.total.profit - prevKpi.total.profit,
-                ev_diff: kpi.total.ev - prevKpi.total.ev
+                ev_diff: kpi.total.ev - prevKpi.total.ev,
               },
               members: kpi.members,
               stores: kpi.stores,
               machines: kpi.machines,
-              day_of_week: kpi.days.map((s, i) => ({ 
-                day: ["日", "月", "火", "水", "木", "金", "土"][i], 
-                rate: Math.round(s.p / (s.h || 1)) 
-              })).filter(s => s.rate !== 0),
-              type_stats: kpi.types
+              day_of_week: kpi.days
+                .map((s, i) => ({
+                  day: ["日", "月", "火", "水", "木", "金", "土"][i],
+                  rate: Math.round(s.p / (s.h || 1)),
+                }))
+                .filter((s) => s.rate !== 0),
+              type_stats: kpi.types,
             };
 
             // GASのAI解析APIを呼び出し
@@ -1959,14 +2031,15 @@
                 action: "runKPIAnalysis",
                 data: {
                   prompt: prompt,
-                  stats: statsSummary
-                }
-              })
+                  stats: statsSummary,
+                },
+              }),
             });
-            
+
             const json = await res.json();
             if (json.status !== "success") {
-              const errorMsg = json.message || json.result || "AI解析に失敗しました";
+              const errorMsg =
+                json.message || json.result || "AI解析に失敗しました";
               throw new Error(errorMsg);
             }
 
@@ -1982,22 +2055,28 @@
               text: aiText,
               summary: {
                 profit: kpi.total.profit,
-                ev: kpi.total.ev
-              }
+                ev: kpi.total.ev,
+              },
             };
-            setHistory(prev => [newHistoryItem, ...prev].slice(0, 50));
+            setHistory((prev) => [newHistoryItem, ...prev].slice(0, 50));
             setActiveTab("report");
           } catch (e) {
             console.error("AI Analysis Error:", e);
-            alert("⚠️ AI解析エラーが発生しました:\n" + e.message + "\n\n(クォータ制限、またはモデルの一次的エラーの可能性があります)");
+            alert(
+              "⚠️ AI解析エラーが発生しました:\n" +
+                e.message +
+                "\n\n(クォータ制限、またはモデルの一次的エラーの可能性があります)"
+            );
           } finally {
             setLoading(false);
           }
         };
         const memberList = React.useMemo(() => {
           const members = new Set();
-          const targetData = selectedStore ? data.filter(d => d.店舗名 === selectedStore) : data;
-          targetData.forEach(d => {
+          const targetData = selectedStore
+            ? data.filter((d) => d.店舗名 === selectedStore)
+            : data;
+          targetData.forEach((d) => {
             const name = d.名前 || d.報告者;
             if (name) members.add(name);
           });
@@ -2006,8 +2085,10 @@
 
         const storeList = React.useMemo(() => {
           const stores = new Set();
-          const targetData = selectedMember ? data.filter(d => (d.名前 || d.報告者) === selectedMember) : data;
-          targetData.forEach(d => {
+          const targetData = selectedMember
+            ? data.filter((d) => (d.名前 || d.報告者) === selectedMember)
+            : data;
+          targetData.forEach((d) => {
             if (d.店舗名) stores.add(d.店舗名);
           });
           return Array.from(stores).sort();
@@ -2020,7 +2101,8 @@
           return data.filter((d) => {
             const dt = new Date(d.日付);
             const inRange = dt >= s && dt <= e;
-            const matchMember = !selectedMember || (d.名前 || d.報告者) === selectedMember;
+            const matchMember =
+              !selectedMember || (d.名前 || d.報告者) === selectedMember;
             const matchStore = !selectedStore || d.店舗名 === selectedStore;
             return inRange && matchMember && matchStore;
           });
@@ -2111,15 +2193,22 @@
                       className="w-full bg-white px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-sm font-bold border border-slate-200 outline-none cursor-pointer hover:border-[#0076FF] transition-colors"
                     >
                       <option value="">全員</option>
-                      {memberList.map(m => <option key={m} value={m}>{m}</option>)}
+                      {memberList.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="space-y-1">
                     <label className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase ml-1 md:ml-2 flex items-center justify-between">
                       <span>店舗</span>
                       {(selectedMember || selectedStore) && (
-                        <button 
-                          onClick={() => { setSelectedMember(""); setSelectedStore(""); }} // リセット機能
+                        <button
+                          onClick={() => {
+                            setSelectedMember("");
+                            setSelectedStore("");
+                          }} // リセット機能
                           className="text-[7px] md:text-[8px] text-rose-500 font-bold border-b border-rose-500 leading-none"
                         >
                           ✕
@@ -2132,7 +2221,11 @@
                       className="w-full bg-white px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-[10px] md:text-sm font-bold border border-slate-200 outline-none cursor-pointer hover:border-[#0076FF] transition-colors"
                     >
                       <option value="">全店</option>
-                      {storeList.map(s => <option key={s} value={s}>{s}</option>)}
+                      {storeList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -2179,7 +2272,9 @@
                           {stats.totalProfit.toLocaleString()}
                           <span className="text-xs md:text-sm ml-2">円</span>
                         </div>
-                        <div className="absolute top-0 right-0 p-4 opacity-5 text-4xl">💰</div>
+                        <div className="absolute top-0 right-0 p-4 opacity-5 text-4xl">
+                          💰
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white border border-slate-100 p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] shadow-sm">
@@ -2188,7 +2283,9 @@
                           </div>
                           <div className="text-xl md:text-4xl font-black italic text-[#0076FF]">
                             {stats.totalEv.toLocaleString()}
-                            <span className="text-xs md:text-sm ml-1 md:ml-2">円</span>
+                            <span className="text-xs md:text-sm ml-1 md:ml-2">
+                              円
+                            </span>
                           </div>
                         </div>
                         <div className="bg-white border border-slate-100 p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] shadow-sm">
@@ -2199,7 +2296,9 @@
                             {Math.round(
                               stats.totalProfit / (stats.totalHours || 1)
                             ).toLocaleString()}
-                            <span className="text-xs md:text-sm ml-1 md:ml-2">円</span>
+                            <span className="text-xs md:text-sm ml-1 md:ml-2">
+                              円
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -2794,7 +2893,9 @@
           try {
             const master = window.HOKUTO_MASTER[mode] || {};
             // 内容のSource of Truth: 編集後(details)を優先し、なければ初期データ(稼動内容)を使用
-            const content = String(getField(report, ["details", "稼動内容", "稼働内容", "内容"]));
+            const content = String(
+              getField(report, ["details", "稼動内容", "稼働内容", "内容"])
+            );
             const lines = content.split("\n");
             let results = lines
               .map((line) => {
@@ -3046,7 +3147,7 @@
                 ev: existingEv,
               });
               // 競合を防ぐため不要なキーを削除（聖域ロジック外）
-              setEditData(prev => {
+              setEditData((prev) => {
                 const n = { ...prev };
                 delete n["稼動内容"];
                 delete n["内容"];
@@ -3394,7 +3495,7 @@
             </div>
             {/* モバイル用バックドロップ */}
             {isSidebarOpen && (
-              <div 
+              <div
                 className="sidebar-backdrop"
                 onClick={() => setIsSidebarOpen(false)}
               />
