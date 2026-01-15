@@ -1812,6 +1812,8 @@
           // 店舗換金率情報の取得 (店舗マスタから)
           const storeMaster = JSON.parse(localStorage.getItem("kpi_store_master") || "[]");
 
+          window._kpi_seen_ids = new Set();
+          window._kpi_h_seen_ids = new Set();
           items.forEach((item) => {
             // --- 優先順位: 1. 前回比較実収支列 (永続化データ), 2. 資産推移計算, 3. 換金-投資 ---
             const rawP = item.前回比較実収支;
@@ -1865,11 +1867,18 @@
               
               const storeProfit = currentMedalVal - (prevMedalVal + cash);
 
-              if (isWalletRow) {
+              // 集計時も isWalletRow の判定を厳密にする (IDごとに1回だけ)
+              const id = item.ID || item.id;
+              const seenIds = window._kpi_seen_ids || new Set();
+              window._kpi_seen_ids = seenIds;
+              const isFirstTimeId = !seenIds.has(id);
+
+              if (isWalletRow && isFirstTimeId) {
                 const prevCashVal = prevWalletItem ? (parseFloat(prevWalletItem.残投資金) || 0) : 0;
                 const currentCash = parseFloat(item.残投資金) || 0;
                 const walletProfit = (currentCash + salary + handover) - (prevCashVal + received);
                 p = storeProfit + walletProfit;
+                seenIds.add(id);
               } else {
                 p = storeProfit;
               }
@@ -1880,7 +1889,12 @@
             }
 
             const ev = parseFloat(item.期待値) || 0;
-            const h = parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
+            const hRaw = parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
+            const idAttr = item.ID || item.id;
+            const hSeenIds = window._kpi_h_seen_ids || new Set();
+            window._kpi_h_seen_ids = hSeenIds;
+            const h = hSeenIds.has(idAttr) ? 0 : hRaw; 
+            if (hRaw > 0) hSeenIds.add(idAttr);
             const name = item.名前 || item.報告者 || "不明";
             const machine = item.機種 || (item.稼動内容 ? String(item.稼動内容).split(/[ \n]/)[0] : "不明");
             const dt = new Date(item.日付);
@@ -2579,8 +2593,7 @@ ${Object.entries(kpi.members)
         const [archive, setArchive] = useState([]);
         const [showLibrary, setShowLibrary] = useState(false);
         const [resetMaster, setResetMaster] = useState([]);
-
-        const [aiNormalization, setAiNormalization] = useState(null);
+        const [storeIdx, setStoreIdx] = useState(0); // 追加: 複数店舗切替用インデックス
         const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
         const [syncInfo, setSyncInfo] = useState("");
         const [checkedIds, setCheckedIds] = useState([]);
@@ -2656,7 +2669,25 @@ ${Object.entries(kpi.members)
 
             const { pending, hokuto, strategy, archive, resetMaster } = result;
 
-            setReports(pending || []);
+            // --- 報告データのグルーピング (ID単位) ---
+            const grouped = (pending || []).reduce((acc, curr) => {
+              const id = String(curr.ID);
+              if (!acc[id]) {
+                acc[id] = {
+                  ...curr,
+                  items: [curr],
+                };
+              } else {
+                acc[id].items.push(curr);
+                // 表示用の店舗名を連結 (ユニークにする)
+                const stores = acc[id].items.map(i => i.店舗名 || i.store).filter(Boolean);
+                acc[id].店舗名 = Array.from(new Set(stores)).join(" / ");
+              }
+              return acc;
+            }, {});
+            const groupedArray = Object.values(grouped);
+
+            setReports(groupedArray);
             setDictionary(hokuto?.dictionary || []);
             window.LATEST_DICT = hokuto?.dictionary || [];
             setStrategyData(strategy || []);
@@ -3006,88 +3037,31 @@ ${Object.entries(kpi.members)
             // 初回読み込み時(isInitial=true)のみeditDataを構築。
             // 再解析時はメタデータや備考欄を上書きせず保持する。
             if (isInitial) {
-              const fin = parseFinance(report);
+              const firstItem = (report.items && report.items[0]) || report;
+              const fin = parseFinance(firstItem);
               setEditData({
-                ...report,
-                ID: getField(report, ["ID", "id", "受付番号"]),
-                報告者: getField(report, ["報告者", "name", "名前", "Worker"]),
-                店舗名: getField(report, ["店舗名", "store", "店名"]),
-                日付: getField(report, ["日付", "date", "稼働日"]),
-                稼働時間:
-                  getField(report, [
-                    "稼働時間",
-                    "hours",
-                    "時間",
-                    "TIME (H)",
-                    "time",
-                    "rawHours",
-                  ]) || "0:00",
-                rawHours: getField(report, [
-                  "rawHours",
-                  "hours_str",
-                  "時間入力値",
-                  "稼働時間",
-                ]),
-                exchange:
-                  getField(report, ["換金額", "exchange", "現金化", "換金"]) ||
-                  0,
-                handover:
-                  getField(report, [
-                    "手渡し額",
-                    "手渡し",
-                    "handover",
-                    "送金",
-                    "transfer",
-                  ]) || 0,
-                parentReceived:
-                  getField(report, ["親受取額", "parentReceived", "親受取"]) ||
-                  0,
-                medal20:
-                  getField(report, [
-                    "20スロ",
-                    "最終メダル枚数",
-                    "medal",
-                    "枚数",
-                    "medal20",
-                  ]) || fin.medal20,
-                medal5: getField(report, ["5スロ", "medal5"]) || fin.medal5,
-                pachi4:
-                  getField(report, ["4パチ", "pachi4", "4円"]) || fin.pachi4,
-                cash:
-                  getField(report, [
-                    "本日投資",
-                    "cash",
-                    "投資",
-                    "本日投資額",
-                  ]) || fin.cash,
-                salary:
-                  getField(report, ["本日の給料", "salary", "給料"]) ||
-                  fin.salary,
-                remaining:
-                  getField(report, [
-                    "残投資金",
-                    "remainingCash",
-                    "残高",
-                    "remaining",
-                  ]) || fin.remaining,
-                memo: getField(report, ["備考", "memo", "備考欄"]),
-                details: getField(report, [
-                  "details",
-                  "稼動内容",
-                  "稼働内容",
-                  "内容",
-                ]),
-                imageUrls:
-                  getField(report, ["画像URL", "imageUrls", "images"]) || "",
+                ...firstItem,
+                ID: report.ID,
+                報告者: report.名前 || report.報告者,
+                店舗名: firstItem.店舗名 || firstItem.store,
+                日付: report.日付,
+                稼働時間: getField(firstItem, ["稼働時間", "hours", "時間"]) || "0:00",
+                rawHours: getField(firstItem, ["rawHours", "hours_str", "稼働時間"]),
+                exchange: getField(firstItem, ["換金額", "exchange"]) || 0,
+                handover: getField(firstItem, ["手渡し額", "handover"]) || 0,
+                parentReceived: getField(firstItem, ["親受取額", "parentReceived"]) || 0,
+                medal20: getField(firstItem, ["20スロ", "medal20"]) || fin.medal20,
+                medal5: getField(firstItem, ["5スロ", "medal5"]) || fin.medal5,
+                pachi4: getField(firstItem, ["4パチ", "pachi4"]) || fin.pachi4,
+                cash: getField(firstItem, ["本日投資", "cash"]) || fin.cash,
+                salary: getField(firstItem, ["本日の給料", "salary"]) || fin.salary,
+                remaining: getField(firstItem, ["残投資金", "remaining"]) || fin.remaining,
+                memo: getField(firstItem, ["備考", "memo"]),
+                details: report.details || firstItem.details,
+                imageUrls: report.imageUrls || firstItem.imageUrls || "",
                 ev: existingEv,
               });
-              // 競合を防ぐため不要なキーを削除（聖域ロジック外）
-              setEditData(prev => {
-                const n = { ...prev };
-                delete n["稼動内容"];
-                delete n["内容"];
-                return n;
-              });
+              setStoreIdx(0);
               if (report.ID) setSelectedId(report.ID);
               if (content) fetchAiNormalization(content);
             }
@@ -3119,13 +3093,16 @@ ${Object.entries(kpi.members)
 
         const handleSaveEdit = async () => {
           setLoading(true);
-          const savePayload = {
-            ID: editData.ID,
+          const currentReport = reports.find(r => r.ID === selectedId);
+          const itemsToSave = currentReport.items ? [...currentReport.items] : [currentReport];
+          
+          // 現在編集中のデータを該当するインデックスに反映
+          itemsToSave[storeIdx] = {
+            ...itemsToSave[storeIdx],
             日付: editData.日付,
-            名前: editData.報告者, // スプレッドシートのヘッダー名に合わせる
-            報告者: editData.報告者, // サイドバー表示用にも残す
+            名前: editData.報告者,
             店舗名: editData.店舗名,
-            稼動内容: editData.details, // スプレッドシートのヘッダー名に合わせる
+            稼動内容: editData.details,
             details: editData.details,
             rawHours: editData.rawHours || editData.稼働時間,
             medal20: safeParseFinance(editData.medal20),
@@ -3137,33 +3114,39 @@ ${Object.entries(kpi.members)
             handover: safeParseFinance(editData.handover),
             parentReceived: safeParseFinance(editData.parentReceived),
             remaining: safeParseFinance(editData.remaining),
-            memo: editData.memo, // 内部キー
-            備考: editData.memo, // バックエンド・表示用共通キー
+            memo: editData.memo,
+            備考: editData.memo,
           };
+
           try {
-            await fetch(GAS_URL, {
-              method: "POST",
-              mode: "no-cors",
-              body: JSON.stringify({
-                action: "updatePendingReport",
-                data: {
-                  ...savePayload,
-                  id: savePayload.ID, // API互換性のため
-                  date: savePayload.日付,
-                  name: savePayload.報告者,
-                  store: savePayload.店舗名,
-                  hours: savePayload.rawHours,
-                },
-              }),
-            });
+            // 全てのアイテムをループして更新
+            await Promise.all(itemsToSave.map((item, idx) => 
+              fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                body: JSON.stringify({
+                  action: "updatePendingReport",
+                  data: {
+                    ...item,
+                    id: item.ID,
+                    date: item.日付,
+                    name: item.報告者 || item.名前,
+                    store: item.店舗名,
+                    hours: item.rawHours,
+                    isWalletRow: idx === 0,
+                  },
+                }),
+              })
+            ));
+
             setReports(
               reports.map((r) =>
                 String(r.ID) === String(editData.ID)
-                  ? { ...r, ...savePayload }
+                  ? { ...r, items: itemsToSave, ...itemsToSave[0] } // 0番目を代表として保持
                   : r
               )
             );
-            alert("変更を保存しました");
+            alert("全ての店舗の変更を保存しました");
           } catch (e) {
             alert("保存エラー: " + e.message);
           } finally {
@@ -3173,34 +3156,55 @@ ${Object.entries(kpi.members)
 
         const onApprove = async () => {
           const report = reports.find((r) => r.ID === selectedId);
-          const hours = parseHours(editData.rawHours || editData.稼働時間);
-          const payload = {
-            id: report.ID,
-            date: report.日付,
-            name: report.報告者,
-            store: editData.店舗名,
-            ev: logs.reduce((s, l) => s + l.ev, 0),
-            hours: hours,
-            exchange: safeParseFinance(editData.exchange),
-            handover: safeParseFinance(editData.handover),
-            parentReceived: safeParseFinance(editData.parentReceived),
+          const itemsToApprove = report.items ? [...report.items] : [report];
+          
+          // 現在の編集内容を忘れずに反映 (storeIdx分のみ)
+          itemsToApprove[storeIdx] = {
+            ...itemsToApprove[storeIdx],
+            ...editData,
             medal20: safeParseFinance(editData.medal20),
             medal5: safeParseFinance(editData.medal5),
             pachi4: safeParseFinance(editData.pachi4),
-            memo: editData.memo,
-            details: editData.details,
-            imageUrls: editData.imageUrls, // 画像URLを保持
-            metadata: JSON.stringify(
-              logs.map((l) => ({ line: l.text, machine: l.machine, ev: l.ev }))
-            ), // 解析メタデータを追加
+            cash: safeParseFinance(editData.cash),
+            salary: safeParseFinance(editData.salary),
+            exchange: safeParseFinance(editData.exchange),
+            handover: safeParseFinance(editData.handover),
+            parentReceived: safeParseFinance(editData.parentReceived),
+            remaining: safeParseFinance(editData.remaining),
           };
+
           setLoading(true);
           try {
-            await fetch(GAS_URL, {
-              method: "POST",
-              mode: "no-cors",
-              body: JSON.stringify({ action: "approveReport", data: payload }),
-            });
+            await Promise.all(itemsToApprove.map((item, idx) => {
+              const hours = parseHours(item.rawHours || item.稼働時間);
+              return fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                body: JSON.stringify({
+                  action: "approveReport",
+                  data: {
+                    ...item,
+                    id: item.ID,
+                    date: item.日付,
+                    name: item.報告者 || item.名前,
+                    store: item.店舗名,
+                    ev: item.ev || 0,
+                    hours: hours,
+                    exchange: safeParseFinance(item.exchange),
+                    handover: safeParseFinance(item.handover),
+                    parentReceived: safeParseFinance(item.parentReceived),
+                    medal20: safeParseFinance(item.medal20),
+                    medal5: safeParseFinance(item.medal5),
+                    pachi4: safeParseFinance(item.pachi4),
+                    memo: item.memo,
+                    details: item.details,
+                    imageUrls: item.imageUrls,
+                    metadata: item.metadata,
+                    isWalletRow: idx === 0, // 最初の行だけ集計対象とする
+                  },
+                }),
+              });
+            }));
             setReports(reports.filter((r) => r.ID !== selectedId));
             setSelectedId(null);
             setLogs([]);
@@ -3612,6 +3616,41 @@ ${Object.entries(kpi.members)
                       <span className="absolute -top-3 left-8 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         稼働リザルト
                       </span>
+
+                      {/* 店舗切替タブ (複数店舗ある場合のみ表示) */}
+                      {reports.find(r => r.ID === selectedId)?.items?.length > 1 && (
+                        <div className="flex gap-2 mb-8 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scroll">
+                          {reports.find(r => r.ID === selectedId).items.map((item, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                // 現在の入力を今のインデックスのitemに退避
+                                const currentReport = reports.find(r => r.ID === selectedId);
+                                currentReport.items[storeIdx] = { ...editData };
+                                
+                                setStoreIdx(idx);
+                                const nextItem = currentReport.items[idx];
+                                setEditData({
+                                  ...nextItem,
+                                  ID: currentReport.ID,
+                                  報告者: currentReport.報告者 || currentReport.名前,
+                                  日付: currentReport.日付,
+                                  // 入力値を反映
+                                  details: nextItem.details || currentReport.details,
+                                });
+                              }}
+                              className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${
+                                storeIdx === idx
+                                  ? "bg-slate-900 text-white shadow-lg"
+                                  : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
+                              }`}
+                            >
+                              {item.店舗名 || `店舗 ${idx + 1}`}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="space-y-8">
                         <div className="space-y-4">
                           <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
