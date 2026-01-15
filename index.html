@@ -147,7 +147,6 @@
                 pachi4: "",
                 cash: "",
                 exchange: "",
-                handover: "",
                 memo: "",
                 logs: [] // その店舗に紐付いたログ
             };
@@ -159,6 +158,7 @@
                 date: new Date().toISOString().split('T')[0],
                 hours: "",
                 salary: "",
+                handover: "",
                 parentReceived: "",
                 remainingCash: ""
             });
@@ -224,6 +224,7 @@
                             date: parsed.date || prev.date,
                             hours: parsed.hours || "",
                             salary: parsed.salary || "",
+                            handover: parsed.handover || "",
                             parentReceived: parsed.parentReceived || "",
                             remainingCash: parsed.remainingCash || ""
                         }));
@@ -465,6 +466,7 @@
 
                 const calculatedHours = parseHours(reportInput.hours);
                 const salary = parseFinance(reportInput.salary);
+                const handover = parseFinance(reportInput.handover);
                 const parentReceived = parseFinance(reportInput.parentReceived);
                 const remainingCash = parseFinance(reportInput.remainingCash);
 
@@ -493,6 +495,7 @@
 稼働時間: ${calculatedHours}h
 本日の給料: ${salary.toLocaleString()}円
 親から受取: ${parentReceived.toLocaleString()}円
+親へ手渡し: ${handover.toLocaleString()}円
 財布の残高: ${remainingCash.toLocaleString()}円
 
 この内容で一括送信します。よろしいですか？
@@ -511,7 +514,6 @@
                             pachi4: parseFinance(s.pachi4),
                             cash: parseFinance(s.cash),
                             exchange: parseFinance(s.exchange),
-                            handover: parseFinance(s.handover),
                             memo: s.memo
                         }));
 
@@ -527,6 +529,7 @@
                             hours: calculatedHours,
                             rawHours: reportInput.hours,
                             salary: salary,
+                            handover: handover,
                             parentReceived: parentReceived,
                             remaining: remainingCash,
                             stores: storePayloads // 複数店舗データを配列で送る
@@ -555,6 +558,7 @@
                             date: new Date().toISOString().split('T')[0],
                             hours: "",
                             salary: "",
+                            handover: "",
                             parentReceived: "",
                             remainingCash: ""
                         });
@@ -667,55 +671,7 @@
 
                                                                         {activeTab === 'log' && (
                                     <div className="space-y-6 animate-fadeIn">
-                                        {/* 1. 共通設定（日付・稼働時間など） */}
-                                        <section className="card p-5 space-y-4 shadow-xl border-indigo-500/10">
-                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">基本情報</div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">稼働日</label>
-                                                    <input type="date" value={reportInput.date} onChange={e => setReportInput({ ...reportInput, date: e.target.value })} className="input-dark py-3 font-bold text-xs" />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">稼働時間</label>
-                                                    <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-3" placeholder="8:40~21:10" />
-                                                    <div className="text-[8px] text-slate-600 mt-1 font-bold italic">計算結果: {parseHours(reportInput.hours)}h</div>
-                                                </div>
-                                            </div>
-                                        </section>
-
-                                        {/* 2. 共通ログ入力（浮いているログ） */}
-                                        {logs.length > 0 && (
-                                            <section className="space-y-3">
-                                                <div className="flex justify-between items-center px-1">
-                                                    <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest">未接続のログ / {logs.length}件</div>
-                                                    <button onClick={() => setLogs([])} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">クリア</button>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {logs.map(l => (
-                                                        <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-rose-500 shadow-sm animate-fadeIn bg-rose-500/5">
-                                                            <div className="min-w-0 flex-1 pr-2">
-                                                                <div className="font-black text-sm text-rose-100 truncate">{l.machine}</div>
-                                                                <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
-                                                            </div>
-                                                            <div className="flex items-center gap-1">
-                                                                <select
-                                                                    onChange={(e) => moveLogToStore(l, "common", Number(e.target.value))}
-                                                                    className="bg-slate-800 text-[9px] text-white p-1 rounded border border-white/10"
-                                                                >
-                                                                    <option value="">店舗へ振分</option>
-                                                                    {stores.map((s, idx) => (
-                                                                        <option key={s.id} value={s.id}>店舗{idx + 1}: {s.store || "(未入力)"}</option>
-                                                                    ))}
-                                                                </select>
-                                                                <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-8 h-8 flex items-center justify-center text-xl">×</button>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </section>
-                                        )}
-
-                                        {/* 3. 店舗ごとの入力カード */}
+                                        {/* 1. 店舗ごとの入力カード（最上部に移動） */}
                                         <div className="space-y-8">
                                             {stores.map((store, index) => (
                                                 <div key={store.id} className="space-y-4 animate-fadeIn">
@@ -793,10 +749,6 @@
                                                                     <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-1.5 px-1">換金額 (円)</label>
                                                                     <input type="text" inputmode="numeric" value={store.exchange} onChange={e => updateStoreField(store.id, "exchange", e.target.value)} className="input-dark font-bold py-2 text-xs placeholder:opacity-30" placeholder="0" />
                                                                 </div>
-                                                                <div className="col-span-2">
-                                                                    <label className="text-[9px] font-black text-amber-400 uppercase tracking-widest block mb-1.5 px-1">親へ手渡し (円)</label>
-                                                                    <input type="text" inputmode="numeric" value={store.handover} onChange={e => updateStoreField(store.id, "handover", e.target.value)} className="input-dark font-bold text-xs border-amber-500/20 py-2" placeholder="0" />
-                                                                </div>
                                                             </div>
 
                                                             <div>
@@ -809,23 +761,72 @@
                                             ))}
                                         </div>
 
+                                        {/* 2. 未接続のログ */}
+                                        {logs.length > 0 && (
+                                            <section className="space-y-3">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest">未接続のログ / {logs.length}件</div>
+                                                    <button onClick={() => setLogs([])} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">クリア</button>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {logs.map(l => (
+                                                        <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-rose-500 shadow-sm animate-fadeIn bg-rose-500/5">
+                                                            <div className="min-w-0 flex-1 pr-2">
+                                                                <div className="font-black text-sm text-rose-100 truncate">{l.machine}</div>
+                                                                <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <select
+                                                                    onChange={(e) => moveLogToStore(l, "common", Number(e.target.value))}
+                                                                    className="bg-slate-800 text-[9px] text-white p-1 rounded border border-white/10"
+                                                                >
+                                                                    <option value="">店舗へ振分</option>
+                                                                    {stores.map((s, idx) => (
+                                                                        <option key={s.id} value={s.id}>店舗{idx + 1}: {s.store || "(未入力)"}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-8 h-8 flex items-center justify-center text-xl">×</button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </section>
+                                        )}
+
                                         {/* 店舗追加ボタン */}
                                         <button onClick={addStore} className="w-full py-4 border-2 border-dashed border-indigo-500/30 rounded-2xl flex items-center justify-center gap-2 text-indigo-400 hover:bg-indigo-500/5 transition-all group">
                                             <span className="text-2xl group-active:scale-125 transition-transform">+</span>
                                             <span className="text-xs font-black uppercase tracking-widest">店舗をもう一つ追加する</span>
                                         </button>
 
-                                        {/* 4. まとめ情報（給料・残投資金など） */}
-                                        <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10">
+                                        {/* 4. まとめ・精算（基本情報を統合） */}
+                                        <section className="card p-5 space-y-6 shadow-xl border-indigo-500/10">
                                             <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">1日のまとめ・精算</div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">親から受取 (円)</label>
+                                            
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block px-1">稼働日</label>
+                                                    <input type="date" value={reportInput.date} onChange={e => setReportInput({ ...reportInput, date: e.target.value })} className="input-dark py-3 font-bold text-xs" />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block px-1">稼働時間</label>
+                                                    <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-3" placeholder="8:40~21:10" />
+                                                    <div className="text-[8px] text-slate-600 mt-1 font-bold italic">計算結果: {parseHours(reportInput.hours)}h</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block px-1">親から受取 (円)</label>
                                                     <input type="text" inputmode="numeric" value={reportInput.parentReceived} onChange={e => setReportInput({ ...reportInput, parentReceived: e.target.value })} className="input-dark font-bold text-sm border-indigo-500/20 py-2" placeholder="0" />
                                                 </div>
-                                                <div>
-                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">本日の給料 (円)</label>
-                                                    <input type="text" inputmode="numeric" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-black text-sm border-slate-700/30 py-2" placeholder="0" />
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[9px] font-black text-amber-400 uppercase tracking-widest block px-1">親へ手渡し (円)</label>
+                                                    <input type="text" inputmode="numeric" value={reportInput.handover} onChange={e => setReportInput({ ...reportInput, handover: e.target.value })} className="input-dark font-bold text-sm border-amber-500/20 py-2" placeholder="0" />
+                                                </div>
+                                                <div className="col-span-2 space-y-1.5">
+                                                    <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block px-1">本日の給料 (円)</label>
+                                                    <input type="text" inputmode="numeric" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-black text-sm border-slate-700/30 py-2 text-center" placeholder="0" />
                                                 </div>
                                             </div>
 
