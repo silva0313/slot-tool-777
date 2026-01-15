@@ -3087,91 +3087,45 @@
             // 【Task 1 & 2対応】
             // 初回読み込み時(isInitial=true)のみeditDataを構築。
             // 再解析時はメタデータや備考欄を上書きせず保持する。
+            const currentCommon = isInitial && editData ? {
+              rawHours: editData.rawHours,
+              salary: editData.salary,
+              handover: editData.handover
+            } : null;
+
             if (isInitial) {
-              const fin = parseFinance(report);
-              setEditData({
+              const finance = parseFinance(report);
+              const initialData = {
                 ...report,
                 ID: getField(report, ["ID", "id", "受付番号"]),
                 報告者: getField(report, ["報告者", "name", "名前", "Worker"]),
                 店舗名: getField(report, ["店舗名", "store", "店名"]),
                 日付: getField(report, ["日付", "date", "稼働日"]),
-                稼働時間:
-                  getField(report, [
-                    "稼働時間",
-                    "hours",
-                    "時間",
-                    "TIME (H)",
-                    "time",
-                    "rawHours",
-                  ]) || "0:00",
-                rawHours: getField(report, [
+                rawHours: currentCommon ? currentCommon.rawHours : getField(report, [
                   "rawHours",
                   "hours_str",
                   "時間入力値",
                   "稼働時間",
+                  "0",
                 ]),
-                exchange:
-                  getField(report, ["換金額", "exchange", "現金化", "換金"]) ||
-                  0,
-                handover:
-                  getField(report, [
-                    "手渡し額",
-                    "手渡し",
-                    "handover",
-                    "送金",
-                    "transfer",
-                  ]) || 0,
-                parentReceived:
-                  getField(report, ["親受取額", "parentReceived", "親受取"]) ||
-                  0,
-                medal20:
-                  getField(report, [
-                    "20スロ",
-                    "最終メダル枚数",
-                    "medal",
-                    "枚数",
-                    "medal20",
-                  ]) || fin.medal20,
-                medal5: getField(report, ["5スロ", "medal5"]) || fin.medal5,
-                pachi4:
-                  getField(report, ["4パチ", "pachi4", "4円"]) || fin.pachi4,
-                cash:
-                  getField(report, [
-                    "本日投資",
-                    "cash",
-                    "投資",
-                    "本日投資額",
-                  ]) || fin.cash,
-                salary:
-                  getField(report, ["本日の給料", "salary", "給料"]) ||
-                  fin.salary,
-                remaining:
-                  getField(report, [
-                    "残投資金",
-                    "remainingCash",
-                    "残高",
-                    "remaining",
-                  ]) || fin.remaining,
+                exchange: getField(report, ["換金額", "exchange", "現金化", "換金"]) || 0,
+                handover: currentCommon ? currentCommon.handover : getField(report, ["手渡し額", "手渡し", "handover", 0]),
+                parentReceived: getField(report, ["親受取額", "parentReceived", "親受取"]) || 0,
+                medal20: getField(report, ["20スロ", "最終メダル枚数", "medal", "枚数", "medal20"]) || finance.medal20,
+                medal5: getField(report, ["5スロ", "medal5"]) || finance.medal5,
+                pachi4: getField(report, ["4パチ", "pachi4", "4円"]) || finance.pachi4,
+                cash: getField(report, ["本日投資", "cash", "投資", "本日投資額"]) || finance.cash,
+                salary: currentCommon ? currentCommon.salary : (getField(report, ["本日の給料", "salary", "給料"]) || finance.salary),
+                remaining: getField(report, ["残投資金", "remainingCash", "残高", "remaining"]) || finance.remaining,
                 memo: getField(report, ["備考", "memo", "備考欄"]),
-                details: getField(report, [
-                  "details",
-                  "稼動内容",
-                  "稼働内容",
-                  "内容",
-                ]),
-                imageUrls:
-                  getField(report, ["画像URL", "imageUrls", "images"]) || "",
+                details: getField(report, ["details", "稼動内容", "稼働内容", "内容"]),
+                imageUrls: getField(report, ["画像URL", "imageUrls", "images"]) || "",
                 ev: existingEv,
-              });
-              // 競合を防ぐため不要なキーを削除（聖域ロジック外）
-              setEditData((prev) => {
-                const n = { ...prev };
-                delete n["稼動内容"];
-                delete n["内容"];
-                return n;
-              });
-              if (report.ID) setSelectedId(report.ID);
-              if (content) fetchAiNormalization(content);
+              };
+              
+              setEditData(initialData);
+              if (initialData.ID) setSelectedId(initialData.ID);
+              if (initialData.details) fetchAiNormalization(initialData.details);
             }
           } catch (e) {
             console.error("Analysis Error:", e);
@@ -3270,31 +3224,31 @@
             // グループ内の全店舗をループして承認APIを叩く
             // 本来は一括承認APIを用意するのが理想だが、既存のapproveReportを順次実行する
             for (const store of group.stores) {
-              // 現在編集中の店舗の場合は、UI上の最新データ(logs等)を使用し、それ以外は元データを使用
               const isCurrent = String(store.ID) === String(editData.ID);
               const targetData = isCurrent ? editData : store;
               const targetLogs = isCurrent ? logs : (targetData.metadata ? JSON.parse(targetData.metadata) : []);
 
               const payload = {
                 id: targetData.ID,
-                date: targetData.日付,
+                date: editData.日付, // グループ共通
                 name: group.name,
                 store: targetData.店舗名,
                 ev: isCurrent ? logs.reduce((s, l) => s + l.ev, 0) : (parseFloat(targetData.期待値) || 0),
-                hours: parseHours(targetData.rawHours || targetData.稼働時間),
+                hours: parseHours(editData.rawHours), // グループ共通項目として同期
                 exchange: safeParseFinance(targetData.exchange || targetData.換金額),
-                handover: safeParseFinance(targetData.handover || targetData.手渡し額),
+                handover: safeParseFinance(editData.handover), // グループ共通項目として同期
                 parentReceived: safeParseFinance(targetData.parentReceived || targetData.親受取額),
                 medal20: safeParseFinance(targetData.medal20 || targetData["20スロ"]),
                 medal5: safeParseFinance(targetData.medal5 || targetData["5スロ"]),
                 pachi4: safeParseFinance(targetData.pachi4 || targetData["4パチ"]),
+                salary: safeParseFinance(editData.salary), // グループ共通項目として同期
                 memo: targetData.memo || targetData.備考,
                 details: targetData.details || targetData.稼動内容,
                 imageUrls: targetData.imageUrls || targetData.画像URL || "",
                 metadata: JSON.stringify(
                   targetLogs.map((l) => ({ line: l.text || l.line, machine: l.machine, ev: l.ev }))
                 ),
-                reportId: group.id // 紐付け用ID
+                reportId: group.id
               };
 
               await fetch(GAS_URL, {
@@ -3562,6 +3516,60 @@
                 );
                 return (
                   <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-20">
+                    {/* A-1: 基本情報 & 共通項目 (最上部へ移動) */}
+                    <div className="bg-slate-900 rounded-[2.5rem] p-10 lg:p-14 text-white shadow-xl relative overflow-hidden border border-white/10">
+                      <span className="absolute top-4 left-8 text-[10px] font-black text-slate-500 uppercase tracking-widest z-20">
+                        基本情報
+                      </span>
+                      <div className="flex flex-col gap-8">
+                        {/* 報告者・日付 */}
+                        <div className="grid grid-cols-2 gap-10 uppercase text-[9px] font-black text-slate-500">
+                          <div>
+                            <div className="mb-1 opacity-50">報告者 / Operator</div>
+                            <div className="text-base font-black text-white italic tracking-tighter">{editData.報告者}</div>
+                          </div>
+                          <div>
+                            <div className="mb-2 opacity-50">稼働日 / Work Date</div>
+                            <input
+                              type="date"
+                              value={formatDateLocal(editData.日付)}
+                              onChange={(e) => setEditData({ ...editData, 日付: e.target.value })}
+                              className="bg-white/10 border border-white/20 text-sm font-black text-white italic px-3 py-1.5 rounded-xl outline-none focus:border-indigo-500/50"
+                            />
+                          </div>
+                        </div>
+
+                        {/* 共通項目: 時間・給料・手渡し */}
+                        <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-8">
+                          <div>
+                            <div className="text-[10px] font-black text-slate-500 uppercase mb-2">稼働時間</div>
+                            <input
+                              value={editData.rawHours || ""}
+                              onChange={(e) => setEditData({ ...editData, rawHours: e.target.value })}
+                              className="w-full bg-white/10 border border-white/10 p-3 rounded-xl text-xs font-black text-white"
+                              placeholder="8:40~21:10"
+                            />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-black text-emerald-500 uppercase mb-2">本日の給料</div>
+                            <input
+                              value={editData.salary ?? 0}
+                              onChange={(e) => setEditData({ ...editData, salary: e.target.value })}
+                              className="w-full bg-white/10 border border-white/10 p-3 rounded-xl text-xs font-black text-white"
+                            />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-black text-amber-500 uppercase mb-2">親へ手渡し</div>
+                            <input
+                              value={editData.handover ?? 0}
+                              onChange={(e) => setEditData({ ...editData, handover: e.target.value })}
+                              className="w-full bg-white/10 border border-white/10 p-3 rounded-xl text-xs font-black text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* 店舗切り替えタブ（複数店舗の場合） */}
                     {group.stores.length > 1 && (
                       <div className="flex gap-2 bg-slate-200 p-1 rounded-2xl overflow-x-auto shadow-inner">
@@ -3580,711 +3588,129 @@
                         ))}
                       </div>
                     )}
-                  {/* A: 報告カード */}
-                  <div className="bg-slate-900 rounded-[2.5rem] p-10 lg:p-14 text-white shadow-xl relative overflow-hidden border border-white/10">
-                    <span className="absolute top-4 left-8 text-[10px] font-black text-slate-500 uppercase tracking-widest z-20">
-                      報告カード
-                    </span>
-                    <div className="flex flex-col gap-8">
-                      {/* --- Gemini AI Analysis UI --- */}
-                      {(isAiAnalyzing || aiNormalization) && (
-                        <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] space-y-6 animate-fadeIn relative overflow-hidden">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                              <span
-                                className={`text-xl ${
-                                  isAiAnalyzing ? "animate-spin" : ""
-                                }`}
-                              >
-                                {isAiAnalyzing ? "✨" : "🤖"}
-                              </span>
-                              <div>
-                                <h4 className="text-[10px] font-black italic text-slate-900 leading-none">
-                                  AI入力補助{" "}
-                                  {isAiAnalyzing
-                                    ? "（解析中...）"
-                                    : "（提案準備完了）"}
-                                </h4>
-                                {!isAiAnalyzing && (
-                                  <p className="text-[8px] text-slate-500 font-bold uppercase mt-0.5">
-                                    Confidence: HIGH (Free Tier Active)
-                                  </p>
-                                )}
+
+                    {/* A-2: 報告詳細 (1日のまとめ) */}
+                    <div className="bg-slate-900 rounded-[2.5rem] p-10 lg:p-14 text-white shadow-xl relative overflow-hidden border border-white/10">
+                      <span className="absolute top-4 left-8 text-[10px] font-black text-slate-500 uppercase tracking-widest z-20">
+                        報告詳細
+                      </span>
+                      <div className="flex flex-col gap-8">
+                        {/* Gemini AI UI (省略中) */}
+                        {(isAiAnalyzing || aiNormalization) && (
+                          <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] space-y-6 animate-fadeIn relative overflow-hidden">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-3">
+                                <span className={`text-xl ${isAiAnalyzing ? "animate-spin" : ""}`}>{isAiAnalyzing ? "✨" : "🤖"}</span>
+                                <div>
+                                  <h4 className="text-[10px] font-black italic text-slate-900 leading-none">AI入力補助</h4>
+                                </div>
                               </div>
                             </div>
-                            {isAiAnalyzing && (
-                              <div className="flex gap-1">
-                                <span className="w-1.5 h-1.5 bg-[#00E0FF] rounded-full animate-bounce"></span>
-                                <span className="w-1.5 h-1.5 bg-[#00E0FF] rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                                <span className="w-1.5 h-1.5 bg-[#00E0FF] rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                            {aiNormalization && !isAiAnalyzing && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <div className="text-[9px] font-black text-slate-500 uppercase ml-1 tracking-widest">Normalizing: Machine</div>
+                                    <div className="bg-white/10 px-4 py-3 rounded-2xl text-xs font-black border border-white/5 text-white italic">{aiNormalization.machine}</div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="text-[9px] font-black text-slate-500 uppercase ml-1 tracking-widest">Normalizing: Store</div>
+                                    <div className="flex items-center gap-3">
+                                      <div className="bg-white/10 px-4 py-3 rounded-2xl text-xs font-black border border-white/5 text-white italic truncate">{aiNormalization.store}</div>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
+                        )}
 
-                          {aiNormalization && !isAiAnalyzing && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <div className="text-[9px] font-black text-slate-500 uppercase ml-1 tracking-widest">
-                                    Normalizing: Machine
-                                  </div>
-                                  <div className="bg-white/10 px-4 py-3 rounded-2xl text-xs font-black border border-white/5 text-white italic">
-                                    {aiNormalization.machine}
-                                  </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="text-[9px] font-black text-slate-500 uppercase ml-1 tracking-widest">
-                                    Normalizing: Store
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex-1 bg-white/10 px-4 py-3 rounded-2xl text-xs font-black border border-white/5 text-white italic truncate">
-                                      {aiNormalization.store}
-                                    </div>
-                                    {editData.店舗名 !==
-                                      aiNormalization.store &&
-                                      aiNormalization.store !== "該当なし" && (
-                                        <button
-                                          onClick={() =>
-                                            setEditData({
-                                              ...editData,
-                                              店舗名: aiNormalization.store,
-                                            })
-                                          }
-                                          className="bg-[#0076FF] hover:bg-[#0060FF] text-white px-4 py-3 rounded-2xl text-[9px] font-black transition-all shadow-lg active:scale-95 shrink-0"
-                                        >
-                                          Update Store
-                                        </button>
-                                      )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <div className="text-[9px] font-black text-rose-500 uppercase ml-1 tracking-widest">
-                                    Series Check
-                                  </div>
-                                  <div className="bg-rose-500/5 p-4 rounded-2xl text-[10px] font-bold text-slate-400 leading-relaxed italic border border-rose-500/10">
-                                    {aiNormalization.series_check}
-                                  </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="text-[9px] font-black text-slate-500 uppercase ml-1 tracking-widest">
-                                    Context Summary
-                                  </div>
-                                  <div className="bg-white/5 p-4 rounded-2xl text-[10px] font-bold text-slate-500 leading-relaxed border border-white/5">
-                                    {aiNormalization.parsed_context}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Decorative Background Element */}
-                          <div className="absolute -bottom-10 -right-10 text-8xl font-black italic opacity-[0.03] pointer-events-none transform -rotate-12">
-                            FLASH
-                          </div>
-                        </div>
-                      )}
-                      <div>
                         <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/10">
                           <div className="flex justify-between items-center mb-3 px-1">
-                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                              稼働ログ詳細 (※修正可能)
-                            </div>
+                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">稼働ログ詳細</div>
                             <div className="flex gap-2">
-                              <button
-                                onClick={() =>
-                                  handleAnalyze(editData, evMode, false)
-                                }
-                                className="text-[9px] font-black bg-indigo-500/20 text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-indigo-500/30 transition-all"
-                              >
-                                再解析 (期待値・機種)
-                              </button>
-                              <button
-                                onClick={handleSaveEdit}
-                                className="text-[9px] font-black bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg hover:bg-emerald-500/30 transition-all"
-                              >
-                                変更を保存 💾
-                              </button>
+                              <button onClick={() => handleAnalyze(editData, evMode, false)} className="text-[9px] font-black bg-indigo-500/20 text-indigo-400 px-3 py-1.5 rounded-lg">再解析</button>
+                              <button onClick={handleSaveEdit} className="text-[9px] font-black bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg">店舗保存</button>
                             </div>
                           </div>
                           <textarea
                             value={editData.details}
-                            onChange={(e) =>
-                              setEditData({
-                                ...editData,
-                                details: e.target.value,
-                              })
-                            }
-                            className="w-full bg-slate-800/50 border border-white/10 p-4 rounded-2xl text-xs font-bold leading-relaxed min-h-[150px] outline-none focus:border-indigo-500/50 transition-all text-white"
-                            placeholder="稼働内容..."
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-10 border-t border-white/5 pt-8 uppercase text-[9px] font-black text-slate-500">
-                        <div>
-                          <div className="mb-1 opacity-50">
-                            報告者 / Operator
-                          </div>
-                          <div className="text-base font-black text-white italic tracking-tighter">
-                            {editData.報告者}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="mb-2 opacity-50">
-                            稼働日 / Work Date
-                          </div>
-                          <input
-                            type="date"
-                            value={formatDateLocal(editData.日付)}
-                            onChange={(e) =>
-                              setEditData({ ...editData, 日付: e.target.value })
-                            }
-                            className="bg-white/10 border border-white/20 text-sm font-black text-white italic px-3 py-1.5 rounded-xl outline-none focus:border-indigo-500/50"
+                            onChange={(e) => setEditData({ ...editData, details: e.target.value })}
+                            className="w-full bg-slate-800/50 border border-white/10 p-4 rounded-2xl text-xs font-bold min-h-[150px] outline-none text-white"
                           />
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 白背景コンテナ (B+Cを包含) */}
-                  <div className="bg-white rounded-[3.5rem] p-6 lg:p-8 shadow-2xl border border-slate-100 space-y-10">
-                    {/* B: 稼働リザルト */}
-                    <div className="border border-slate-100 rounded-[2.5rem] p-8 lg:p-10 relative">
-                      <span className="absolute -top-3 left-8 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        稼働リザルト
-                      </span>
-                      <div className="space-y-8">
+                    {/* B: 稼働数価 */}
+                    <div className="bg-white rounded-[3.5rem] p-6 lg:p-8 shadow-2xl border border-slate-100 space-y-10">
+                      <div className="border border-slate-100 rounded-[2.5rem] p-8 lg:p-10 relative">
+                        <span className="absolute -top-3 left-8 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">店舗別リザルト</span>
+                        <div className="space-y-8">
+                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                            <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">店舗名</div>
+                            <input value={editData.店舗名 || ""} onChange={(e) => setEditData({ ...editData, 店舗名: e.target.value })} className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full" />
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="text-[9px] font-black text-rose-500 uppercase ml-1">20スロ</label>
+                              <input value={editData.medal20 ?? 0} onChange={(e) => setEditData({ ...editData, medal20: e.target.value })} className="bg-white border text-base font-black px-4 py-2 rounded-xl w-full" />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-black text-indigo-500 uppercase ml-1">5スロ</label>
+                              <input value={editData.medal5 ?? 0} onChange={(e) => setEditData({ ...editData, medal5: e.target.value })} className="bg-white border text-base font-black px-4 py-2 rounded-xl w-full" />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-black text-emerald-500 uppercase ml-1">4パチ</label>
+                              <input value={editData.pachi4 ?? 0} onChange={(e) => setEditData({ ...editData, pachi4: e.target.value })} className="bg-white border text-base font-black px-4 py-2 rounded-xl w-full" />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                              <div className="text-[9px] font-black text-rose-500 uppercase mb-1">本日投資</div>
+                              <input value={editData.cash ?? 0} onChange={(e) => setEditData({ ...editData, cash: e.target.value })} className="w-full bg-white border text-sm font-black px-3 py-2 rounded-xl" />
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                              <div className="text-[9px] font-black text-indigo-500 uppercase mb-1">親から受取</div>
+                              <input value={editData.parentReceived ?? 0} onChange={(e) => setEditData({ ...editData, parentReceived: e.target.value })} className="w-full bg-white border text-sm font-black px-3 py-2 rounded-xl" />
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                              <div className="text-[9px] font-black text-emerald-500 uppercase mb-1">換金額</div>
+                              <input value={editData.exchange ?? 0} onChange={(e) => setEditData({ ...editData, exchange: e.target.value })} className="w-full bg-white border text-sm font-black px-3 py-2 rounded-xl" />
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                              <div className="text-[9px] font-black text-amber-500 uppercase mb-1">残投資金</div>
+                              <input value={editData.remaining ?? 0} onChange={(e) => setEditData({ ...editData, remaining: e.target.value })} className="w-full bg-white border text-sm font-black px-3 py-2 rounded-xl" />
+                            </div>
+                          </div>
+
+                          <textarea value={editData.memo || ""} onChange={(e) => setEditData({ ...editData, memo: e.target.value })} className="w-full bg-slate-50 border p-4 rounded-2xl text-xs font-medium min-h-[80px]" placeholder="備考" />
+                        </div>
+                      </div>
+
+                      {/* C: 稼働詳細 (EV) */}
+                      <div className="border border-slate-100 rounded-[2.5rem] p-8 lg:p-10 relative">
+                        <span className="absolute -top-3 left-8 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">期待値詳細</span>
                         <div className="space-y-4">
-                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
-                              店舗名
+                          {logs.map((log, i) => (
+                            <div key={i} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
+                              <div className="text-xs font-black">{log.machine} : {log.ev}円</div>
+                              <button onClick={() => setLogs(logs.filter((_, idx) => idx !== i))} className="text-rose-400 text-lg">✕</button>
                             </div>
-                            <input
-                              value={editData.店舗名 || ""}
-                              onChange={(e) =>
-                                setEditData({
-                                  ...editData,
-                                  店舗名: e.target.value,
-                                })
-                              }
-                              className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full"
-                              placeholder="例: マルハン〇〇店"
-                            />
-                          </div>
-
-                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
-                              稼働時間
-                            </div>
-                            <input
-                              value={editData.rawHours || ""}
-                              onChange={(e) =>
-                                setEditData({
-                                  ...editData,
-                                  rawHours: e.target.value,
-                                })
-                              }
-                              className="bg-white border text-base font-black px-4 py-3 rounded-xl w-full"
-                              placeholder="8:40~21:10"
-                            />
-                            <div className="text-[9px] font-bold text-[#0076FF] mt-2 ml-1 italic">
-                              数値:{" "}
-                              {parseHours(
-                                editData.rawHours || editData.稼働時間
-                              )}
-                              h
-                            </div>
-                          </div>
-
-                          <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-6">
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
-                              最終枚数 / 球数
-                            </div>
-                            <div className="space-y-4">
-                              <div>
-                                <label className="text-[9px] font-black text-rose-500 uppercase ml-1">
-                                  20スロ{" "}
-                                  <span className="text-[7px] text-slate-400 font-normal italic">
-                                    ※「枚」OK
-                                  </span>
-                                </label>
-                                <input
-                                  type="text"
-                                  value={editData.medal20 ?? 0}
-                                  onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
-                                      medal20: e.target.value,
-                                    })
-                                  }
-                                  className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full"
-                                  placeholder="2500枚"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[9px] font-black text-indigo-500 uppercase ml-1">
-                                  5スロ{" "}
-                                  <span className="text-[7px] text-slate-400 font-normal italic">
-                                    ※「枚」OK
-                                  </span>
-                                </label>
-                                <input
-                                  type="text"
-                                  value={editData.medal5 ?? 0}
-                                  onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
-                                      medal5: e.target.value,
-                                    })
-                                  }
-                                  className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full"
-                                  placeholder="1000枚"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[9px] font-black text-emerald-500 uppercase ml-1">
-                                  4円パチ{" "}
-                                  <span className="text-[7px] text-slate-400 font-normal italic">
-                                    ※「玉」OK
-                                  </span>
-                                </label>
-                                <input
-                                  type="text"
-                                  value={editData.pachi4 ?? 0}
-                                  onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
-                                      pachi4: e.target.value,
-                                    })
-                                  }
-                                  className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full"
-                                  placeholder="5000玉"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-4">
-                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <div className="text-[10px] font-black text-rose-500 uppercase mb-2 ml-1">
-                                    本日投資 (円)
-                                  </div>
-                                  <input
-                                    type="text"
-                                    value={editData.cash ?? 0}
-                                    onChange={(e) =>
-                                      setEditData({
-                                        ...editData,
-                                        cash: e.target.value,
-                                      })
-                                    }
-                                    className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full"
-                                    placeholder="15000"
-                                  />
-                                </div>
-                                <div>
-                                  <div className="text-[10px] font-black text-indigo-500 uppercase mb-2 ml-1">
-                                    親から受取 (円)
-                                  </div>
-                                  <input
-                                    type="text"
-                                    value={editData.parentReceived ?? 0}
-                                    onChange={(e) =>
-                                      setEditData({
-                                        ...editData,
-                                        parentReceived: e.target.value,
-                                      })
-                                    }
-                                    className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full"
-                                    placeholder="0"
-                                  />
-                                </div>
-                                <div>
-                                  <div className="text-[10px] font-black text-emerald-500 uppercase mb-2 ml-1">
-                                    換金額 (円)
-                                  </div>
-                                  <input
-                                    type="text"
-                                    value={editData.exchange ?? 0}
-                                    onChange={(e) =>
-                                      setEditData({
-                                        ...editData,
-                                        exchange: e.target.value,
-                                      })
-                                    }
-                                    className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full"
-                                    placeholder="30000"
-                                  />
-                                </div>
-                                <div>
-                                  <div className="text-[10px] font-black text-amber-500 uppercase mb-2 ml-1">
-                                    親へ手渡し (円)
-                                  </div>
-                                  <input
-                                    type="text"
-                                    value={editData.handover ?? 0}
-                                    onChange={(e) =>
-                                      setEditData({
-                                        ...editData,
-                                        handover: e.target.value,
-                                      })
-                                    }
-                                    className="bg-white border text-lg font-black px-4 py-3 rounded-xl w-full"
-                                    placeholder="25000"
-                                  />
-                                </div>
-                              </div>
-                              <div className="bg-white p-6 rounded-2xl border border-slate-200">
-                                <div className="text-[10px] font-black text-slate-400 uppercase mb-2 text-center">
-                                  本日の給料
-                                </div>
-                                <input
-                                  type="text"
-                                  value={editData.salary ?? 0}
-                                  onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
-                                      salary: e.target.value,
-                                    })
-                                  }
-                                  className="bg-slate-50 border border-slate-100 text-lg font-black px-4 py-3 rounded-xl w-full text-center"
-                                  placeholder="10000"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="bg-indigo-50 border border-indigo-100 p-8 rounded-[2.5rem] shadow-sm">
-                              <div className="text-[10px] font-black text-indigo-400 uppercase mb-3 ml-1 text-center">
-                                最終的な残投資金
-                              </div>
-                              <input
-                                type="text"
-                                value={editData.remaining ?? 0}
-                                onChange={(e) =>
-                                  setEditData({
-                                    ...editData,
-                                    remaining: e.target.value,
-                                  })
-                                }
-                                className="bg-white border-2 border-indigo-200 text-3xl font-black px-6 py-4 rounded-3xl w-full text-indigo-900 text-center"
-                                placeholder="0"
-                              />
-                            </div>
-
-                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                              <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
-                                メモ・備考
-                              </div>
-                              <textarea
-                                value={editData.memo || ""}
-                                onChange={(e) =>
-                                  setEditData({
-                                    ...editData,
-                                    memo: e.target.value,
-                                  })
-                                }
-                                className="w-full bg-white border p-6 rounded-3xl text-sm font-medium min-h-[120px] outline-none"
-                                placeholder="備考"
-                              />
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
                     </div>
 
-                    {/* C: 稼働詳細 */}
-                    <div className="border border-slate-100 rounded-[2.5rem] p-8 lg:p-10 relative space-y-10">
-                      <span className="absolute -top-3 left-8 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        稼働詳細
-                      </span>
-                      <div className="flex justify-between items-center bg-slate-100 p-2 rounded-3xl">
-                        <div className="flex flex-col ml-4">
-                          <h3 className="text-xl font-black italic">北斗</h3>
-                          <p className="text-[9px] font-bold text-amber-600 uppercase">
-                            ※おすすめ週間のみ優良店に変更してください
-                          </p>
-                        </div>
-                        <div className="flex gap-4 items-center">
-                          <div className="flex gap-2 bg-slate-200/50 p-1 rounded-2xl">
-                            {["設定１相当", "優良店"].map((m) => (
-                              <button
-                                key={m}
-                                onClick={() => {
-                                  setEvMode(m);
-                                  handleAnalyze(editData, m, false);
-                                }}
-                                className={`px-5 py-2 text-[9px] font-black rounded-xl ${
-                                  evMode === m
-                                    ? "bg-white shadow text-[#0076FF]"
-                                    : "text-slate-400"
-                                }`}
-                              >
-                                {m}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                    {/* Aggregate Footer */}
+                    <div className="bg-[#0076FF] p-10 rounded-[4rem] text-white flex justify-between items-center shadow-2xl">
+                      <div>
+                        <div className="text-[10px] font-black opacity-50 uppercase">Aggregate EV</div>
+                        <div className="text-4xl font-black italic">{logs.reduce((s, l) => s + l.ev, 0).toLocaleString()} 円</div>
                       </div>
-                      <div className="space-y-5">
-                        {logs.map((log, i) => (
-                          <div
-                            key={i}
-                            className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col gap-6 animate-fadeIn relative overflow-hidden group"
-                          >
-                            <div className="space-y-5">
-                              <div>
-                                <span
-                                  className={`text-[10px] font-black px-4 py-2 rounded-xl text-white shadow-sm inline-block ${log.color}`}
-                                >
-                                  {log.machine}
-                                </span>
-                              </div>
-
-                              <div className="text-base font-black text-slate-800 leading-relaxed pl-1">
-                                {log.text}
-                                {log.source && (
-                                  <div className="text-[9px] font-black text-[#0076FF] italic opacity-60 mt-2">
-                                    Sheet: {log.source}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="pt-6 border-t border-slate-200 flex items-end justify-between">
-                                <div className="space-y-2">
-                                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">
-                                    算出期待値 (編集可能)
-                                  </div>
-                                  <div className="flex items-center gap-3 relative">
-                                    <input
-                                      type="number"
-                                      value={log.ev || ""}
-                                      placeholder="0"
-                                      onChange={(e) => {
-                                        const n = [...logs];
-                                        n[i].ev = parseInt(e.target.value) || 0;
-                                        setLogs(n);
-                                      }}
-                                      className="input-ev text-xl"
-                                    />
-                                    {(() => {
-                                      // スマートサジェスト (Smart Suggest) ロジック
-                                      const line = log.text.toLowerCase();
-                                      const machine = log.machine;
-
-                                      // 北斗は専用ロジック(1G単位)があるため、この汎用リセット提案からは除外する
-                                      if (machine === "スマスロ北斗の拳")
-                                        return null;
-
-                                      // 1. 朝一リセ即時確定 (タグ優先判定)
-                                      // 特定済みの機種名 (machine) と一致するマスタのみを検索対象にする
-                                      const rm = resetMaster.find(
-                                        (m) => m.機種名 === machine
-                                      );
-
-                                      if (rm) {
-                                        // リセットを示唆する共通用語 または マスタ固有キーワードが含まれているか
-                                        const commonWords = [
-                                          "リセ",
-                                          "リセット",
-                                          "設定変更",
-                                          "変更後",
-                                          "朝一",
-                                          "短縮",
-                                          "天国",
-                                        ];
-                                        const mKeywords = (rm.キーワード || "")
-                                          .split(/[,，、]/)
-                                          .map((k) => k.trim().toLowerCase())
-                                          .filter(Boolean);
-                                        const allResetWords = [
-                                          ...new Set([
-                                            ...commonWords,
-                                            ...mKeywords,
-                                          ]),
-                                        ];
-
-                                        const isResetContext =
-                                          allResetWords.some((k) =>
-                                            line.includes(k)
-                                          );
-                                        if (!isResetContext) return null; // リセット文脈でなければサジェストスキップ
-                                        const unitPrice =
-                                          parseInt(rm.単価) || 0;
-                                        // 倍数抽出: "×3", "*2", "5個" などに対応
-                                        const multMatch = line.match(
-                                          /[×*]\s*(\d+)|(\d+)\s*個/
-                                        );
-                                        const count = multMatch
-                                          ? parseInt(
-                                              multMatch[1] || multMatch[2]
-                                            )
-                                          : 1;
-                                        const resetEv = unitPrice * count;
-
-                                        // G数に基づいたサジェスト(±5G精度検索)がある場合はそちらを優先するため、ここではサジェストしない
-                                        // 例: ラブ嬢リセ200g 等の拾い直し時は、0g~90gの定額300円提案を抑制する
-                                        const gMatch =
-                                          line.match(/(\d+)\s*[gG]/);
-                                        const hasHistoricalData =
-                                          gMatch &&
-                                          archive &&
-                                          archive.some((h) => {
-                                            if (
-                                              h.machine !== machine ||
-                                              !h.metadata
-                                            )
-                                              return false;
-                                            const hGMatch = String(
-                                              h.details || ""
-                                            )
-                                              .toLowerCase()
-                                              .match(/(\d+)\s*[gG]/);
-                                            return (
-                                              hGMatch &&
-                                              Math.abs(
-                                                parseInt(hGMatch[1]) -
-                                                  parseInt(gMatch[1])
-                                              ) <= 10
-                                            );
-                                          });
-
-                                        if (
-                                          log.ev !== resetEv &&
-                                          !hasHistoricalData
-                                        ) {
-                                          return (
-                                            <div
-                                              onClick={() => {
-                                                const n = [...logs];
-                                                n[i].ev = resetEv;
-                                                setLogs(n);
-                                              }}
-                                              className="mt-2 bg-rose-50 text-rose-600 text-[10px] font-black px-4 py-2 rounded-xl cursor-pointer shadow-sm hover:bg-rose-100 transition-all border border-rose-100 animate-fadeIn"
-                                            >
-                                              {resetEv.toLocaleString()}円{" "}
-                                              {count > 1
-                                                ? `(${unitPrice.toLocaleString()}×${count})`
-                                                : ""}
-                                            </div>
-                                          );
-                                        }
-                                      }
-
-                                      // 2. ±5G 精度検索 (過去ログ 10件以上)
-                                      const gMatch = line.match(/(\d+)\s*[gG]/);
-                                      if (gMatch && archive) {
-                                        const currentG = parseInt(gMatch[1]);
-                                        const matches = archive.filter((h) => {
-                                          if (
-                                            h.machine !== machine ||
-                                            !h.metadata
-                                          )
-                                            return false;
-                                          const hGMatch = String(
-                                            h.details || ""
-                                          )
-                                            .toLowerCase()
-                                            .match(/(\d+)\s*[gG]/);
-                                          if (!hGMatch) return false;
-                                          const hG = parseInt(hGMatch[1]);
-                                          return Math.abs(hG - currentG) <= 10;
-                                        });
-
-                                        if (matches.length >= 10) {
-                                          // metadata内の該当行の期待値を取得して平均
-                                          const evs = matches
-                                            .map((h) => {
-                                              try {
-                                                const meta =
-                                                  typeof h.metadata === "string"
-                                                    ? JSON.parse(h.metadata)
-                                                    : h.metadata;
-                                                const row = Array.isArray(meta)
-                                                  ? meta.find((m) =>
-                                                      String(m.line || m.text)
-                                                        .toLowerCase()
-                                                        .includes(
-                                                          machine.toLowerCase()
-                                                        )
-                                                    )
-                                                  : null;
-                                                return row ? row.ev : null;
-                                              } catch (e) {
-                                                return null;
-                                              }
-                                            })
-                                            .filter((v) => v !== null);
-
-                                          if (evs.length >= 10) {
-                                            const avgEv = Math.round(
-                                              evs.reduce((a, b) => a + b, 0) /
-                                                evs.length
-                                            );
-                                            if (log.ev !== avgEv) {
-                                              return (
-                                                <div
-                                                  onClick={() => {
-                                                    const n = [...logs];
-                                                    n[i].ev = avgEv;
-                                                    setLogs(n);
-                                                  }}
-                                                  className="mt-2 bg-indigo-50 text-indigo-600 text-[10px] font-black px-4 py-2 rounded-xl cursor-pointer shadow-sm hover:bg-indigo-100 transition-all border border-indigo-100 animate-fadeIn"
-                                                >
-                                                  {avgEv.toLocaleString()}円
-                                                </div>
-                                              );
-                                            }
-                                          }
-                                        }
-                                      }
-                                      return null;
-                                    })()}
-                                    <span className="text-xs font-black text-slate-400">
-                                      円
-                                    </span>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() =>
-                                    setLogs(logs.filter((_, idx) => idx !== i))
-                                  }
-                                  className="p-4 text-slate-200 hover:text-rose-500 transition-colors"
-                                >
-                                  <span className="text-3xl font-light">✕</span>
-                                </button>
-                              </div>
-                            </div>
-                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
-                              <div className="text-6xl font-black italic">
-                                #{i + 1}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="bg-[#0076FF] p-10 rounded-[4rem] text-white flex flex-col lg:flex-row justify-between items-center gap-8 shadow-2xl">
-                      <div className="text-center lg:text-left">
-                        <div className="text-[10px] font-black opacity-50 uppercase mb-1">
-                          Aggregate Potential EV
-                        </div>
-                        <div className="text-7xl font-black italic">
-                          {logs.reduce((s, l) => s + l.ev, 0).toLocaleString()}{" "}
-                          <span className="text-xl font-bold opacity-30 ml-2">
-                            円
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={onApprove}
-                        className="bg-white text-[#0076FF] px-16 py-6 rounded-[2.5rem] font-black shadow-xl hover:bg-slate-50 transition-all text-xs tracking-widest"
-                      >
-                        Approve & Complete
-                      </button>
+                      <button onClick={onApprove} className="bg-white text-[#0076FF] px-10 py-4 rounded-3xl font-black">Approve & Complete</button>
                     </div>
                   </div>
                 );
