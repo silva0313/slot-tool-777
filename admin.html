@@ -3649,26 +3649,41 @@ ${Object.entries(kpi.members)
                                 const currentReport = reports.find(r => r.ID === selectedId);
                                 currentReport.items[storeIdx] = { ...editData };
                                 
-                                setStoreIdx(idx);
-                                const nextItem = currentReport.items[idx];
-                                setEditData({
-                                  ...nextItem,
-                                  ID: currentReport.ID,
-                                  報告者: currentReport.報告者 || currentReport.名前,
-                                  日付: currentReport.日付,
-                                  // 入力値を反映
-                                  details: nextItem.details || currentReport.details,
-                                });
-                              }}
-                              className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${
-                                storeIdx === idx
-                                  ? "bg-slate-900 text-white shadow-lg"
-                                  : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
-                              }`}
-                            >
-                              {item.店舗名 || `店舗 ${idx + 1}`}
-                            </button>
-                          ))}
+                                 setStoreIdx(idx);
+                                 setAiNormalization(null);
+                                 const nextItem = currentReport.items[idx];
+                                 const fin = parseFinance(nextItem);
+                                 setEditData({
+                                   ...nextItem,
+                                   ID: currentReport.ID,
+                                   報告者: currentReport.報告者 || currentReport.名前,
+                                   店舗名: nextItem.店舗名 || nextItem.store,
+                                   日付: currentReport.日付,
+                                   稼働時間: getField(nextItem, ["稼働時間", "hours", "時間"]) || "0:00",
+                                   rawHours: getField(nextItem, ["rawHours", "hours_str", "稼働時間"]),
+                                   exchange: getField(nextItem, ["換金額", "exchange"]) || 0,
+                                   handover: getField(nextItem, ["手渡し額", "handover"]) || 0,
+                                   parentReceived: getField(nextItem, ["親受取額", "parentReceived"]) || 0,
+                                   medal20: getField(nextItem, ["20スロ", "medal20"]) || fin.medal20,
+                                   medal5: getField(nextItem, ["5スロ", "medal5"]) || fin.medal5,
+                                   pachi4: getField(nextItem, ["4パチ", "pachi4"]) || fin.pachi4,
+                                   cash: getField(nextItem, ["本日投資", "cash"]) || fin.cash,
+                                   salary: getField(nextItem, ["本日の給料", "salary"]) || fin.salary,
+                                   remaining: getField(nextItem, ["残投資金", "remaining"]) || fin.remaining,
+                                   memo: getField(nextItem, ["備考", "memo"]),
+                                   details: nextItem.details || getField(nextItem, ["稼動内容", "稼働内容", "内容"]),
+                                   imageUrls: nextItem.imageUrls || "",
+                                 });
+                               }}
+                               className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${
+                                 storeIdx === idx
+                                   ? "bg-slate-900 text-white shadow-lg"
+                                   : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
+                               }`}
+                             >
+                               {item.店舗名 || `店舗 ${idx + 1}`}
+                             </button>
+                           ))}
                         </div>
                       )}
 
