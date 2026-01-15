@@ -1815,6 +1815,12 @@
           window._kpi_seen_ids = new Set();
           window._kpi_h_seen_ids = new Set();
           items.forEach((item) => {
+            const name = item.名前 || item.報告者 || "不明";
+            const storeName = item.店舗名 || item.store || "";
+            const ps = storeMaster.find(s => s.name === storeName) || { m20: 50, m5: 200, p4: 250 };
+            const r20 = 1000 / (parseFloat(ps.m20) || 46);
+            const r5 = 1000 / (parseFloat(ps.m5) || 178);
+            const r4 = 1000 / (parseFloat(ps.p4) || 250);
             // --- 優先順位: 1. 前回比較実収支列 (永続化データ), 2. 資産推移計算, 3. 換金-投資 ---
             const rawP = item.前回比較実収支;
             let p = (rawP !== undefined && rawP !== null && String(rawP).trim() !== "") ? parseFloat(rawP) : null;
@@ -1895,7 +1901,6 @@
             window._kpi_h_seen_ids = hSeenIds;
             const h = hSeenIds.has(idAttr) ? 0 : hRaw; 
             if (hRaw > 0) hSeenIds.add(idAttr);
-            const name = item.名前 || item.報告者 || "不明";
             const machine = item.機種 || (item.稼動内容 ? String(item.稼動内容).split(/[ \n]/)[0] : "不明");
             const dt = new Date(item.日付);
             const day = dt.getDay();
