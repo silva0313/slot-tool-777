@@ -3463,6 +3463,82 @@ ${Object.entries(kpi.members)
             <div className="main scroll-container">
               {editData && reports && reports.find((r) => String(r.ID) === String(selectedId)) ? (
                 <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-20">
+                  
+                  {/* Global Header: 共通項目 (報告者・日付) */}
+                  <div className="bg-slate-900 rounded-[2rem] p-6 lg:p-8 text-white shadow-xl border border-white/10 flex flex-wrap justify-between items-center gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-white/5">👤</div>
+                      <div>
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">報告者 / Operator</div>
+                        <div className="text-lg font-black italic tracking-tighter">{editData.報告者}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                      <div className="text-xl">📅</div>
+                      <div className="space-y-1">
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">稼働日 / Work Date</div>
+                        <input
+                          type="date"
+                          value={formatDateLocal(editData.日付)}
+                          onChange={(e) =>
+                            setEditData({ ...editData, 日付: e.target.value })
+                          }
+                          className="bg-transparent border-none text-base font-black text-white italic outline-none focus:ring-0 p-0 h-auto"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Store Switching Tabs: 最上部へ移動 */}
+                  {reports.find(r => r.ID === selectedId)?.items?.length > 1 && (
+                    <div className="flex gap-2 bg-slate-100 p-1.5 rounded-[1.8rem] shadow-inner border border-slate-200 overflow-x-auto custom-scroll">
+                      {reports.find(r => r.ID === selectedId).items.map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            const currentReport = reports.find(r => r.ID === selectedId);
+                            currentReport.items[storeIdx] = { ...editData };
+                            
+                            setStoreIdx(idx);
+                            setAiNormalization(null);
+                            const nextItem = currentReport.items[idx];
+                            const fin = parseFinance(nextItem);
+                            setEditData({
+                              ...nextItem,
+                              ID: currentReport.ID,
+                              報告者: currentReport.報告者 || currentReport.名前,
+                              店舗名: nextItem.店舗名 || nextItem.store,
+                              日付: currentReport.日付,
+                              稼働時間: getField(nextItem, ["稼働時間", "hours", "時間"]) || "0:00",
+                              rawHours: getField(nextItem, ["rawHours", "hours_str", "稼働時間"]),
+                              exchange: getField(nextItem, ["換金額", "exchange"]) || 0,
+                              handover: getField(nextItem, ["手渡し額", "handover"]) || 0,
+                              parentReceived: getField(nextItem, ["親受取額", "parentReceived"]) || 0,
+                              medal20: getField(nextItem, ["20スロ", "medal20"]) || fin.medal20,
+                              medal5: getField(nextItem, ["5スロ", "medal5"]) || fin.medal5,
+                              pachi4: getField(nextItem, ["4パチ", "pachi4"]) || fin.pachi4,
+                              cash: getField(nextItem, ["本日投資", "cash"]) || fin.cash,
+                              salary: getField(nextItem, ["本日の給料", "salary"]) || fin.salary,
+                              remaining: getField(nextItem, ["残投資金", "remaining"]) || fin.remaining,
+                              memo: getField(nextItem, ["備考", "memo"]),
+                              details: nextItem.details || getField(nextItem, ["稼動内容", "稼働内容", "内容"]),
+                              imageUrls: nextItem.imageUrls || "",
+                            });
+                          }}
+                          className={`px-8 py-3 rounded-[1.4rem] text-[10px] font-black transition-all whitespace-nowrap shadow-sm ${
+                            storeIdx === idx
+                              ? "bg-slate-900 text-white shadow-lg scale-[1.02]"
+                              : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+                          }`}
+                        >
+                          <span className="mr-2 opacity-40">#{idx + 1}</span>
+                          {item.店舗名 || item.store || `店舗 ${idx + 1}`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* A: 報告カード */}
                   <div className="bg-slate-900 rounded-[2.5rem] p-10 lg:p-14 text-white shadow-xl relative overflow-hidden border border-white/10">
                     <span className="absolute top-4 left-8 text-[10px] font-black text-slate-500 uppercase tracking-widest z-20">
@@ -3604,88 +3680,15 @@ ${Object.entries(kpi.members)
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-10 border-t border-white/5 pt-8 uppercase text-[9px] font-black text-slate-500">
-                        <div>
-                          <div className="mb-1 opacity-50">
-                            報告者 / Operator
-                          </div>
-                          <div className="text-base font-black text-white italic tracking-tighter">
-                            {editData.報告者}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="mb-2 opacity-50">
-                            稼働日 / Work Date
-                          </div>
-                          <input
-                            type="date"
-                            value={formatDateLocal(editData.日付)}
-                            onChange={(e) =>
-                              setEditData({ ...editData, 日付: e.target.value })
-                            }
-                            className="bg-white/10 border border-white/20 text-sm font-black text-white italic px-3 py-1.5 rounded-xl outline-none focus:border-indigo-500/50"
-                          />
-                        </div>
-                      </div>
                     </div>
                   </div>
 
                   {/* 白背景コンテナ (B+Cを包含) */}
                   <div className="bg-white rounded-[3.5rem] p-6 lg:p-8 shadow-2xl border border-slate-100 space-y-10">
-                    {/* B: 稼働リザルト */}
                     <div className="border border-slate-100 rounded-[2.5rem] p-8 lg:p-10 relative">
                       <span className="absolute -top-3 left-8 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         稼働リザルト
                       </span>
-
-                      {/* 店舗切替タブ (複数店舗ある場合のみ表示) */}
-                      {reports.find(r => r.ID === selectedId)?.items?.length > 1 && (
-                        <div className="flex gap-2 mb-8 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scroll">
-                          {reports.find(r => r.ID === selectedId).items.map((item, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                // 現在の入力を今のインデックスのitemに退避
-                                const currentReport = reports.find(r => r.ID === selectedId);
-                                currentReport.items[storeIdx] = { ...editData };
-                                
-                                 setStoreIdx(idx);
-                                 setAiNormalization(null);
-                                 const nextItem = currentReport.items[idx];
-                                 const fin = parseFinance(nextItem);
-                                 setEditData({
-                                   ...nextItem,
-                                   ID: currentReport.ID,
-                                   報告者: currentReport.報告者 || currentReport.名前,
-                                   店舗名: nextItem.店舗名 || nextItem.store,
-                                   日付: currentReport.日付,
-                                   稼働時間: getField(nextItem, ["稼働時間", "hours", "時間"]) || "0:00",
-                                   rawHours: getField(nextItem, ["rawHours", "hours_str", "稼働時間"]),
-                                   exchange: getField(nextItem, ["換金額", "exchange"]) || 0,
-                                   handover: getField(nextItem, ["手渡し額", "handover"]) || 0,
-                                   parentReceived: getField(nextItem, ["親受取額", "parentReceived"]) || 0,
-                                   medal20: getField(nextItem, ["20スロ", "medal20"]) || fin.medal20,
-                                   medal5: getField(nextItem, ["5スロ", "medal5"]) || fin.medal5,
-                                   pachi4: getField(nextItem, ["4パチ", "pachi4"]) || fin.pachi4,
-                                   cash: getField(nextItem, ["本日投資", "cash"]) || fin.cash,
-                                   salary: getField(nextItem, ["本日の給料", "salary"]) || fin.salary,
-                                   remaining: getField(nextItem, ["残投資金", "remaining"]) || fin.remaining,
-                                   memo: getField(nextItem, ["備考", "memo"]),
-                                   details: nextItem.details || getField(nextItem, ["稼動内容", "稼働内容", "内容"]),
-                                   imageUrls: nextItem.imageUrls || "",
-                                 });
-                               }}
-                               className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${
-                                 storeIdx === idx
-                                   ? "bg-slate-900 text-white shadow-lg"
-                                   : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
-                               }`}
-                             >
-                               {item.店舗名 || `店舗 ${idx + 1}`}
-                             </button>
-                           ))}
-                        </div>
-                      )}
 
                       <div className="space-y-8">
                         <div className="space-y-4">
