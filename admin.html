@@ -3086,6 +3086,7 @@ ${Object.entries(kpi.members)
                 ev: existingEv,
               });
               setStoreIdx(0);
+              setLogs(results);
               setAiNormalization(null);
               if (report.ID) setSelectedId(String(report.ID));
               if (content) fetchAiNormalization(content);
@@ -3501,11 +3502,10 @@ ${Object.entries(kpi.members)
                   {/* Global Header: 共通項目集約 */}
                   <div className="bg-slate-900 rounded-[2.5rem] p-8 lg:p-10 text-white shadow-2xl border border-white/10 space-y-8">
                     <div className="flex flex-wrap justify-between items-center gap-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-xl border border-white/10 opacity-30">P</div>
-                        <div>
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">報告者 / Operator</div>
-                          <div className="text-xl font-black italic tracking-tighter">{editData.報告者}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="pl-1">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">報告者 / Operator</div>
+                          <div className="text-xl lg:text-3xl font-black italic tracking-tighter">{editData.報告者}</div>
                         </div>
                       </div>
                       
@@ -4145,8 +4145,8 @@ ${Object.entries(kpi.members)
                     {/* 合計期待値リザルト (全店舗統合) */}
                     {(() => {
                       const currentReport = reports.find(r => r.ID === selectedId);
-                      const breakdown = (currentReport?.items || [editData]).map((item) => {
-                        const itemLogs = item.results || (item.ID === editData.ID && String(item.store) === String(editData.店舗名) ? logs : []);
+                      const breakdown = (currentReport?.items || [editData]).map((item, i) => {
+                        const itemLogs = (i === storeIdx) ? logs : (item.results || []);
                         return itemLogs.reduce((s, l) => s + (l.ev || 0), 0);
                       });
                       const totalEv = breakdown.reduce((sum, val) => sum + val, 0);
