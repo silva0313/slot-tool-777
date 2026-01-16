@@ -4116,6 +4116,20 @@ ${Object.entries(kpi.members)
                             <div className="text-[10px] font-black opacity-50 uppercase mb-1 tracking-widest">
                                 Aggregate Potential EV
                             </div>
+                            
+                            {/* 足し算の内訳を表示 */}
+                            {breakdown.length > 1 && (
+                              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 mb-2 opacity-80 font-mono text-[10px] font-black">
+                                {breakdown.map((val, i) => (
+                                  <React.Fragment key={i}>
+                                    <span>{val.toLocaleString()}</span>
+                                    {i < breakdown.length - 1 && <span className="opacity-40 mx-1">+</span>}
+                                  </React.Fragment>
+                                ))}
+                                <span className="mx-2 text-[#00E0FF]">=</span>
+                              </div>
+                            )}
+
                             <div className="text-7xl font-black italic">
                               {(totalEv || 0).toLocaleString()}{" "}
                               <span className="text-xl font-bold opacity-30 ml-2">
