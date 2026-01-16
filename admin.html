@@ -3787,15 +3787,15 @@ ${Object.entries(kpi.members)
                       <span className="absolute -top-3 left-8 bg-white px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         稼働詳細
                       </span>
-                      <div className="flex justify-between items-center bg-slate-100 p-2 rounded-3xl">
-                        <div className="flex flex-col ml-4">
+                      <div className="flex justify-between items-center mb-8 px-2">
+                        <div className="flex flex-col">
                           <h3 className="text-xl font-black italic">北斗</h3>
-                          <p className="text-[9px] font-bold text-amber-600 uppercase">
+                          <p className="text-[8px] font-black text-amber-500 uppercase tracking-tighter mt-1">
                             ※おすすめ週間のみ優良店に変更してください
                           </p>
                         </div>
-                        <div className="flex gap-4 items-center">
-                          <div className="flex gap-2 bg-slate-200/50 p-1 rounded-2xl">
+                        <div className="flex items-center">
+                          <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200 shadow-inner">
                             {["設定１相当", "優良店"].map((m) => (
                               <button
                                 key={m}
@@ -3803,10 +3803,10 @@ ${Object.entries(kpi.members)
                                   setEvMode(m);
                                   handleAnalyze(editData, m, false);
                                 }}
-                                className={`px-5 py-2 text-[9px] font-black rounded-xl ${
+                                className={`px-5 py-2 text-[9px] font-black rounded-full transition-all ${
                                   evMode === m
                                     ? "bg-white shadow text-[#0076FF]"
-                                    : "text-slate-400"
+                                    : "text-slate-400 hover:text-slate-600"
                                 }`}
                               >
                                 {m}
