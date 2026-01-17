@@ -1654,7 +1654,7 @@
                           追加
                         </button>
                       </div>
-                      <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scroll pr-2">
+                      <div className="space-y-4 max-h-[400px] overflow-y-auto overflow-x-hidden custom-scroll pr-2">
                         {members.length > 0 ? (
                           members.map((name, i) => (
                             <div
@@ -2040,17 +2040,21 @@
 
           // --- 戦略的インサイト生成 (高精度化) ---
           const storeStrategy = Object.entries(kpi.stores)
+            .sort((a, b) => b[1].ev - a[1].ev) // 期待値が高い順に提言
             .map(([n, s]) => {
               const h_real = s.p / (s.h || 1);
               const h_ev = s.ev / (s.h || 1);
               const gap = h_real - h_ev;
-              if (gap > 5000)
-                return `・${n}: 【優良】期待値以上に実収支が出ており、台の質が極めて高い可能性があります。さらに攻める価値あり。`;
-              if (gap < -5000)
-                return `・${n}: 【警戒】期待値欠損が激しいです。立ち回りや交換率、あるいは「引き」以外の要因を再点検してください。`;
-              return `・${n}: 期待値通りの安定稼働です。`;
+              const vol = s.ev;
+
+              if (s.h < 5) return `・${n}: 【稼働不足】データが不十分です。この店舗のポテンシャルを測るため、より厚い稼働を推奨します。`;
+              if (vol > 30000 && gap > 5000) return `・${n}: 【最高品質】高い期待値に対し実収支も大幅に上振れ。軍団の生命線として最優先で攻め落とすべきです。`;
+              if (vol > 20000 && gap < -8000) return `・${n}: 【乖離注意】期待値獲得は良好ですが、欠損が深刻。ヤメ時や交換率の見直し、現場での挙動を注視してください。`;
+              if (vol < 5000 && s.p > 20000) return `・${n}: 【幸運】期待値は低いですが結果が出ています。深追いせず、質の高い台への移動を検討してください。`;
+              if (gap > -2000 && gap < 2000) return `・${n}: 【安定】期待値通りの確かな稼働です。ベースとなる店舗として維持してください。`;
+              return `・${n}: 時給乖離(${Math.round(gap).toLocaleString()}円)に注意。台の見極め精度を上げる必要があります。`;
             })
-            .slice(0, 3)
+            .slice(0, 4)
             .join("\n");
 
           const memberEfficiency = Object.entries(kpi.members)
@@ -2073,15 +2077,13 @@
 
           const lineText = `【KPI分析レポート】🚀${filterHeader}
 期間: ${range.start} 〜 ${range.end}
-(前期間比: ${pChange > 0 ? "+" : ""}${pChange.toLocaleString()}円)
+(前期間比: ${pChange >= 0 ? "+" : ""}${pChange.toLocaleString()}円)
 ━━━━━━━━━━━━━━
 📊 チーム全体成績
 ・総期待値: ${kpi.total.ev.toLocaleString()}円
 ・実収支: ${kpi.total.profit.toLocaleString()}円
 ・総稼働: ${kpi.total.hours}h
-・平均時給: ${Math.round(
-            kpi.total.profit / (kpi.total.hours || 1)
-          ).toLocaleString()}円
+・時給（実/期）: ${Math.round(kpi.total.profit / (kpi.total.hours || 1)).toLocaleString()} / ${Math.round(kpi.total.ev / (kpi.total.hours || 1)).toLocaleString()}円/h
 
 🏆 メンバー別分析 (期待値順)
 ${Object.entries(kpi.members)
@@ -2104,15 +2106,15 @@ ${Object.entries(kpi.members)
             )
             .join(
               "\n"
-            )}\n特に「野川」は日曜基準のおすすめ週間の影響を注視する必要があります。\n\n📅 トレンド分析\n・最高時給曜日: ${
+            )}\n特に「野川」は日曜基準のおすすめ週間の影響を注視する必要があります。\n\n📅 トレンド分析 (理論 vs 現実)\n・最高時給曜日: ${
             bestDay?.d || "-"
-          }曜日 (${(
+          }曜日 (実:${(
             bestDay?.rate || 0
-          ).toLocaleString()}円/h)\n・平日時給: ${Math.round(
+          ).toLocaleString()}円 / 期:${Math.round((kpi.days[dayJP.indexOf(bestDay?.d)]?.ev / kpi.days[dayJP.indexOf(bestDay?.d)]?.h) || 0).toLocaleString()}円)\n・平日時給(実/期): ${Math.round(
             kpi.types.weekday.p / (kpi.types.weekday.h || 1)
-          ).toLocaleString()}円/h\n・土日時給: ${Math.round(
+          ).toLocaleString()} / ${Math.round(kpi.types.weekday.ev / (kpi.types.weekday.h || 1)).toLocaleString()}円\n・土日時給(実/期): ${Math.round(
             kpi.types.weekend.p / (kpi.types.weekend.h || 1)
-          ).toLocaleString()}円/h\n\n👹 北斗重要分析\n・期待値累計: ${(
+          ).toLocaleString()} / ${Math.round(kpi.types.weekend.ev / (kpi.types.weekend.h || 1)).toLocaleString()}円\n\n👹 北斗重要分析\n・期待値累計: ${(
             kpi.machines["スマスロ北斗の拳"]?.ev || 0
           ).toLocaleString()}円\n・稼働貢献: ${
             kpi.machines["スマスロ北斗の拳"]
