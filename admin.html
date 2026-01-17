@@ -202,22 +202,30 @@
 
         const nameList = React.useMemo(() => {
           const names = new Set();
-          const targetData = storeFilter ? (archive || []).filter(d => d.store === storeFilter) : (archive || []);
-          targetData.forEach(item => { if(item.name) names.add(item.name); });
+          const targetData = storeFilter
+            ? (archive || []).filter((d) => d.store === storeFilter)
+            : archive || [];
+          targetData.forEach((item) => {
+            if (item.name) names.add(item.name);
+          });
           return Array.from(names).sort();
         }, [archive, storeFilter]);
 
         const storeList = React.useMemo(() => {
           const stores = new Set();
-          const targetData = nameFilter ? (archive || []).filter(d => d.name === nameFilter) : (archive || []);
-          targetData.forEach(item => { if(item.store) stores.add(item.store); });
+          const targetData = nameFilter
+            ? (archive || []).filter((d) => d.name === nameFilter)
+            : archive || [];
+          targetData.forEach((item) => {
+            if (item.store) stores.add(item.store);
+          });
           return Array.from(stores).sort();
         }, [archive, nameFilter]);
 
         const filtered = (archive || []).filter((item) => {
           if (!item || (!item.details && !item.store && !item.name))
             return false;
-            
+
           const matchName = !nameFilter || item.name === nameFilter;
           const matchStore = !storeFilter || item.store === storeFilter;
           if (!matchName || !matchStore) return false;
@@ -440,7 +448,11 @@
                       className="bg-white border border-slate-200 px-2 md:px-3 py-1.5 md:py-2 rounded-xl text-[8px] md:text-[10px] font-bold outline-none focus:border-indigo-500 max-w-[80px] md:max-w-none"
                     >
                       <option value="">全員</option>
-                      {nameList.map(n => <option key={n} value={n}>{n}</option>)}
+                      {nameList.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
                     </select>
                     <select
                       value={storeFilter}
@@ -448,7 +460,11 @@
                       className="bg-white border border-slate-200 px-2 md:px-3 py-1.5 md:py-2 rounded-xl text-[8px] md:text-[10px] font-bold outline-none focus:border-indigo-500 max-w-[80px] md:max-w-none"
                     >
                       <option value="">全店</option>
-                      {storeList.map(s => <option key={s} value={s}>{s}</option>)}
+                      {storeList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -541,15 +557,23 @@
                                 総期待値
                               </div>
                               <div className="text-xl font-black italic text-[#0076FF] tracking-tighter drop-shadow-sm">
-                                {(item.ev || 0).toLocaleString()} <span className="text-xs">円</span>
+                                {(item.ev || 0).toLocaleString()}{" "}
+                                <span className="text-xs">円</span>
                               </div>
                             </div>
                             <div className="flex items-center justify-between pt-1 border-t border-dashed border-slate-100">
                               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 前回比較実収支
                               </div>
-                              <div className={`text-xl font-black italic tracking-tighter drop-shadow-sm ${item.profit >= 0 ? "text-[#00FF85]" : "text-rose-500"}`}>
-                                {(item.profit || 0).toLocaleString()} <span className="text-xs">円</span>
+                              <div
+                                className={`text-xl font-black italic tracking-tighter drop-shadow-sm ${
+                                  item.profit >= 0
+                                    ? "text-[#00FF85]"
+                                    : "text-rose-500"
+                                }`}
+                              >
+                                {(item.profit || 0).toLocaleString()}{" "}
+                                <span className="text-xs">円</span>
                               </div>
                             </div>
                           </div>
@@ -1759,7 +1783,9 @@
         });
         const [history, setHistory] = React.useState(() => {
           try {
-            return JSON.parse(localStorage.getItem("kpi_report_history") || "[]");
+            return JSON.parse(
+              localStorage.getItem("kpi_report_history") || "[]"
+            );
           } catch (e) {
             return [];
           }
@@ -1810,70 +1836,106 @@
           };
 
           // 店舗換金率情報の取得 (店舗マスタから)
-          const storeMaster = JSON.parse(localStorage.getItem("kpi_store_master") || "[]");
+          const storeMaster = JSON.parse(
+            localStorage.getItem("kpi_store_master") || "[]"
+          );
 
           window._kpi_seen_ids = new Set();
           window._kpi_h_seen_ids = new Set();
           items.forEach((item) => {
             const name = item.名前 || item.報告者 || "不明";
             const storeName = item.店舗名 || item.store || "";
-            const ps = storeMaster.find(s => s.name === storeName) || { m20: 50, m5: 200, p4: 250 };
+            const ps = storeMaster.find((s) => s.name === storeName) || {
+              m20: 50,
+              m5: 200,
+              p4: 250,
+            };
             const r20 = 1000 / (parseFloat(ps.m20) || 46);
             const r5 = 1000 / (parseFloat(ps.m5) || 178);
             const r4 = 1000 / (parseFloat(ps.p4) || 250);
             // --- 優先順位: 1. 前回比較実収支列 (永続化データ), 2. 資産推移計算, 3. 換金-投資 ---
             const rawP = item.前回比較実収支;
-            let p = (rawP !== undefined && rawP !== null && String(rawP).trim() !== "") ? parseFloat(rawP) : null;
-            
+            let p =
+              rawP !== undefined && rawP !== null && String(rawP).trim() !== ""
+                ? parseFloat(rawP)
+                : null;
+
             if (p === null) {
               // 1. 同一店舗の前回資産を探す (メダル増減用)
-                const parseDt = (v) => {
-                  try {
-                    if (!v) return new Date(0);
-                    const s = String(v).split("(")[0].trim().replace(/\//g, "-");
-                    const d = new Date(s);
-                    return isNaN(d.getTime()) ? new Date(0) : d;
-                  } catch(e) { return new Date(0); }
-                };
-                const sameMember = (data || []).filter(l => l && (l.名前 || l.報告者) === name);
-                const sortedSameStore = sameMember
-                  .filter(l => l && l.店舗名 === storeName)
-                  .sort((a, b) => parseDt(a.日付) - parseDt(b.日付) || String(a.ID || "").localeCompare(String(b.ID || "")));
-              
-              const currentStoreIdx = sortedSameStore.findIndex(l => l.ID === item.ID);
-              const prevStoreItem = currentStoreIdx > 0 ? sortedSameStore[currentStoreIdx - 1] : null;
+              const parseDt = (v) => {
+                try {
+                  if (!v) return new Date(0);
+                  const s = String(v).split("(")[0].trim().replace(/\//g, "-");
+                  const d = new Date(s);
+                  return isNaN(d.getTime()) ? new Date(0) : d;
+                } catch (e) {
+                  return new Date(0);
+                }
+              };
+              const sameMember = (data || []).filter(
+                (l) => l && (l.名前 || l.報告者) === name
+              );
+              const sortedSameStore = sameMember
+                .filter((l) => l && l.店舗名 === storeName)
+                .sort(
+                  (a, b) =>
+                    parseDt(a.日付) - parseDt(b.日付) ||
+                    String(a.ID || "").localeCompare(String(b.ID || ""))
+                );
+
+              const currentStoreIdx = sortedSameStore.findIndex(
+                (l) => l.ID === item.ID
+              );
+              const prevStoreItem =
+                currentStoreIdx > 0
+                  ? sortedSameStore[currentStoreIdx - 1]
+                  : null;
 
               // 2. 同一メンバーの「前回現金(Wallet)」を探す (別IDの最新の残投資金)
-              const sortedAll = sameMember
-                .sort((a, b) => parseDt(a.日付) - parseDt(b.日付) || String(a.ID).localeCompare(String(b.ID)));
-              const myIdx = sortedAll.findIndex(l => l.ID === item.ID);
+              const sortedAll = sameMember.sort(
+                (a, b) =>
+                  parseDt(a.日付) - parseDt(b.日付) ||
+                  String(a.ID).localeCompare(String(b.ID))
+              );
+              const myIdx = sortedAll.findIndex((l) => l.ID === item.ID);
               const prevWalletItem = sortedAll
                 .slice(0, myIdx)
                 .reverse()
-                .find(l => l.ID !== item.ID && String(l.残投資金 || "").trim() !== "");
+                .find(
+                  (l) =>
+                    l.ID !== item.ID && String(l.残投資金 || "").trim() !== ""
+                );
 
-              const salary = parseFloat(item.本日の給料) || parseFloat(item.salary) || 0;
+              const salary =
+                parseFloat(item.本日の給料) || parseFloat(item.salary) || 0;
               const handover = parseFloat(item.手渡し額) || 0;
               const cash = parseFloat(item.本日投資) || 0;
               const received = parseFloat(item.親受取額) || 0;
               // メイン行（Wallet計算対象）の判定: 稼働時間が入力されている行を基準にする
-              const isWalletRow = (parseFloat(item.稼働時間) || 0) > 0 || salary > 0;
+              const isWalletRow =
+                (parseFloat(item.稼働時間) || 0) > 0 || salary > 0;
 
               let prevMedalVal = 0;
               if (prevStoreItem) {
-                const ps = storeMaster.find(s => s.name === storeName) || { m20: 50, m5: 200, p4: 250 };
+                const ps = storeMaster.find((s) => s.name === storeName) || {
+                  m20: 50,
+                  m5: 200,
+                  p4: 250,
+                };
                 const pr20 = 1000 / (parseFloat(ps.m20) || 46);
                 const pr5 = 1000 / (parseFloat(ps.m5) || 178);
                 const pr4 = 1000 / (parseFloat(ps.p4) || 250);
-                prevMedalVal = (parseFloat(prevStoreItem["20スロ"]) || 0) * pr20 + 
-                               (parseFloat(prevStoreItem["5スロ"]) || 0) * pr5 + 
-                               (parseFloat(prevStoreItem["4パチ"]) || 0) * pr4;
+                prevMedalVal =
+                  (parseFloat(prevStoreItem["20スロ"]) || 0) * pr20 +
+                  (parseFloat(prevStoreItem["5スロ"]) || 0) * pr5 +
+                  (parseFloat(prevStoreItem["4パチ"]) || 0) * pr4;
               }
 
-              const currentMedalVal = (parseFloat(item["20スロ"]) || 0) * r20 + 
-                                    (parseFloat(item["5スロ"]) || 0) * r5 + 
-                                    (parseFloat(item["4パチ"]) || 0) * r4;
-              
+              const currentMedalVal =
+                (parseFloat(item["20スロ"]) || 0) * r20 +
+                (parseFloat(item["5スロ"]) || 0) * r5 +
+                (parseFloat(item["4パチ"]) || 0) * r4;
+
               const storeProfit = currentMedalVal - (prevMedalVal + cash);
 
               // 集計時も isWalletRow の判定を厳密にする (IDごとに1回だけ)
@@ -1883,9 +1945,12 @@
               const isFirstTimeId = !seenIds.has(id);
 
               if (isWalletRow && isFirstTimeId) {
-                const prevCashVal = prevWalletItem ? (parseFloat(prevWalletItem.残投資金) || 0) : 0;
+                const prevCashVal = prevWalletItem
+                  ? parseFloat(prevWalletItem.残投資金) || 0
+                  : 0;
                 const currentCash = parseFloat(item.残投資金) || 0;
-                const walletProfit = (currentCash + salary + handover) - (prevCashVal + received);
+                const walletProfit =
+                  currentCash + salary + handover - (prevCashVal + received);
                 p = storeProfit + walletProfit;
                 seenIds.add(id);
               } else {
@@ -1898,13 +1963,18 @@
             }
 
             const ev = parseFloat(item.期待値) || 0;
-            const hRaw = parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
+            const hRaw =
+              parseFloat(item.稼働時間) || parseFloat(item.時間) || 0;
             const idAttr = item.ID || item.id;
             const hSeenIds = window._kpi_h_seen_ids || new Set();
             window._kpi_h_seen_ids = hSeenIds;
-            const h = hSeenIds.has(idAttr) ? 0 : hRaw; 
+            const h = hSeenIds.has(idAttr) ? 0 : hRaw;
             if (hRaw > 0) hSeenIds.add(idAttr);
-            const machine = item.機種 || (item.稼動内容 ? String(item.稼動内容).split(/[ \n]/)[0] : "不明");
+            const machine =
+              item.機種 ||
+              (item.稼動内容
+                ? String(item.稼動内容).split(/[ \n]/)[0]
+                : "不明");
             const dt = new Date(item.日付);
             const day = dt.getDay();
             const isWeekend = day === 0 || day === 6;
@@ -1912,8 +1982,7 @@
             kpi.total.profit += p;
             kpi.total.ev += ev;
             kpi.total.hours += h;
-            if (!kpi.members[name])
-              kpi.members[name] = { p: 0, ev: 0, h: 0 };
+            if (!kpi.members[name]) kpi.members[name] = { p: 0, ev: 0, h: 0 };
             kpi.members[name].p += p;
             kpi.members[name].ev += ev;
             kpi.members[name].h += h;
@@ -1980,19 +2049,31 @@
               const h_real = s.p / (s.h || 1);
               const h_ev = s.ev / (s.h || 1);
               const gap = h_real - h_ev;
-              if (gap > 5000) return `・${n}: 【優良】期待値以上に実収支が出ており、台の質が極めて高い可能性があります。さらに攻める価値あり。`;
-              if (gap < -5000) return `・${n}: 【警戒】期待値欠損が激しいです。立ち回りや交換率、あるいは「引き」以外の要因を再点検してください。`;
+              if (gap > 5000)
+                return `・${n}: 【優良】期待値以上に実収支が出ており、台の質が極めて高い可能性があります。さらに攻める価値あり。`;
+              if (gap < -5000)
+                return `・${n}: 【警戒】期待値欠損が激しいです。立ち回りや交換率、あるいは「引き」以外の要因を再点検してください。`;
               return `・${n}: 期待値通りの安定稼働です。`;
-            }).slice(0, 3).join("\n");
+            })
+            .slice(0, 3)
+            .join("\n");
 
           const memberEfficiency = Object.entries(kpi.members)
-            .sort((a, b) => (b[1].ev / (b[1].h || 1)) - (a[1].ev / (a[1].h || 1)))
-            .map(([n, s], i) => `${i + 1}位 ${n} (${Math.round(s.ev / (s.h || 1)).toLocaleString()}円/h)`)
-            .slice(0, 3).join(" > ");
+            .sort((a, b) => b[1].ev / (b[1].h || 1) - a[1].ev / (a[1].h || 1))
+            .map(
+              ([n, s], i) =>
+                `${i + 1}位 ${n} (${Math.round(
+                  s.ev / (s.h || 1)
+                ).toLocaleString()}円/h)`
+            )
+            .slice(0, 3)
+            .join(" > ");
 
           let filterHeader = "";
           if (selectedMember || selectedStore) {
-            filterHeader = `\n(絞り込み: ${selectedMember || "全員"} / ${selectedStore || "全店舗"})`;
+            filterHeader = `\n(絞り込み: ${selectedMember || "全員"} / ${
+              selectedStore || "全店舗"
+            })`;
           }
 
           const lineText = `【KPI分析レポート】🚀${filterHeader}
@@ -2003,18 +2084,22 @@
 ・総期待値: ${kpi.total.ev.toLocaleString()}円
 ・実収支: ${kpi.total.profit.toLocaleString()}円
 ・総稼働: ${kpi.total.hours}h
-・平均時給: ${Math.round(kpi.total.profit / (kpi.total.hours || 1)).toLocaleString()}円
+・平均時給: ${Math.round(
+            kpi.total.profit / (kpi.total.hours || 1)
+          ).toLocaleString()}円
 
 🏆 メンバー別分析 (期待値順)
 ${Object.entries(kpi.members)
-            .sort((a, b) => b[1].ev - a[1].ev)
-            .map(([n, s], i) => {
-              const hourly = Math.round(s.p / (s.h || 1));
-              return `${i + 1}. ${n}: ${s.ev.toLocaleString()}円 (${
-                s.p > 0 ? s.p.toLocaleString() + "円" : "--"
-              } / ${s.h}h / ${hourly.toLocaleString()}円/h)`;
-            })
-            .join("\n")}\n\n※管理者は「台パス」により期待値時給が低く出る傾向があります。\n\n📍 店舗別時給分析\n${Object.entries(
+  .sort((a, b) => b[1].ev - a[1].ev)
+  .map(([n, s], i) => {
+    const hourly = Math.round(s.p / (s.h || 1));
+    return `${i + 1}. ${n}: ${s.ev.toLocaleString()}円 (${
+      s.p > 0 ? s.p.toLocaleString() + "円" : "--"
+    } / ${s.h}h / ${hourly.toLocaleString()}円/h)`;
+  })
+  .join(
+    "\n"
+  )}\n\n※管理者は「台パス」により期待値時給が低く出る傾向があります。\n\n📍 店舗別時給分析\n${Object.entries(
             kpi.stores
           )
             .sort((a, b) => b[1].p / (b[1].h || 1) - a[1].p / (a[1].h || 1))
@@ -2055,17 +2140,19 @@ ${Object.entries(kpi.members)
             text: lineText,
             summary: {
               profit: kpi.total.profit,
-              ev: kpi.total.ev
-            }
+              ev: kpi.total.ev,
+            },
           };
-          setHistory(prev => [newHistoryItem, ...prev].slice(0, 50)); // 最大50件
+          setHistory((prev) => [newHistoryItem, ...prev].slice(0, 50)); // 最大50件
 
           setActiveTab("report");
         };
         const memberList = React.useMemo(() => {
           const members = new Set();
-          const targetData = selectedStore ? data.filter(d => d.店舗名 === selectedStore) : data;
-          targetData.forEach(d => {
+          const targetData = selectedStore
+            ? data.filter((d) => d.店舗名 === selectedStore)
+            : data;
+          targetData.forEach((d) => {
             const name = d.名前 || d.報告者;
             if (name) members.add(name);
           });
@@ -2074,8 +2161,10 @@ ${Object.entries(kpi.members)
 
         const storeList = React.useMemo(() => {
           const stores = new Set();
-          const targetData = selectedMember ? data.filter(d => (d.名前 || d.報告者) === selectedMember) : data;
-          targetData.forEach(d => {
+          const targetData = selectedMember
+            ? data.filter((d) => (d.名前 || d.報告者) === selectedMember)
+            : data;
+          targetData.forEach((d) => {
             if (d.店舗名) stores.add(d.店舗名);
           });
           return Array.from(stores).sort();
@@ -2088,7 +2177,8 @@ ${Object.entries(kpi.members)
           return data.filter((d) => {
             const dt = new Date(d.日付);
             const inRange = dt >= s && dt <= e;
-            const matchMember = !selectedMember || (d.名前 || d.報告者) === selectedMember;
+            const matchMember =
+              !selectedMember || (d.名前 || d.報告者) === selectedMember;
             const matchStore = !selectedStore || d.店舗名 === selectedStore;
             return inRange && matchMember && matchStore;
           });
@@ -2125,85 +2215,108 @@ ${Object.entries(kpi.members)
         return (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn">
             <div className="bg-white rounded-[3rem] w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden text-slate-900">
-              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                <h2 className="text-2xl font-black italic uppercase">
-                  KPIアナリティクス
-                </h2>
+              <div className="p-4 lg:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-lg shadow-lg">
+                    📊
+                  </div>
+                  <div>
+                    <h2 className="text-sm lg:text-lg font-black italic uppercase tracking-tighter text-slate-800">
+                      分析レポート
+                    </h2>
+                    <p className="hidden md:block text-[8px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">
+                      KPI Performance Analytics
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={onClose}
-                  className="text-slate-400 hover:text-rose-500 text-3xl transition-colors"
+                  className="text-slate-300 hover:text-rose-500 text-2xl lg:text-3xl transition-colors font-light p-2"
                 >
                   ✕
                 </button>
               </div>
-              <div className="p-8 bg-slate-50 border-b border-slate-100 flex flex-wrap gap-4 items-end shrink-0">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2">
-                    開始日
-                  </label>
-                  <input
-                    type="date"
-                    value={range.start}
-                    onChange={(e) =>
-                      setRange({ ...range, start: e.target.value })
-                    }
-                    className="bg-white px-4 py-2 rounded-xl font-bold border border-slate-200 outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2">
-                    終了日
-                  </label>
-                  <input
-                    type="date"
-                    value={range.end}
-                    onChange={(e) =>
-                      setRange({ ...range, end: e.target.value })
-                    }
-                    className="bg-white px-4 py-2 rounded-xl font-bold border border-slate-200 outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2">
-                    人物フィルター
-                  </label>
-                  <select
-                    value={selectedMember}
-                    onChange={(e) => setSelectedMember(e.target.value)}
-                    className="bg-white px-4 py-2 rounded-xl font-bold border border-slate-200 outline-none w-[140px] text-xs cursor-pointer hover:border-[#0076FF] transition-colors"
+              <div className="p-4 lg:p-6 bg-slate-50/50 border-b border-slate-100 shrink-0 overflow-x-auto no-scrollbar">
+                <div className="flex flex-nowrap md:grid md:grid-cols-5 gap-3 items-end min-w-[600px] md:min-w-0">
+                  <div className="space-y-1 shrink-0">
+                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                      開始
+                    </label>
+                    <input
+                      type="date"
+                      value={range.start}
+                      onChange={(e) =>
+                        setRange({ ...range, start: e.target.value })
+                      }
+                      className="bg-white px-3 py-1.5 rounded-xl font-bold border border-slate-200 outline-none text-[10px] w-32 focus:border-[#0076FF] transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1 shrink-0">
+                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                      終了
+                    </label>
+                    <input
+                      type="date"
+                      value={range.end}
+                      onChange={(e) =>
+                        setRange({ ...range, end: e.target.value })
+                      }
+                      className="bg-white px-3 py-1.5 rounded-xl font-bold border border-slate-200 outline-none text-[10px] w-32 focus:border-[#0076FF] transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1 shrink-0">
+                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                      人物
+                    </label>
+                    <select
+                      value={selectedMember}
+                      onChange={(e) => setSelectedMember(e.target.value)}
+                      className="bg-white px-3 py-1.5 rounded-xl font-bold border border-slate-200 outline-none w-28 text-[10px] cursor-pointer hover:border-[#0076FF] transition-all"
+                    >
+                      <option value="">全員</option>
+                      {memberList.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1 shrink-0">
+                    <label className="text-[9px] font-black text-slate-400 uppercase ml-1 flex justify-between">
+                      <span>店舗</span>
+                      {(selectedMember || selectedStore) && (
+                        <button
+                          onClick={() => {
+                            setSelectedMember("");
+                            setSelectedStore("");
+                          }}
+                          className="text-[7px] text-rose-500 font-bold border-b border-rose-500 leading-none"
+                        >
+                          X
+                        </button>
+                      )}
+                    </label>
+                    <select
+                      value={selectedStore}
+                      onChange={(e) => setSelectedStore(e.target.value)}
+                      className="bg-white px-3 py-1.5 rounded-xl font-bold border border-slate-200 outline-none w-28 text-[10px] cursor-pointer hover:border-[#0076FF] transition-all"
+                    >
+                      <option value="">全店舗</option>
+                      {storeList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={load}
+                    disabled={loading}
+                    className="bg-[#0076FF] text-white px-4 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-md disabled:opacity-50 h-[30px] shrink-0 whitespace-nowrap active:scale-95 transition-all self-end"
                   >
-                    <option value="">全員表示</option>
-                    {memberList.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
+                    {loading ? "⌛" : "データを解析"}
+                  </button>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-2 flex items-center justify-between">
-                    <span>店舗フィルター</span>
-                    {(selectedMember || selectedStore) && (
-                      <button 
-                        onClick={() => { setSelectedMember(""); setSelectedStore(""); }}
-                        className="text-[8px] text-rose-500 font-bold border-b border-rose-500 leading-none"
-                      >
-                        RESET
-                      </button>
-                    )}
-                  </label>
-                  <select
-                    value={selectedStore}
-                    onChange={(e) => setSelectedStore(e.target.value)}
-                    className="bg-white px-4 py-2 rounded-xl font-bold border border-slate-200 outline-none w-[140px] text-xs cursor-pointer hover:border-[#0076FF] transition-colors"
-                  >
-                    <option value="">全店舗表示</option>
-                    {storeList.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <button
-                  onClick={load}
-                  disabled={loading}
-                  className="bg-[#0076FF] text-white px-8 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg disabled:opacity-50 h-[42px]"
-                >
-                  {loading ? "読み込み中..." : "データを解析する"}
-                </button>
               </div>
 
               <div className="flex bg-slate-100 p-1 shrink-0">
@@ -2681,7 +2794,9 @@ ${Object.entries(kpi.members)
             // --- 報告データのグルーピング (ID単位) ---
             const grouped = (pending || []).reduce((acc, curr) => {
               if (!curr) return acc;
-              const id = String(curr.ID || curr.id || "unknown-" + Math.random());
+              const id = String(
+                curr.ID || curr.id || "unknown-" + Math.random()
+              );
               if (!acc[id]) {
                 acc[id] = {
                   ...curr,
@@ -2691,7 +2806,9 @@ ${Object.entries(kpi.members)
               } else {
                 acc[id].items.push(curr);
                 // 表示用の店舗名を連結 (ユニークにする)
-                const stores = (acc[id].items || []).map(i => i.店舗名 || i.store).filter(Boolean);
+                const stores = (acc[id].items || [])
+                  .map((i) => i.店舗名 || i.store)
+                  .filter(Boolean);
                 acc[id].店舗名 = Array.from(new Set(stores)).join(" / ");
               }
               return acc;
@@ -2705,8 +2822,8 @@ ${Object.entries(kpi.members)
             setArchive(archive || []);
             setResetMaster(resetMaster || []);
             window.HOKUTO_MASTER = hokuto?.data || {
-              "設定１相当": {},
-              "優良店": {},
+              設定１相当: {},
+              優良店: {},
             };
 
             const masterCount = Object.keys(
@@ -2871,88 +2988,159 @@ ${Object.entries(kpi.members)
           try {
             const masterMode = mode || "設定１相当";
             const master = (window.HOKUTO_MASTER || {})[masterMode] || {};
-            const archive = (window.REPORTS_ARCHIVE || []);
+            const archive = window.REPORTS_ARCHIVE || [];
 
             // 内部解析ヘルパー
             const performAnalysis = (analysisContent) => {
               if (!analysisContent) return [];
               const lines = String(analysisContent).split("\n");
-              const res = lines.map((line) => {
-                if (!line.trim()) return null;
-                let match = {
-                  text: line.trim(),
-                  ev: 0,
-                  machine: "",
-                  color: "bg-slate-400",
-                  source: "",
-                };
-                let bestMatch = null;
-                let longestKeywordLen = 0;
-                dictionary.forEach((d) => {
-                  const keywords = (d.キーワード || "").split(/[,，、]/).map(k => k.trim().toLowerCase()).filter(Boolean);
-                  keywords.forEach((k) => {
-                    if (line.toLowerCase().includes(k)) {
-                      if (k.length > longestKeywordLen) {
-                        longestKeywordLen = k.length;
-                        bestMatch = d;
+              const res = lines
+                .map((line) => {
+                  if (!line.trim()) return null;
+                  let match = {
+                    text: line.trim(),
+                    ev: 0,
+                    machine: "",
+                    color: "bg-slate-400",
+                    source: "",
+                  };
+                  let bestMatch = null;
+                  let longestKeywordLen = 0;
+                  dictionary.forEach((d) => {
+                    const keywords = (d.キーワード || "")
+                      .split(/[,，、]/)
+                      .map((k) => k.trim().toLowerCase())
+                      .filter(Boolean);
+                    keywords.forEach((k) => {
+                      if (line.toLowerCase().includes(k)) {
+                        if (k.length > longestKeywordLen) {
+                          longestKeywordLen = k.length;
+                          bestMatch = d;
+                        }
+                      }
+                    });
+                  });
+                  if (bestMatch) {
+                    match.machine = bestMatch.機種名;
+                    match.color = bestMatch.色コード;
+                    const normLine = line
+                      .replace(/[＋]/g, "+")
+                      .replace(/[－ー―ー−−‐-]/g, "-");
+                    const gMatch = normLine.match(/(\d+)\s*[Gg]/);
+                    const sMatch = normLine.match(/([+-]?\d+)\s*[枚枚]/);
+                    const signedMatch = normLine.match(/([+-]\d+)/);
+                    const allNums = (normLine.match(/-?\d+/g) || []).map(
+                      Number
+                    );
+                    const isReset = /リセ|リセット|設定変更|変更後/.test(
+                      normLine
+                    );
+                    let gCount = 0,
+                      diff = NaN;
+                    if (gMatch) gCount = parseInt(gMatch[1]);
+                    if (sMatch) diff = parseInt(sMatch[1]);
+                    else if (signedMatch) diff = parseInt(signedMatch[1]);
+                    if (isNaN(diff)) {
+                      if (gCount !== 0)
+                        diff = allNums.find((n) => n !== gCount) ?? 0;
+                      else diff = allNums[1] ?? 0;
+                    }
+                    if (gCount === 0)
+                      gCount =
+                        allNums.find((n) => n !== diff) ??
+                        (allNums.length > 0 ? allNums[0] : 0);
+                    if (match.machine === "スマスロ北斗の拳") {
+                      const sheets = Object.keys(master);
+                      let selected = "";
+                      if (isReset) {
+                        selected = sheets.find(
+                          (s) => s.includes("変更") || s.includes("リセ")
+                        );
+                      } else {
+                        const getRangeName = (d) => {
+                          if (d < -1400) return "-1400枚未満";
+                          if (d <= -1001) return "-1400～-1001枚";
+                          if (d <= -601) return "-1000～-601枚";
+                          if (d <= -401) return "-600～-401枚";
+                          if (d <= -301) return "-400～-301枚";
+                          if (d <= -201) return "-300～-201枚";
+                          if (d <= -101) return "-200～-101枚";
+                          if (d <= -1) return "-100～-1枚";
+                          if (d <= 99) return "±0～+99枚";
+                          if (d <= 199) return "+100～+199枚";
+                          if (d <= 299) return "+200～+299枚";
+                          if (d <= 399) return "+300～+399枚";
+                          if (d <= 599) return "+400～+599枚";
+                          if (d <= 799) return "+600～+799枚";
+                          if (d <= 999) return "+800～+999枚";
+                          if (d <= 1199) return "+1000～+1199枚";
+                          if (d <= 1399) return "+1200～+1399枚";
+                          if (d <= 1999) return "+1400～+1999枚";
+                          return "+2000枚以上";
+                        };
+                        const targetName = getRangeName(diff);
+                        const normTarget = targetName
+                          .replace(/[±枚（）()\[\]\s　]/g, "")
+                          .replace(/[〜〜~]/g, "～")
+                          .trim();
+                        selected = sheets.find(
+                          (sh) =>
+                            sh
+                              .replace(/[±枚（）()\[\]\s　]/g, "")
+                              .replace(/[〜〜~]/g, "～")
+                              .trim() === normTarget
+                        );
+                        if (!selected && diff >= 0 && diff <= 99)
+                          selected = sheets.find(
+                            (sh) => sh.includes("通常") || sh.includes("基本")
+                          );
+                      }
+                      if (selected) {
+                        match.source = selected;
+                        match.ev = matchEvInRange(gCount, master[selected]);
                       }
                     }
-                  });
-                });
-                if (bestMatch) {
-                  match.machine = bestMatch.機種名;
-                  match.color = bestMatch.色コード;
-                  const normLine = line.replace(/[＋]/g, "+").replace(/[－ー―ー−−‐-]/g, "-");
-                  const gMatch = normLine.match(/(\d+)\s*[Gg]/);
-                  const sMatch = normLine.match(/([+-]?\d+)\s*[枚枚]/);
-                  const signedMatch = normLine.match(/([+-]\d+)/);
-                  const allNums = (normLine.match(/-?\d+/g) || []).map(Number);
-                  const isReset = /リセ|リセット|設定変更|変更後/.test(normLine);
-                  let gCount = 0, diff = NaN;
-                  if (gMatch) gCount = parseInt(gMatch[1]);
-                  if (sMatch) diff = parseInt(sMatch[1]); else if (signedMatch) diff = parseInt(signedMatch[1]);
-                  if (isNaN(diff)) {
-                    if (gCount !== 0) diff = allNums.find((n) => n !== gCount) ?? 0;
-                    else diff = allNums[1] ?? 0;
-                  }
-                  if (gCount === 0) gCount = allNums.find((n) => n !== diff) ?? (allNums.length > 0 ? allNums[0] : 0);
-                  if (match.machine === "スマスロ北斗の拳") {
-                    const sheets = Object.keys(master);
-                    let selected = "";
-                    if (isReset) {
-                      selected = sheets.find(s => s.includes("変更") || s.includes("リセ"));
-                    } else {
-                      const getRangeName = (d) => {
-                        if (d < -1400) return "-1400枚未満";
-                        if (d <= -1001) return "-1400～-1001枚"; if (d <= -601) return "-1000～-601枚";
-                        if (d <= -401) return "-600～-401枚"; if (d <= -301) return "-400～-301枚";
-                        if (d <= -201) return "-300～-201枚"; if (d <= -101) return "-200～-101枚";
-                        if (d <= -1) return "-100～-1枚"; if (d <= 99) return "±0～+99枚";
-                        if (d <= 199) return "+100～+199枚"; if (d <= 299) return "+200～+299枚";
-                        if (d <= 399) return "+300～+399枚"; if (d <= 599) return "+400～+599枚";
-                        if (d <= 799) return "+600～+799枚"; if (d <= 999) return "+800～+999枚";
-                        if (d <= 1199) return "+1000～+1199枚"; if (d <= 1399) return "+1200～+1399枚";
-                        if (d <= 1999) return "+1400～+1999枚"; return "+2000枚以上";
-                      };
-                      const targetName = getRangeName(diff);
-                      const normTarget = targetName.replace(/[±枚（）()\[\]\s　]/g, "").replace(/[〜〜~]/g, "～").trim();
-                      selected = sheets.find(sh => sh.replace(/[±枚（）()\[\]\s　]/g, "").replace(/[〜〜~]/g, "～").trim() === normTarget);
-                      if (!selected && diff >= 0 && diff <= 99) selected = sheets.find(sh => sh.includes("通常") || sh.includes("基本"));
+                    if (
+                      isInitial &&
+                      match.machine &&
+                      match.machine !== "スマスロ北斗の拳" &&
+                      match.machine !== "その他"
+                    ) {
+                      const history = archive.filter(
+                        (h) =>
+                          h &&
+                          (String(h.details || "").includes(match.machine) ||
+                            h.machine === match.machine)
+                      );
+                      const best =
+                        history.find(
+                          (h) =>
+                            h &&
+                            (h.details === line ||
+                              String(h.details || "").includes(line))
+                        ) || history[0];
+                      if (best && best.ev)
+                        match.prediction = {
+                          ev: best.ev,
+                          date: best.date,
+                          name: best.name,
+                        };
                     }
-                    if (selected) { match.source = selected; match.ev = matchEvInRange(gCount, master[selected]); }
                   }
-                  if (isInitial && match.machine && match.machine !== "スマスロ北斗の拳" && match.machine !== "その他") {
-                    const history = archive.filter(h => h && (String(h.details || "").includes(match.machine) || h.machine === match.machine));
-                    const best = history.find(h => h && (h.details === line || String(h.details || "").includes(line))) || history[0];
-                    if (best && best.ev) match.prediction = { ev: best.ev, date: best.date, name: best.name };
-                  }
-                }
-                return match;
-              }).filter(Boolean);
-              
-              const existingEv = parseFloat(getField(report, ["期待値", "ev", "EV"])) || 0;
+                  return match;
+                })
+                .filter(Boolean);
+
+              const existingEv =
+                parseFloat(getField(report, ["期待値", "ev", "EV"])) || 0;
               if (res.length === 0 && existingEv !== 0) {
-                res.push({ text: "取得済みデータ", ev: existingEv, machine: "その他", color: "bg-slate-400", source: "" });
+                res.push({
+                  text: "取得済みデータ",
+                  ev: existingEv,
+                  machine: "その他",
+                  color: "bg-slate-400",
+                  source: "",
+                });
               }
               return res;
             };
@@ -2960,14 +3148,18 @@ ${Object.entries(kpi.members)
             if (isInitial) {
               // 全コンテンツの一括分割と各店舗ごとの事前解析。
               if (report.items && report.items.length > 0) {
-                report.items = report.items.map(it => ({
+                report.items = report.items.map((it) => ({
                   ...it,
-                  results: performAnalysis(it.details || getField(it, ["内容", "稼動内容", "稼働内容"]))
+                  results: performAnalysis(
+                    it.details || getField(it, ["内容", "稼動内容", "稼働内容"])
+                  ),
                 }));
               }
               const firstItem = (report.items && report.items[0]) || report;
               const fin = parseFinance(firstItem);
-              const content = String(getField(report, ["details", "稼動内容", "稼働内容", "内容"]));
+              const content = String(
+                getField(report, ["details", "稼動内容", "稼働内容", "内容"])
+              );
               const results = firstItem.results || performAnalysis(content);
 
               setEditData({
@@ -2976,17 +3168,27 @@ ${Object.entries(kpi.members)
                 報告者: report.名前 || report.報告者,
                 店舗名: firstItem.店舗名 || firstItem.store,
                 日付: report.日付,
-                稼働時間: getField(firstItem, ["稼働時間", "hours", "時間"]) || "0:00",
-                rawHours: getField(firstItem, ["rawHours", "hours_str", "稼働時間"]),
+                稼働時間:
+                  getField(firstItem, ["稼働時間", "hours", "時間"]) || "0:00",
+                rawHours: getField(firstItem, [
+                  "rawHours",
+                  "hours_str",
+                  "稼働時間",
+                ]),
                 exchange: getField(firstItem, ["換金額", "exchange"]) || 0,
                 handover: getField(firstItem, ["手渡し額", "handover"]) || 0,
-                parentReceived: getField(firstItem, ["親受取額", "parentReceived"]) || 0,
-                medal20: getField(firstItem, ["20スロ", "medal20"]) || fin.medal20,
+                parentReceived:
+                  getField(firstItem, ["親受取額", "parentReceived"]) || 0,
+                medal20:
+                  getField(firstItem, ["20スロ", "medal20"]) || fin.medal20,
                 medal5: getField(firstItem, ["5スロ", "medal5"]) || fin.medal5,
                 pachi4: getField(firstItem, ["4パチ", "pachi4"]) || fin.pachi4,
                 cash: getField(firstItem, ["本日投資", "cash"]) || fin.cash,
-                salary: getField(firstItem, ["本日の給料", "salary"]) || fin.salary,
-                remaining: getField(firstItem, ["残投資金", "remaining"]) || fin.remaining,
+                salary:
+                  getField(firstItem, ["本日の給料", "salary"]) || fin.salary,
+                remaining:
+                  getField(firstItem, ["残投資金", "remaining"]) ||
+                  fin.remaining,
                 memo: getField(firstItem, ["備考", "memo"]),
                 details: firstItem.details || content,
                 imageUrls: report.imageUrls || firstItem.imageUrls || "",
@@ -2996,14 +3198,17 @@ ${Object.entries(kpi.members)
               setLogs(results);
               setAiNormalization(null);
               if (report.ID) setSelectedId(String(report.ID));
-              if (firstItem.details || content) fetchAiNormalization(firstItem.details || content);
+              if (firstItem.details || content)
+                fetchAiNormalization(firstItem.details || content);
             } else {
               // 再解析時: 現在の店舗のdetailsを基にperformAnalysisを実行
-              const target = String(getField(report, ["details", "内容", "稼動内容", "稼働内容"]));
+              const target = String(
+                getField(report, ["details", "内容", "稼動内容", "稼働内容"])
+              );
               const results = performAnalysis(target);
               setLogs(results);
               // 同期のため現在のアイテムも更新
-              setEditData(prev => ({ ...prev, results }));
+              setEditData((prev) => ({ ...prev, results }));
             }
           } catch (e) {
             console.error("Analysis Error:", e);
@@ -3033,9 +3238,11 @@ ${Object.entries(kpi.members)
 
         const handleSaveEdit = async () => {
           setLoading(true);
-          const currentReport = reports.find(r => r.ID === selectedId);
-          const itemsToSave = currentReport.items ? [...currentReport.items] : [currentReport];
-          
+          const currentReport = reports.find((r) => r.ID === selectedId);
+          const itemsToSave = currentReport.items
+            ? [...currentReport.items]
+            : [currentReport];
+
           // 現在編集中のデータを該当するインデックスに反映
           itemsToSave[storeIdx] = {
             ...itemsToSave[storeIdx],
@@ -3046,7 +3253,7 @@ ${Object.entries(kpi.members)
           };
 
           // 共通項目を全アイテムに伝播させる
-          const updatedItems = itemsToSave.map(it => ({
+          const updatedItems = itemsToSave.map((it) => ({
             ...it,
             日付: editData.日付,
             名前: editData.報告者,
@@ -3057,34 +3264,42 @@ ${Object.entries(kpi.members)
             parentReceived: editData.parentReceived,
             salary: editData.salary,
             remaining: editData.remaining,
-            metadata: JSON.stringify({ results: it.results || [] }) // 解析結果をメタデータとして保存
+            metadata: JSON.stringify({ results: it.results || [] }), // 解析結果をメタデータとして保存
           }));
 
           try {
             // 全てのアイテムをループして更新
-            await Promise.all(updatedItems.map((item, idx) => 
-              fetch(GAS_URL, {
-                method: "POST",
-                mode: "no-cors",
-                body: JSON.stringify({
-                  action: "updatePendingReport",
-                  data: {
-                    ...item,
-                    id: item.ID,
-                    date: item.日付,
-                    name: item.報告者,
-                    store: item.店舗名,
-                    hours: item.rawHours,
-                    isWalletRow: idx === 0,
-                  },
-                }),
-              })
-            ));
+            await Promise.all(
+              updatedItems.map((item, idx) =>
+                fetch(GAS_URL, {
+                  method: "POST",
+                  mode: "no-cors",
+                  body: JSON.stringify({
+                    action: "updatePendingReport",
+                    data: {
+                      ...item,
+                      id: item.ID,
+                      date: item.日付,
+                      name: item.報告者,
+                      store: item.店舗名,
+                      hours: item.rawHours,
+                      isWalletRow: idx === 0,
+                    },
+                  }),
+                })
+              )
+            );
 
             setReports(
               reports.map((r) =>
                 String(r.ID) === String(editData.ID)
-                  ? { ...r, items: updatedItems, ...updatedItems[0], 日付: editData.日付, 名前: editData.報告者 }
+                  ? {
+                      ...r,
+                      items: updatedItems,
+                      ...updatedItems[0],
+                      日付: editData.日付,
+                      名前: editData.報告者,
+                    }
                   : r
               )
             );
@@ -3099,7 +3314,7 @@ ${Object.entries(kpi.members)
         const onApprove = async () => {
           const report = reports.find((r) => r.ID === selectedId);
           const itemsToApprove = report.items ? [...report.items] : [report];
-          
+
           // 現在の編集内容を反映
           const updatedItems = itemsToApprove.map((it, idx) => {
             if (idx === storeIdx) {
@@ -3133,40 +3348,42 @@ ${Object.entries(kpi.members)
           });
 
           try {
-            await Promise.all(updatedItems.map((item, idx) => {
-              const hours = parseHours(item.rawHours || item.稼働時間);
-              // 期待値は各アイテムのresultsから計算
-              const itemLogs = item.results || [];
-              const calculatedEv = itemLogs.reduce((s, l) => s + l.ev, 0);
+            await Promise.all(
+              updatedItems.map((item, idx) => {
+                const hours = parseHours(item.rawHours || item.稼働時間);
+                // 期待値は各アイテムのresultsから計算
+                const itemLogs = item.results || [];
+                const calculatedEv = itemLogs.reduce((s, l) => s + l.ev, 0);
 
-              return fetch(GAS_URL, {
-                method: "POST",
-                mode: "no-cors",
-                body: JSON.stringify({
-                  action: "approveReport",
-                  data: {
-                    ...item,
-                    id: item.ID,
-                    date: item.日付,
-                    name: item.報告者,
-                    store: item.店舗名,
-                    ev: calculatedEv,
-                    hours: hours,
-                    exchange: safeParseFinance(item.exchange),
-                    handover: safeParseFinance(item.handover),
-                    parentReceived: safeParseFinance(item.parentReceived),
-                    medal20: safeParseFinance(item.medal20),
-                    medal5: safeParseFinance(item.medal5),
-                    pachi4: safeParseFinance(item.pachi4),
-                    memo: item.memo,
-                    details: item.details,
-                    imageUrls: item.imageUrls,
-                    metadata: JSON.stringify({ results: itemLogs }),
-                    isWalletRow: idx === 0,
-                  },
-                }),
-              });
-            }));
+                return fetch(GAS_URL, {
+                  method: "POST",
+                  mode: "no-cors",
+                  body: JSON.stringify({
+                    action: "approveReport",
+                    data: {
+                      ...item,
+                      id: item.ID,
+                      date: item.日付,
+                      name: item.報告者,
+                      store: item.店舗名,
+                      ev: calculatedEv,
+                      hours: hours,
+                      exchange: safeParseFinance(item.exchange),
+                      handover: safeParseFinance(item.handover),
+                      parentReceived: safeParseFinance(item.parentReceived),
+                      medal20: safeParseFinance(item.medal20),
+                      medal5: safeParseFinance(item.medal5),
+                      pachi4: safeParseFinance(item.pachi4),
+                      memo: item.memo,
+                      details: item.details,
+                      imageUrls: item.imageUrls,
+                      metadata: JSON.stringify({ results: itemLogs }),
+                      isWalletRow: idx === 0,
+                    },
+                  }),
+                });
+              })
+            );
             setReports(reports.filter((r) => r.ID !== selectedId));
             setSelectedId(null);
             setLogs([]);
@@ -3310,62 +3527,64 @@ ${Object.entries(kpi.members)
                 </button>
               </div>
               <div className="flex-1 scroll-container custom-scroll p-4 space-y-2">
-                {(!reports || reports.length === 0) ? (
+                {!reports || reports.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] opacity-30 text-center space-y-4">
                     <div className="text-4xl">📭</div>
                     <div>No Pending Reports</div>
                   </div>
-                ) : reports.map((r) => (
-                  <div
-                    key={String(r.ID)}
-                    onClick={() => {
-                      handleAnalyze(r, evMode, true);
-                      setIsSidebarOpen(false);
-                    }}
-                    className={`p-5 rounded-[1.5rem] cursor-pointer transition-all ${
-                      String(selectedId) === String(r.ID)
-                        ? "bg-[#0076FF] text-white shadow-xl translate-x-1"
-                        : "hover:bg-white/5 text-slate-400"
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCheckedIds((prev) =>
-                            prev.includes(r.ID)
-                              ? prev.filter((x) => x !== r.ID)
-                              : [...prev, r.ID]
-                          );
-                        }}
-                        className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${
-                          checkedIds.includes(r.ID)
-                            ? "bg-white border-white"
-                            : "border-white/10"
-                        }`}
-                      >
-                        {checkedIds.includes(r.ID) && (
-                          <span className="text-[#0076FF] font-black text-xs">
-                            ✓
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline mb-1">
-                          <div className="text-sm font-black text-white truncate">
-                            {r.名前 || r.報告者}
-                          </div>
-                          <div className="text-[8px] font-black opacity-40 uppercase font-mono ml-2 shrink-0">
-                            {formatDateLocal(r.日付)}
-                          </div>
+                ) : (
+                  reports.map((r) => (
+                    <div
+                      key={String(r.ID)}
+                      onClick={() => {
+                        handleAnalyze(r, evMode, true);
+                        setIsSidebarOpen(false);
+                      }}
+                      className={`p-5 rounded-[1.5rem] cursor-pointer transition-all ${
+                        String(selectedId) === String(r.ID)
+                          ? "bg-[#0076FF] text-white shadow-xl translate-x-1"
+                          : "hover:bg-white/5 text-slate-400"
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCheckedIds((prev) =>
+                              prev.includes(r.ID)
+                                ? prev.filter((x) => x !== r.ID)
+                                : [...prev, r.ID]
+                            );
+                          }}
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${
+                            checkedIds.includes(r.ID)
+                              ? "bg-white border-white"
+                              : "border-white/10"
+                          }`}
+                        >
+                          {checkedIds.includes(r.ID) && (
+                            <span className="text-[#0076FF] font-black text-xs">
+                              ✓
+                            </span>
+                          )}
                         </div>
-                        <div className="font-bold text-[10px] truncate opacity-80 text-slate-400">
-                          {r.店舗名}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline mb-1">
+                            <div className="text-sm font-black text-white truncate">
+                              {r.名前 || r.報告者}
+                            </div>
+                            <div className="text-[8px] font-black opacity-40 uppercase font-mono ml-2 shrink-0">
+                              {formatDateLocal(r.日付)}
+                            </div>
+                          </div>
+                          <div className="font-bold text-[10px] truncate opacity-80 text-slate-400">
+                            {r.店舗名}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               <div className="p-6 border-t border-white/5 space-y-3">
                 <button
@@ -3401,43 +3620,62 @@ ${Object.entries(kpi.members)
             </div>
             {/* モバイル用バックドロップ */}
             {isSidebarOpen && (
-              <div 
+              <div
                 className="sidebar-backdrop"
                 onClick={() => setIsSidebarOpen(false)}
               />
             )}
             <div className="main scroll-container">
-              {editData && reports && reports.find((r) => String(r.ID) === String(selectedId)) ? (
+              {editData &&
+              reports &&
+              reports.find((r) => String(r.ID) === String(selectedId)) ? (
                 <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn pb-20">
-                  
                   {/* Global Header: 共通項目集約 */}
                   <div className="bg-slate-900 rounded-[2.5rem] p-8 lg:p-10 text-white shadow-2xl border border-white/10 space-y-8">
                     <div className="flex flex-wrap justify-between items-center gap-6">
                       <div className="flex items-center gap-2">
                         <div>
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">報告者 / Operator</div>
-                          <div className="text-xl lg:text-3xl font-black italic tracking-tighter">{editData.報告者}</div>
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5 opacity-60">
+                            報告者 / Operator
+                          </div>
+                          <div className="text-xl lg:text-3xl font-black italic tracking-tighter">
+                            {editData.報告者}
+                          </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-4">
                         <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
                           <div className="space-y-1">
-                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">稼働日 / Date</div>
+                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">
+                              稼働日 / Date
+                            </div>
                             <input
                               type="date"
                               value={formatDateLocal(editData.日付)}
-                              onChange={(e) => setEditData({ ...editData, 日付: e.target.value })}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  日付: e.target.value,
+                                })
+                              }
                               className="bg-transparent border-none text-base font-black text-white italic outline-none focus:ring-0 p-0 h-auto"
                             />
                           </div>
                         </div>
                         <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
                           <div className="space-y-1">
-                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">稼働時間 / Time</div>
+                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">
+                              稼働時間 / Time
+                            </div>
                             <input
                               value={editData.rawHours || ""}
-                              onChange={(e) => setEditData({ ...editData, rawHours: e.target.value })}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  rawHours: e.target.value,
+                                })
+                              }
                               className="bg-transparent border-none text-base font-black text-white italic outline-none focus:ring-0 p-0 h-auto w-24"
                               placeholder="8:40~21:10"
                             />
@@ -3448,38 +3686,63 @@ ${Object.entries(kpi.members)
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-                        <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">親から受取</div>
+                        <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">
+                          親から受取
+                        </div>
                         <input
                           type="number"
                           value={editData.parentReceived || 0}
-                          onChange={(e) => setEditData({ ...editData, parentReceived: e.target.value })}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              parentReceived: e.target.value,
+                            })
+                          }
                           className="bg-transparent border-none w-full text-center text-lg font-black italic text-[#00FF85] focus:ring-0 p-0"
                         />
                       </div>
                       <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-                        <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">親へ手渡し</div>
+                        <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">
+                          親へ手渡し
+                        </div>
                         <input
                           type="number"
                           value={editData.handover || 0}
-                          onChange={(e) => setEditData({ ...editData, handover: e.target.value })}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              handover: e.target.value,
+                            })
+                          }
                           className="bg-transparent border-none w-full text-center text-lg font-black italic text-rose-500 focus:ring-0 p-0"
                         />
                       </div>
                       <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-                        <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">本日の給料</div>
+                        <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">
+                          本日の給料
+                        </div>
                         <input
                           type="number"
                           value={editData.salary || 0}
-                          onChange={(e) => setEditData({ ...editData, salary: e.target.value })}
+                          onChange={(e) =>
+                            setEditData({ ...editData, salary: e.target.value })
+                          }
                           className="bg-transparent border-none w-full text-center text-lg font-black italic text-[#FFB800] focus:ring-0 p-0"
                         />
                       </div>
                       <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-                        <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">最終残投資金</div>
+                        <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">
+                          最終残投資金
+                        </div>
                         <input
                           type="number"
                           value={editData.remaining || 0}
-                          onChange={(e) => setEditData({ ...editData, remaining: e.target.value })}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              remaining: e.target.value,
+                            })
+                          }
                           className="bg-transparent border-none w-full text-center text-lg font-black italic text-white focus:ring-0 p-0"
                         />
                       </div>
@@ -3487,65 +3750,86 @@ ${Object.entries(kpi.members)
                   </div>
 
                   {/* Store Switching Tabs: 最上部へ移動 */}
-                  {reports.find(r => r.ID === selectedId)?.items?.length > 1 && (
+                  {reports.find((r) => r.ID === selectedId)?.items?.length >
+                    1 && (
                     <div className="flex gap-2 mb-8 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scroll">
-                      {reports.find(r => r.ID === selectedId).items.map((item, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            const currentReport = reports.find(r => r.ID === selectedId);
-                            // 現在の編集内容を退避 (results込で保存)
-                            currentReport.items[storeIdx] = { 
-                              ...currentReport.items[storeIdx],
-                              ...editData, 
-                              results: [...logs] 
-                            };
-                            // 共通項目も親オブジェクトに反映（日付バグ修正）
-                            currentReport.日付 = editData.日付;
-                            currentReport.reports_name = editData.報告者;
-                            
-                            setStoreIdx(idx);
-                            setAiNormalization(null);
-                            const nextItem = currentReport.items[idx];
-                            const fin = parseFinance(nextItem);
-                            
-                            // 稼動詳細（テキスト）と解析ログ（期待値リスト）を即座に連動
-                            const nextDetails = nextItem.details || getField(nextItem, ["稼動内容", "稼働内容", "内容"]);
-                            const nextLogs = nextItem.results || [];
-                            setLogs(nextLogs);
-                            
-                            setEditData({
-                              ...nextItem,
-                              ID: currentReport.ID,
-                              報告者: editData.報告者, 
-                              日付: editData.日付, 
-                              稼働時間: editData.稼働時間,
-                              rawHours: editData.rawHours,
-                              handover: editData.handover,
-                              parentReceived: editData.parentReceived,
-                              salary: editData.salary,
-                              remaining: editData.remaining,
-                              
-                              店舗名: nextItem.店舗名 || nextItem.store,
-                              exchange: getField(nextItem, ["換金額", "exchange"]) || 0,
-                              medal20: getField(nextItem, ["20スロ", "medal20"]) || fin.medal20,
-                              medal5: getField(nextItem, ["5スロ", "medal5"]) || fin.medal5,
-                              pachi4: getField(nextItem, ["4パチ", "pachi4"]) || fin.pachi4,
-                              cash: getField(nextItem, ["本日投資", "cash"]) || fin.cash,
-                              memo: getField(nextItem, ["備考", "memo"]),
-                              details: nextDetails,
-                              imageUrls: nextItem.imageUrls || "",
-                            });
-                          }}
-                          className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${
-                            storeIdx === idx
-                              ? "bg-slate-900 text-white shadow-lg"
-                              : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
-                          }`}
-                        >
-                          {item.店舗名 || item.store || `店舗 ${idx + 1}`}
-                        </button>
-                      ))}
+                      {reports
+                        .find((r) => r.ID === selectedId)
+                        .items.map((item, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              const currentReport = reports.find(
+                                (r) => r.ID === selectedId
+                              );
+                              // 現在の編集内容を退避 (results込で保存)
+                              currentReport.items[storeIdx] = {
+                                ...currentReport.items[storeIdx],
+                                ...editData,
+                                results: [...logs],
+                              };
+                              // 共通項目も親オブジェクトに反映（日付バグ修正）
+                              currentReport.日付 = editData.日付;
+                              currentReport.reports_name = editData.報告者;
+
+                              setStoreIdx(idx);
+                              setAiNormalization(null);
+                              const nextItem = currentReport.items[idx];
+                              const fin = parseFinance(nextItem);
+
+                              // 稼動詳細（テキスト）と解析ログ（期待値リスト）を即座に連動
+                              const nextDetails =
+                                nextItem.details ||
+                                getField(nextItem, [
+                                  "稼動内容",
+                                  "稼働内容",
+                                  "内容",
+                                ]);
+                              const nextLogs = nextItem.results || [];
+                              setLogs(nextLogs);
+
+                              setEditData({
+                                ...nextItem,
+                                ID: currentReport.ID,
+                                報告者: editData.報告者,
+                                日付: editData.日付,
+                                稼働時間: editData.稼働時間,
+                                rawHours: editData.rawHours,
+                                handover: editData.handover,
+                                parentReceived: editData.parentReceived,
+                                salary: editData.salary,
+                                remaining: editData.remaining,
+
+                                店舗名: nextItem.店舗名 || nextItem.store,
+                                exchange:
+                                  getField(nextItem, ["換金額", "exchange"]) ||
+                                  0,
+                                medal20:
+                                  getField(nextItem, ["20スロ", "medal20"]) ||
+                                  fin.medal20,
+                                medal5:
+                                  getField(nextItem, ["5スロ", "medal5"]) ||
+                                  fin.medal5,
+                                pachi4:
+                                  getField(nextItem, ["4パチ", "pachi4"]) ||
+                                  fin.pachi4,
+                                cash:
+                                  getField(nextItem, ["本日投資", "cash"]) ||
+                                  fin.cash,
+                                memo: getField(nextItem, ["備考", "memo"]),
+                                details: nextDetails,
+                                imageUrls: nextItem.imageUrls || "",
+                              });
+                            }}
+                            className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${
+                              storeIdx === idx
+                                ? "bg-slate-900 text-white shadow-lg"
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
+                            }`}
+                          >
+                            {item.店舗名 || item.store || `店舗 ${idx + 1}`}
+                          </button>
+                        ))}
                     </div>
                   )}
 
@@ -3695,92 +3979,132 @@ ${Object.entries(kpi.members)
 
                   {/* 白背景コンテナ (B+Cを包含) */}
                   <div className="bg-white rounded-[3.5rem] p-6 lg:p-8 shadow-2xl border border-slate-100 space-y-10">
-                      
-                      {/* Section B: 稼働リザルト - 5行 (Mobile) / 4行 (PC) レスポンシブ構成 */}
-                      <div className="flex flex-col gap-6 lg:gap-8 p-6 lg:p-10 border border-slate-100 rounded-[2.5rem] relative">
-                        <span className="absolute -top-3 left-8 bg-white px-3 py-0.5 text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 rounded-full">
-                          STORE RESULT
-                        </span>
+                    {/* Section B: 稼働リザルト - 5行 (Mobile) / 4行 (PC) レスポンシブ構成 */}
+                    <div className="flex flex-col gap-6 lg:gap-8 p-6 lg:p-10 border border-slate-100 rounded-[2.5rem] relative">
+                      <span className="absolute -top-3 left-8 bg-white px-3 py-0.5 text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 rounded-full">
+                        STORE RESULT
+                      </span>
 
-                        {/* Row 1: 店舗名 (強調) */}
-                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                          <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">店舗名 (Emphasized)</div>
+                      {/* Row 1: 店舗名 (強調) */}
+                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                        <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
+                          店舗名 (Emphasized)
+                        </div>
+                        <input
+                          value={editData.店舗名 || ""}
+                          onChange={(e) =>
+                            setEditData({ ...editData, 店舗名: e.target.value })
+                          }
+                          className="bg-white border-2 border-slate-200 text-xl lg:text-2xl font-black px-6 py-4 rounded-2xl w-full text-slate-900 focus:border-[#0076FF] outline-none transition-all shadow-sm"
+                          placeholder="例: マルハン〇〇店"
+                        />
+                      </div>
+
+                      {/* Row 2: 最終枚数 / 球数 (スマホは縦、PCは横) */}
+                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                        <div className="text-[10px] font-black text-slate-400 uppercase mb-4 ml-1">
+                          最終枚数 / 球数
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
+                            <label className="text-[10px] md:text-[9px] font-black text-rose-500 uppercase ml-1 shrink-0 w-16 md:w-auto">
+                              20スロ
+                            </label>
+                            <input
+                              type="number"
+                              value={editData.medal20 || 0}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  medal20: e.target.value,
+                                })
+                              }
+                              className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
+                            />
+                          </div>
+                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
+                            <label className="text-[10px] md:text-[9px] font-black text-indigo-500 uppercase ml-1 shrink-0 w-16 md:w-auto">
+                              5スロ
+                            </label>
+                            <input
+                              type="number"
+                              value={editData.medal5 || 0}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  medal5: e.target.value,
+                                })
+                              }
+                              className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
+                            />
+                          </div>
+                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
+                            <label className="text-[10px] md:text-[9px] font-black text-[#00E0FF] uppercase ml-1 shrink-0 w-16 md:w-auto">
+                              4パチ
+                            </label>
+                            <input
+                              type="number"
+                              value={editData.pachi4 || 0}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  pachi4: e.target.value,
+                                })
+                              }
+                              className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Row 3 (Mobile Row 3&4): 投資・換金 (スマホは各1行、PCは1行2列) */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col">
+                          <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
+                            本日投資
+                          </div>
                           <input
-                            value={editData.店舗名 || ""}
-                            onChange={(e) => setEditData({ ...editData, 店舗名: e.target.value })}
-                            className="bg-white border-2 border-slate-200 text-xl lg:text-2xl font-black px-6 py-4 rounded-2xl w-full text-slate-900 focus:border-[#0076FF] outline-none transition-all shadow-sm"
-                            placeholder="例: マルハン〇〇店"
+                            type="number"
+                            value={editData.cash || 0}
+                            onChange={(e) =>
+                              setEditData({ ...editData, cash: e.target.value })
+                            }
+                            className="bg-white border border-slate-200 text-2xl font-black px-6 py-4 rounded-xl w-full text-rose-500 shadow-inner"
                           />
                         </div>
-
-                        {/* Row 2: 最終枚数 / 球数 (スマホは縦、PCは横) */}
-                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                          <div className="text-[10px] font-black text-slate-400 uppercase mb-4 ml-1">最終枚数 / 球数</div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
-                              <label className="text-[10px] md:text-[9px] font-black text-rose-500 uppercase ml-1 shrink-0 w-16 md:w-auto">20スロ</label>
-                              <input
-                                type="number"
-                                value={editData.medal20 || 0}
-                                onChange={(e) => setEditData({ ...editData, medal20: e.target.value })}
-                                className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
-                              />
-                            </div>
-                            <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
-                              <label className="text-[10px] md:text-[9px] font-black text-indigo-500 uppercase ml-1 shrink-0 w-16 md:w-auto">5スロ</label>
-                              <input
-                                type="number"
-                                value={editData.medal5 || 0}
-                                onChange={(e) => setEditData({ ...editData, medal5: e.target.value })}
-                                className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
-                              />
-                            </div>
-                            <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
-                              <label className="text-[10px] md:text-[9px] font-black text-[#00E0FF] uppercase ml-1 shrink-0 w-16 md:w-auto">4パチ</label>
-                              <input
-                                type="number"
-                                value={editData.pachi4 || 0}
-                                onChange={(e) => setEditData({ ...editData, pachi4: e.target.value })}
-                                className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
-                              />
-                            </div>
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col">
+                          <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
+                            換金額
                           </div>
-                        </div>
-
-                        {/* Row 3 (Mobile Row 3&4): 投資・換金 (スマホは各1行、PCは1行2列) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col">
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">本日投資</div>
-                            <input
-                              type="number"
-                              value={editData.cash || 0}
-                              onChange={(e) => setEditData({ ...editData, cash: e.target.value })}
-                              className="bg-white border border-slate-200 text-2xl font-black px-6 py-4 rounded-xl w-full text-rose-500 shadow-inner"
-                            />
-                          </div>
-                          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col">
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">換金額</div>
-                            <input
-                              type="number"
-                              value={editData.exchange || 0}
-                              onChange={(e) => setEditData({ ...editData, exchange: e.target.value })}
-                              className="bg-white border border-slate-200 text-2xl font-black px-6 py-4 rounded-xl w-full text-[#00FF85] shadow-inner"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Row 4 (Mobile Row 5): 店舗メモ (広めに確保) */}
-                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                          <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">店舗メモ</div>
-                          <textarea
-                            value={editData.memo || ""}
-                            onChange={(e) => setEditData({ ...editData, memo: e.target.value })}
-                            className="bg-white border border-slate-200 text-base font-black px-6 py-4 rounded-xl w-full min-h-[80px]"
-                            placeholder="独自の換金率、貯メダル再利用、台番号など..."
+                          <input
+                            type="number"
+                            value={editData.exchange || 0}
+                            onChange={(e) =>
+                              setEditData({
+                                ...editData,
+                                exchange: e.target.value,
+                              })
+                            }
+                            className="bg-white border border-slate-200 text-2xl font-black px-6 py-4 rounded-xl w-full text-[#00FF85] shadow-inner"
                           />
                         </div>
                       </div>
 
+                      {/* Row 4 (Mobile Row 5): 店舗メモ (広めに確保) */}
+                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                        <div className="text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">
+                          店舗メモ
+                        </div>
+                        <textarea
+                          value={editData.memo || ""}
+                          onChange={(e) =>
+                            setEditData({ ...editData, memo: e.target.value })
+                          }
+                          className="bg-white border border-slate-200 text-base font-black px-6 py-4 rounded-xl w-full min-h-[80px]"
+                          placeholder="独自の換金率、貯メダル再利用、台番号など..."
+                        />
+                      </div>
+                    </div>
 
                     {/* C: 稼働詳細 */}
                     <div className="border border-slate-100 rounded-[2.5rem] p-8 lg:p-10 relative space-y-10">
@@ -3790,7 +4114,9 @@ ${Object.entries(kpi.members)
                       <div className="flex flex-col mb-8 px-2 space-y-4">
                         <div className="flex flex-col items-center space-y-3">
                           <div className="flex items-center gap-4">
-                            <h3 className="text-xl font-black italic text-slate-900">北斗</h3>
+                            <h3 className="text-xl font-black italic text-slate-900">
+                              北斗
+                            </h3>
                             <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200 shadow-inner">
                               {["設定１相当", "優良店"].map((m) => (
                                 <button
@@ -3814,316 +4140,373 @@ ${Object.entries(kpi.members)
                             ※おすすめ週間のみ優良店に変更してください
                           </p>
                         </div>
-                      <div className="space-y-5">
-                        {logs.map((log, i) => (
-                          <div
-                            key={i}
-                            className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col gap-6 animate-fadeIn relative overflow-hidden group"
-                          >
-                            <div className="space-y-5">
-                              <div>
-                                <span
-                                  className={`text-[10px] font-black px-4 py-2 rounded-xl text-white shadow-sm inline-block ${log.color}`}
-                                >
-                                  {log.machine}
-                                </span>
-                              </div>
+                        <div className="space-y-5">
+                          {logs.map((log, i) => (
+                            <div
+                              key={i}
+                              className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col gap-6 animate-fadeIn relative overflow-hidden group"
+                            >
+                              <div className="space-y-5">
+                                <div>
+                                  <span
+                                    className={`text-[10px] font-black px-4 py-2 rounded-xl text-white shadow-sm inline-block ${log.color}`}
+                                  >
+                                    {log.machine}
+                                  </span>
+                                </div>
 
-                              <div className="text-base font-black text-slate-800 leading-relaxed pl-1">
-                                {log.text}
-                                {log.source && (
-                                  <div className="text-[9px] font-black text-[#0076FF] italic opacity-60 mt-2">
-                                    Sheet: {log.source}
-                                  </div>
-                                )}
-                              </div>
+                                <div className="text-base font-black text-slate-800 leading-relaxed pl-1">
+                                  {log.text}
+                                  {log.source && (
+                                    <div className="text-[9px] font-black text-[#0076FF] italic opacity-60 mt-2">
+                                      Sheet: {log.source}
+                                    </div>
+                                  )}
+                                </div>
 
-                              <div className="pt-6 border-t border-slate-200 flex items-end justify-between">
-                                <div className="space-y-2">
-                                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">
-                                    算出期待値 (編集可能)
-                                  </div>
-                                  <div className="flex items-center gap-3 relative">
-                                    <input
-                                      type="number"
-                                      value={log.ev || ""}
-                                      placeholder="0"
-                                      onChange={(e) => {
-                                        const n = [...logs];
-                                        n[i].ev = parseInt(e.target.value) || 0;
-                                        setLogs(n);
-                                      }}
-                                      className="input-ev text-xl"
-                                    />
-                                    {(() => {
-                                      // スマートサジェスト (Smart Suggest) ロジック
-                                      const line = log.text.toLowerCase();
-                                      const machine = log.machine;
+                                <div className="pt-6 border-t border-slate-200 flex items-end justify-between">
+                                  <div className="space-y-2">
+                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider ml-1">
+                                      算出期待値 (編集可能)
+                                    </div>
+                                    <div className="flex items-center gap-3 relative">
+                                      <input
+                                        type="number"
+                                        value={log.ev || ""}
+                                        placeholder="0"
+                                        onChange={(e) => {
+                                          const n = [...logs];
+                                          n[i].ev =
+                                            parseInt(e.target.value) || 0;
+                                          setLogs(n);
+                                        }}
+                                        className="input-ev text-xl"
+                                      />
+                                      {(() => {
+                                        // スマートサジェスト (Smart Suggest) ロジック
+                                        const line = log.text.toLowerCase();
+                                        const machine = log.machine;
 
-                                      // 北斗は専用ロジック(1G単位)があるため、この汎用リセット提案からは除外する
-                                      if (machine === "スマスロ北斗の拳")
-                                        return null;
+                                        // 北斗は専用ロジック(1G単位)があるため、この汎用リセット提案からは除外する
+                                        if (machine === "スマスロ北斗の拳")
+                                          return null;
 
-                                      // 1. 朝一リセ即時確定 (タグ優先判定)
-                                      // 特定済みの機種名 (machine) と一致するマスタのみを検索対象にする
-                                      const rm = resetMaster.find(
-                                        (m) => m.機種名 === machine
-                                      );
-
-                                      if (rm) {
-                                        // リセットを示唆する共通用語 または マスタ固有キーワードが含まれているか
-                                        const commonWords = [
-                                          "リセ",
-                                          "リセット",
-                                          "設定変更",
-                                          "変更後",
-                                          "朝一",
-                                          "短縮",
-                                          "天国",
-                                        ];
-                                        const mKeywords = (rm.キーワード || "")
-                                          .split(/[,，、]/)
-                                          .map((k) => k.trim().toLowerCase())
-                                          .filter(Boolean);
-                                        const allResetWords = [
-                                          ...new Set([
-                                            ...commonWords,
-                                            ...mKeywords,
-                                          ]),
-                                        ];
-
-                                        const isResetContext =
-                                          allResetWords.some((k) =>
-                                            line.includes(k)
-                                          );
-                                        if (!isResetContext) return null; // リセット文脈でなければサジェストスキップ
-                                        const unitPrice =
-                                          parseInt(rm.単価) || 0;
-                                        // 倍数抽出: "×3", "*2", "5個" などに対応
-                                        const multMatch = line.match(
-                                          /[×*]\s*(\d+)|(\d+)\s*個/
+                                        // 1. 朝一リセ即時確定 (タグ優先判定)
+                                        // 特定済みの機種名 (machine) と一致するマスタのみを検索対象にする
+                                        const rm = resetMaster.find(
+                                          (m) => m.機種名 === machine
                                         );
-                                        const count = multMatch
-                                          ? parseInt(
-                                              multMatch[1] || multMatch[2]
-                                            )
-                                          : 1;
-                                        const resetEv = unitPrice * count;
 
-                                        // G数に基づいたサジェスト(±5G精度検索)がある場合はそちらを優先するため、ここではサジェストしない
-                                        // 例: ラブ嬢リセ200g 等の拾い直し時は、0g~90gの定額300円提案を抑制する
+                                        if (rm) {
+                                          // リセットを示唆する共通用語 または マスタ固有キーワードが含まれているか
+                                          const commonWords = [
+                                            "リセ",
+                                            "リセット",
+                                            "設定変更",
+                                            "変更後",
+                                            "朝一",
+                                            "短縮",
+                                            "天国",
+                                          ];
+                                          const mKeywords = (
+                                            rm.キーワード || ""
+                                          )
+                                            .split(/[,，、]/)
+                                            .map((k) => k.trim().toLowerCase())
+                                            .filter(Boolean);
+                                          const allResetWords = [
+                                            ...new Set([
+                                              ...commonWords,
+                                              ...mKeywords,
+                                            ]),
+                                          ];
+
+                                          const isResetContext =
+                                            allResetWords.some((k) =>
+                                              line.includes(k)
+                                            );
+                                          if (!isResetContext) return null; // リセット文脈でなければサジェストスキップ
+                                          const unitPrice =
+                                            parseInt(rm.単価) || 0;
+                                          // 倍数抽出: "×3", "*2", "5個" などに対応
+                                          const multMatch = line.match(
+                                            /[×*]\s*(\d+)|(\d+)\s*個/
+                                          );
+                                          const count = multMatch
+                                            ? parseInt(
+                                                multMatch[1] || multMatch[2]
+                                              )
+                                            : 1;
+                                          const resetEv = unitPrice * count;
+
+                                          // G数に基づいたサジェスト(±5G精度検索)がある場合はそちらを優先するため、ここではサジェストしない
+                                          // 例: ラブ嬢リセ200g 等の拾い直し時は、0g~90gの定額300円提案を抑制する
+                                          const gMatch =
+                                            line.match(/(\d+)\s*[gG]/);
+                                          const hasHistoricalData =
+                                            gMatch &&
+                                            archive &&
+                                            archive.some((h) => {
+                                              if (
+                                                h.machine !== machine ||
+                                                !h.metadata
+                                              )
+                                                return false;
+                                              const hGMatch = String(
+                                                h.details || ""
+                                              )
+                                                .toLowerCase()
+                                                .match(/(\d+)\s*[gG]/);
+                                              return (
+                                                hGMatch &&
+                                                Math.abs(
+                                                  parseInt(hGMatch[1]) -
+                                                    parseInt(gMatch[1])
+                                                ) <= 10
+                                              );
+                                            });
+
+                                          if (
+                                            log.ev !== resetEv &&
+                                            !hasHistoricalData
+                                          ) {
+                                            return (
+                                              <div
+                                                onClick={() => {
+                                                  const n = [...logs];
+                                                  n[i].ev = resetEv;
+                                                  setLogs(n);
+                                                }}
+                                                className="mt-2 bg-rose-50 text-rose-600 text-[10px] font-black px-4 py-2 rounded-xl cursor-pointer shadow-sm hover:bg-rose-100 transition-all border border-rose-100 animate-fadeIn"
+                                              >
+                                                {resetEv.toLocaleString()}円{" "}
+                                                {count > 1
+                                                  ? `(${unitPrice.toLocaleString()}×${count})`
+                                                  : ""}
+                                              </div>
+                                            );
+                                          }
+                                        }
+
+                                        // 2. ±5G 精度検索 (過去ログ 10件以上)
                                         const gMatch =
                                           line.match(/(\d+)\s*[gG]/);
-                                        const hasHistoricalData =
-                                          gMatch &&
-                                          archive &&
-                                          archive.some((h) => {
-                                            if (
-                                              h.machine !== machine ||
-                                              !h.metadata
-                                            )
-                                              return false;
-                                            const hGMatch = String(
-                                              h.details || ""
-                                            )
-                                              .toLowerCase()
-                                              .match(/(\d+)\s*[gG]/);
-                                            return (
-                                              hGMatch &&
-                                              Math.abs(
-                                                parseInt(hGMatch[1]) -
-                                                  parseInt(gMatch[1])
-                                              ) <= 10
-                                            );
-                                          });
-
-                                        if (
-                                          log.ev !== resetEv &&
-                                          !hasHistoricalData
-                                        ) {
-                                          return (
-                                            <div
-                                              onClick={() => {
-                                                const n = [...logs];
-                                                n[i].ev = resetEv;
-                                                setLogs(n);
-                                              }}
-                                              className="mt-2 bg-rose-50 text-rose-600 text-[10px] font-black px-4 py-2 rounded-xl cursor-pointer shadow-sm hover:bg-rose-100 transition-all border border-rose-100 animate-fadeIn"
-                                            >
-                                              {resetEv.toLocaleString()}円{" "}
-                                              {count > 1
-                                                ? `(${unitPrice.toLocaleString()}×${count})`
-                                                : ""}
-                                            </div>
-                                          );
-                                        }
-                                      }
-
-                                      // 2. ±5G 精度検索 (過去ログ 10件以上)
-                                      const gMatch = line.match(/(\d+)\s*[gG]/);
-                                      if (gMatch && archive) {
-                                        const currentG = parseInt(gMatch[1]);
-                                        const matches = archive.filter((h) => {
-                                          if (
-                                            h.machine !== machine ||
-                                            !h.metadata
-                                          )
-                                            return false;
-                                          const hGMatch = String(
-                                            h.details || ""
-                                          )
-                                            .toLowerCase()
-                                            .match(/(\d+)\s*[gG]/);
-                                          if (!hGMatch) return false;
-                                          const hG = parseInt(hGMatch[1]);
-                                          return Math.abs(hG - currentG) <= 10;
-                                        });
-
-                                        if (matches.length >= 10) {
-                                          // metadata内の該当行の期待値を取得して平均
-                                          const evs = matches
-                                            .map((h) => {
-                                              try {
-                                                const meta =
-                                                  typeof h.metadata === "string"
-                                                    ? JSON.parse(h.metadata)
-                                                    : h.metadata;
-                                                const row = Array.isArray(meta)
-                                                  ? meta.find((m) =>
-                                                      String(m.line || m.text)
-                                                        .toLowerCase()
-                                                        .includes(
-                                                          machine.toLowerCase()
-                                                        )
-                                                    )
-                                                  : null;
-                                                return row ? row.ev : null;
-                                              } catch (e) {
-                                                return null;
-                                              }
-                                            })
-                                            .filter((v) => v !== null);
-
-                                          if (evs.length >= 10) {
-                                            const avgEv = Math.round(
-                                              evs.reduce((a, b) => a + b, 0) /
-                                                evs.length
-                                            );
-                                            if (log.ev !== avgEv) {
+                                        if (gMatch && archive) {
+                                          const currentG = parseInt(gMatch[1]);
+                                          const matches = archive.filter(
+                                            (h) => {
+                                              if (
+                                                h.machine !== machine ||
+                                                !h.metadata
+                                              )
+                                                return false;
+                                              const hGMatch = String(
+                                                h.details || ""
+                                              )
+                                                .toLowerCase()
+                                                .match(/(\d+)\s*[gG]/);
+                                              if (!hGMatch) return false;
+                                              const hG = parseInt(hGMatch[1]);
                                               return (
-                                                <div
-                                                  onClick={() => {
-                                                    const n = [...logs];
-                                                    n[i].ev = avgEv;
-                                                    setLogs(n);
-                                                  }}
-                                                  className="mt-2 bg-indigo-50 text-indigo-600 text-[10px] font-black px-4 py-2 rounded-xl cursor-pointer shadow-sm hover:bg-indigo-100 transition-all border border-indigo-100 animate-fadeIn"
-                                                >
-                                                  {avgEv.toLocaleString()}円
-                                                </div>
+                                                Math.abs(hG - currentG) <= 10
                                               );
+                                            }
+                                          );
+
+                                          if (matches.length >= 10) {
+                                            // metadata内の該当行の期待値を取得して平均
+                                            const evs = matches
+                                              .map((h) => {
+                                                try {
+                                                  const meta =
+                                                    typeof h.metadata ===
+                                                    "string"
+                                                      ? JSON.parse(h.metadata)
+                                                      : h.metadata;
+                                                  const row = Array.isArray(
+                                                    meta
+                                                  )
+                                                    ? meta.find((m) =>
+                                                        String(m.line || m.text)
+                                                          .toLowerCase()
+                                                          .includes(
+                                                            machine.toLowerCase()
+                                                          )
+                                                      )
+                                                    : null;
+                                                  return row ? row.ev : null;
+                                                } catch (e) {
+                                                  return null;
+                                                }
+                                              })
+                                              .filter((v) => v !== null);
+
+                                            if (evs.length >= 10) {
+                                              const avgEv = Math.round(
+                                                evs.reduce((a, b) => a + b, 0) /
+                                                  evs.length
+                                              );
+                                              if (log.ev !== avgEv) {
+                                                return (
+                                                  <div
+                                                    onClick={() => {
+                                                      const n = [...logs];
+                                                      n[i].ev = avgEv;
+                                                      setLogs(n);
+                                                    }}
+                                                    className="mt-2 bg-indigo-50 text-indigo-600 text-[10px] font-black px-4 py-2 rounded-xl cursor-pointer shadow-sm hover:bg-indigo-100 transition-all border border-indigo-100 animate-fadeIn"
+                                                  >
+                                                    {avgEv.toLocaleString()}円
+                                                  </div>
+                                                );
+                                              }
                                             }
                                           }
                                         }
-                                      }
-                                      return null;
-                                    })()}
-                                    <span className="text-xs font-black text-slate-400">
-                                      円
-                                    </span>
+                                        return null;
+                                      })()}
+                                      <span className="text-xs font-black text-slate-400">
+                                        円
+                                      </span>
+                                    </div>
                                   </div>
+                                  <button
+                                    onClick={() =>
+                                      setLogs(
+                                        logs.filter((_, idx) => idx !== i)
+                                      )
+                                    }
+                                    className="p-4 text-slate-200 hover:text-rose-500 transition-colors"
+                                  >
+                                    <span className="text-3xl font-light">
+                                      ✕
+                                    </span>
+                                  </button>
                                 </div>
-                                <button
-                                  onClick={() =>
-                                    setLogs(logs.filter((_, idx) => idx !== i))
-                                  }
-                                  className="p-4 text-slate-200 hover:text-rose-500 transition-colors"
-                                >
-                                  <span className="text-3xl font-light">✕</span>
-                                </button>
+                              </div>
+                              <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                                <div className="text-6xl font-black italic">
+                                  #{i + 1}
+                                </div>
                               </div>
                             </div>
-                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
-                              <div className="text-6xl font-black italic">
-                                #{i + 1}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                  </div>
+                    {/* Secondary Store Switching Tabs: デュアル配置 (期待値リストと合計サマリーの間) */}
+                    {reports.find((r) => r.ID === selectedId)?.items?.length >
+                      1 && (
+                      <div className="flex gap-2 mb-8 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scroll">
+                        {reports
+                          .find((r) => r.ID === selectedId)
+                          .items.map((item, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                const currentReport = reports.find(
+                                  (r) => r.ID === selectedId
+                                );
+                                currentReport.items[storeIdx] = {
+                                  ...currentReport.items[storeIdx],
+                                  ...editData,
+                                  results: [...logs],
+                                };
+                                currentReport.日付 = editData.日付;
+                                currentReport.reports_name = editData.報告者;
+                                setStoreIdx(idx);
+                                setAiNormalization(null);
+                                const nextItem = currentReport.items[idx];
+                                const fin = parseFinance(nextItem);
+                                const nextDetails =
+                                  nextItem.details ||
+                                  getField(nextItem, [
+                                    "稼動内容",
+                                    "稼働内容",
+                                    "内容",
+                                  ]);
+                                const nextLogs = nextItem.results || [];
+                                setLogs(nextLogs);
+                                setEditData({
+                                  ...nextItem,
+                                  ID: currentReport.ID,
+                                  報告者: editData.報告者,
+                                  日付: editData.日付,
+                                  稼働時間: editData.稼働時間,
+                                  rawHours: editData.rawHours,
+                                  handover: editData.handover,
+                                  parentReceived: editData.parentReceived,
+                                  salary: editData.salary,
+                                  remaining: editData.remaining,
+                                  店舗名: nextItem.店舗名 || nextItem.store,
+                                  exchange:
+                                    getField(nextItem, [
+                                      "換金額",
+                                      "exchange",
+                                    ]) || 0,
+                                  medal20:
+                                    getField(nextItem, ["20スロ", "medal20"]) ||
+                                    fin.medal20,
+                                  medal5:
+                                    getField(nextItem, ["5スロ", "medal5"]) ||
+                                    fin.medal5,
+                                  pachi4:
+                                    getField(nextItem, ["4パチ", "pachi4"]) ||
+                                    fin.pachi4,
+                                  cash:
+                                    getField(nextItem, ["本日投資", "cash"]) ||
+                                    fin.cash,
+                                  memo: getField(nextItem, ["備考", "memo"]),
+                                  details: nextDetails,
+                                  imageUrls: nextItem.imageUrls || "",
+                                });
+                              }}
+                              className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${
+                                storeIdx === idx
+                                  ? "bg-slate-900 text-white shadow-lg"
+                                  : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
+                              }`}
+                            >
+                              {item.店舗名 || item.store || `店舗 ${idx + 1}`}
+                            </button>
+                          ))}
+                      </div>
+                    )}
 
-                  {/* Secondary Store Switching Tabs: デュアル配置 (期待値リストと合計サマリーの間) */}
-                  {reports.find(r => r.ID === selectedId)?.items?.length > 1 && (
-                    <div className="flex gap-2 mb-8 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scroll">
-                      {reports.find(r => r.ID === selectedId).items.map((item, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            const currentReport = reports.find(r => r.ID === selectedId);
-                            currentReport.items[storeIdx] = { ...currentReport.items[storeIdx], ...editData, results: [...logs] };
-                            currentReport.日付 = editData.日付;
-                            currentReport.reports_name = editData.報告者;
-                            setStoreIdx(idx);
-                            setAiNormalization(null);
-                            const nextItem = currentReport.items[idx];
-                            const fin = parseFinance(nextItem);
-                            const nextDetails = nextItem.details || getField(nextItem, ["稼動内容", "稼働内容", "内容"]);
-                            const nextLogs = nextItem.results || [];
-                            setLogs(nextLogs);
-                            setEditData({
-                              ...nextItem,
-                              ID: currentReport.ID,
-                              報告者: editData.報告者, 日付: editData.日付, 稼働時間: editData.稼働時間,
-                              rawHours: editData.rawHours, handover: editData.handover, 
-                              parentReceived: editData.parentReceived, salary: editData.salary, remaining: editData.remaining,
-                              店舗名: nextItem.店舗名 || nextItem.store,
-                              exchange: getField(nextItem, ["換金額", "exchange"]) || 0,
-                              medal20: getField(nextItem, ["20スロ", "medal20"]) || fin.medal20,
-                              medal5: getField(nextItem, ["5スロ", "medal5"]) || fin.medal5,
-                              pachi4: getField(nextItem, ["4パチ", "pachi4"]) || fin.pachi4,
-                              cash: getField(nextItem, ["本日投資", "cash"]) || fin.cash,
-                              memo: getField(nextItem, ["備考", "memo"]),
-                              details: nextDetails, imageUrls: nextItem.imageUrls || "",
-                            });
-                          }}
-                          className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all whitespace-nowrap ${
-                            storeIdx === idx
-                              ? "bg-slate-900 text-white shadow-lg"
-                              : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
-                          }`}
-                        >
-                          {item.店舗名 || item.store || `店舗 ${idx + 1}`}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* 合計期待値リザルト (全店舗統合) */}
+                    {/* 合計期待値リザルト (全店舗統合) */}
                     {(() => {
-                      const currentReport = reports.find(r => r.ID === selectedId);
-                      const breakdown = (currentReport?.items || [editData]).map((item, i) => {
-                        const itemLogs = (i === storeIdx) ? logs : (item.results || []);
+                      const currentReport = reports.find(
+                        (r) => r.ID === selectedId
+                      );
+                      const breakdown = (
+                        currentReport?.items || [editData]
+                      ).map((item, i) => {
+                        const itemLogs =
+                          i === storeIdx ? logs : item.results || [];
                         return itemLogs.reduce((s, l) => s + (l.ev || 0), 0);
                       });
-                      const totalEv = breakdown.reduce((sum, val) => sum + val, 0);
+                      const totalEv = breakdown.reduce(
+                        (sum, val) => sum + val,
+                        0
+                      );
 
                       return (
                         <div className="bg-[#0076FF] p-10 rounded-[4rem] text-white flex flex-col lg:flex-row justify-between items-center gap-8 shadow-2xl">
                           <div className="text-center lg:text-left">
                             <div className="text-[10px] font-black opacity-50 uppercase mb-1 tracking-widest">
-                                Aggregate Potential EV
+                              Aggregate Potential EV
                             </div>
-                            
+
                             {/* 足し算の内訳を表示 */}
                             {breakdown.length > 1 && (
                               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1 mb-2 opacity-80 font-mono text-[10px] font-black">
                                 {breakdown.map((val, i) => (
                                   <React.Fragment key={i}>
                                     <span>{val.toLocaleString()}</span>
-                                    {i < breakdown.length - 1 && <span className="opacity-40 mx-1">+</span>}
+                                    {i < breakdown.length - 1 && (
+                                      <span className="opacity-40 mx-1">+</span>
+                                    )}
                                   </React.Fragment>
                                 ))}
                                 <span className="mx-2 text-[#00E0FF]">=</span>
@@ -4137,7 +4520,7 @@ ${Object.entries(kpi.members)
                               </span>
                             </div>
                           </div>
-                          
+
                           <button
                             onClick={onApprove}
                             className="bg-white text-[#0076FF] px-16 py-6 rounded-[2.5rem] font-black shadow-xl hover:bg-slate-50 transition-all text-xs tracking-widest"
