@@ -330,6 +330,20 @@
                 }
 
                 if (match) return { machine: match.machine, ev: match.ev };
+              } else if (meta && Array.isArray(meta.results)) {
+                // アドミンアプリ承認形式: { results: [ { machine: "...", ev: 100 }, ... ] }
+                let match = meta.results.find(
+                  (m) =>
+                    m &&
+                    m.machine &&
+                    (m.line === line || line.includes(m.machine))
+                );
+                
+                if (!match && lineIndex !== undefined && meta.results[lineIndex]) {
+                  match = meta.results[lineIndex];
+                }
+                
+                if (match) return { machine: match.machine, ev: match.ev };
               }
             } catch (e) {
               console.warn("Metadata parse error", e);
