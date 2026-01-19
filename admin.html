@@ -3694,7 +3694,7 @@ ${Object.entries(kpi.members)
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                         <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">
                           親から受取
                         </div>
@@ -3707,10 +3707,10 @@ ${Object.entries(kpi.members)
                               parentReceived: e.target.value,
                             })
                           }
-                          className="bg-transparent border-none w-full text-center text-lg font-black italic text-[#00FF85] focus:ring-0 p-0"
+                          className="bg-transparent border-none w-full text-center text-base font-black italic text-[#00FF85] focus:ring-0 px-1 py-0"
                         />
                       </div>
-                      <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                         <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">
                           親へ手渡し
                         </div>
@@ -3723,10 +3723,10 @@ ${Object.entries(kpi.members)
                               handover: e.target.value,
                             })
                           }
-                          className="bg-transparent border-none w-full text-center text-lg font-black italic text-rose-500 focus:ring-0 p-0"
+                          className="bg-transparent border-none w-full text-center text-base font-black italic text-rose-500 focus:ring-0 px-1 py-0"
                         />
                       </div>
-                      <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                         <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">
                           本日の給料
                         </div>
@@ -3736,10 +3736,10 @@ ${Object.entries(kpi.members)
                           onChange={(e) =>
                             setEditData({ ...editData, salary: e.target.value })
                           }
-                          className="bg-transparent border-none w-full text-center text-lg font-black italic text-[#FFB800] focus:ring-0 p-0"
+                          className="bg-transparent border-none w-full text-center text-base font-black italic text-[#FFB800] focus:ring-0 px-1 py-0"
                         />
                       </div>
-                      <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                         <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">
                           最終残投資金
                         </div>
@@ -3752,7 +3752,7 @@ ${Object.entries(kpi.members)
                               remaining: e.target.value,
                             })
                           }
-                          className="bg-transparent border-none w-full text-center text-lg font-black italic text-white focus:ring-0 p-0"
+                          className="bg-transparent border-none w-full text-center text-base font-black italic text-white focus:ring-0 px-1 py-0"
                         />
                       </div>
                     </div>
@@ -4015,8 +4015,8 @@ ${Object.entries(kpi.members)
                           最終枚数 / 球数
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
-                            <label className="text-[10px] md:text-[9px] font-black text-rose-500 uppercase ml-1 shrink-0 w-16 md:w-auto">
+                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200 overflow-hidden">
+                            <label className="text-[10px] md:text-[9px] font-black text-rose-500 uppercase ml-1 shrink-0 w-12 md:w-auto">
                               20スロ
                             </label>
                             <input
@@ -4028,11 +4028,11 @@ ${Object.entries(kpi.members)
                                   medal20: e.target.value,
                                 })
                               }
-                              className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
+                              className="bg-white md:bg-white border border-slate-200 text-lg md:text-base font-black px-2 md:px-4 py-3 rounded-xl w-full flex-1"
                             />
                           </div>
-                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
-                            <label className="text-[10px] md:text-[9px] font-black text-indigo-500 uppercase ml-1 shrink-0 w-16 md:w-auto">
+                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200 overflow-hidden">
+                            <label className="text-[10px] md:text-[9px] font-black text-indigo-500 uppercase ml-1 shrink-0 w-12 md:w-auto">
                               5スロ
                             </label>
                             <input
@@ -4044,11 +4044,11 @@ ${Object.entries(kpi.members)
                                   medal5: e.target.value,
                                 })
                               }
-                              className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
+                              className="bg-white md:bg-white border border-slate-200 text-lg md:text-base font-black px-2 md:px-4 py-3 rounded-xl w-full flex-1"
                             />
                           </div>
-                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200">
-                            <label className="text-[10px] md:text-[9px] font-black text-[#00E0FF] uppercase ml-1 shrink-0 w-16 md:w-auto">
+                          <div className="flex items-center md:block gap-4 md:gap-0 bg-white md:bg-transparent p-3 md:p-0 rounded-xl border md:border-none border-slate-200 overflow-hidden">
+                            <label className="text-[10px] md:text-[9px] font-black text-[#00E0FF] uppercase ml-1 shrink-0 w-12 md:w-auto">
                               4パチ
                             </label>
                             <input
@@ -4060,7 +4060,7 @@ ${Object.entries(kpi.members)
                                   pachi4: e.target.value,
                                 })
                               }
-                              className="bg-white md:bg-white border border-slate-200 text-xl md:text-base font-black px-4 py-3 rounded-xl w-full"
+                              className="bg-white md:bg-white border border-slate-200 text-lg md:text-base font-black px-2 md:px-4 py-3 rounded-xl w-full flex-1"
                             />
                           </div>
                         </div>
