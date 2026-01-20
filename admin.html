@@ -560,7 +560,7 @@
                                           {analysis.ev !== 0
                                             ? `${
                                                 analysis.ev > 0 ? "+" : ""
-                                              }${analysis.ev.toLocaleString()}円`
+                                              }${Math.round(analysis.ev).toLocaleString()}円`
                                             : "---"}
                                         </div>
                                       )}
@@ -575,7 +575,7 @@
                                 総期待値
                               </div>
                               <div className="text-xl font-black italic text-[#0076FF] tracking-tighter drop-shadow-sm">
-                                {(item.ev || 0).toLocaleString()}{" "}
+                                {Math.round(item.ev || 0).toLocaleString()}{" "}
                                 <span className="text-xs">円</span>
                               </div>
                             </div>
@@ -2100,11 +2100,11 @@
 
           const lineText = `【KPI分析レポート】🚀${filterHeader}
 期間: ${range.start} 〜 ${range.end}
-(前期間比: ${pChange >= 0 ? "+" : ""}${pChange.toLocaleString()}円)
+(前期間比: ${pChange >= 0 ? "+" : ""}${Math.round(pChange).toLocaleString()}円)
 ━━━━━━━━━━━━━━
 📊 チーム全体成績
-・総期待値: ${kpi.total.ev.toLocaleString()}円
-・実収支: ${kpi.total.profit.toLocaleString()}円
+・総期待値: ${Math.round(kpi.total.ev).toLocaleString()}円
+・実収支: ${Math.round(kpi.total.profit).toLocaleString()}円
 ・総稼働: ${kpi.total.hours}h
 ・時給（実/期）: ${Math.round(kpi.total.profit / (kpi.total.hours || 1)).toLocaleString()} / ${Math.round(kpi.total.ev / (kpi.total.hours || 1)).toLocaleString()}円/h
 
@@ -2113,8 +2113,8 @@ ${Object.entries(kpi.members)
   .sort((a, b) => b[1].ev - a[1].ev)
   .map(([n, s], i) => {
     const hourly = Math.round(s.p / (s.h || 1));
-    return `${i + 1}. ${n}: ${s.ev.toLocaleString()}円 (${
-      s.p.toLocaleString() + "円"
+    return `${i + 1}. ${n}: ${Math.round(s.ev).toLocaleString()}円 (${
+      Math.round(s.p).toLocaleString() + "円"
     } / ${s.h}h / ${hourly.toLocaleString()}円/h)`;
   })
   .join(
@@ -2131,14 +2131,14 @@ ${Object.entries(kpi.members)
               "\n",
             )}\n特に「野川」は日曜基準のおすすめ週間の影響を注視する必要があります。\n\n📅 トレンド分析 (理論 vs 現実)\n・最高時給曜日: ${
             bestDay?.d || "-"
-          }曜日 (実:${(
-            bestDay?.rate || 0
+          }曜日 (実:${Math.round(
+            bestDay?.rate || 0,
           ).toLocaleString()}円 / 期:${Math.round(kpi.days[dayJP.indexOf(bestDay?.d)]?.ev / kpi.days[dayJP.indexOf(bestDay?.d)]?.h || 0).toLocaleString()}円)\n・平日時給(実/期): ${Math.round(
             kpi.types.weekday.p / (kpi.types.weekday.h || 1),
           ).toLocaleString()} / ${Math.round(kpi.types.weekday.ev / (kpi.types.weekday.h || 1)).toLocaleString()}円\n・土日時給(実/期): ${Math.round(
             kpi.types.weekend.p / (kpi.types.weekend.h || 1),
-          ).toLocaleString()} / ${Math.round(kpi.types.weekend.ev / (kpi.types.weekend.h || 1)).toLocaleString()}円\n\n👹 北斗重要分析\n・期待値累計: ${(
-            kpi.machines["スマスロ北斗の拳"]?.ev || 0
+          ).toLocaleString()} / ${Math.round(kpi.types.weekend.ev / (kpi.types.weekend.h || 1)).toLocaleString()}円\n\n👹 北斗重要分析\n・期待値累計: ${Math.round(
+            kpi.machines["スマスロ北斗の拳"]?.ev || 0,
           ).toLocaleString()}円\n・稼働貢献: ${
             kpi.machines["スマスロ北斗の拳"]
               ? Math.round(
@@ -2217,14 +2217,14 @@ ${Object.entries(kpi.members)
         const copyReport = () => {
           const text = `【KPI分析レポート】\n期間: ${range.start} 〜 ${
             range.end
-          }\n\n■全体合計\n実収支: ${stats.totalProfit.toLocaleString()}円\n期待値: ${stats.totalEv.toLocaleString()}円\n稼動時間: ${
+          }\n\n■全体合計\n実収支: ${Math.round(stats.totalProfit).toLocaleString()}円\n期待値: ${Math.round(stats.totalEv).toLocaleString()}円\n稼動時間: ${
             stats.totalHours
           }h\n時給: ${Math.round(
             stats.totalProfit / (stats.totalHours || 1),
           )}円\n\n■個人別実収支\n${Object.entries(stats.person)
             .map(
               ([name, s]) =>
-                `${name}: ${s.p.toLocaleString()}円 (${s.h}h/時給${Math.round(
+                `${name}: ${Math.round(s.p).toLocaleString()}円 (${s.h}h/時給${Math.round(
                   s.p / (s.h || 1),
                 )}円)`,
             )
@@ -2370,7 +2370,7 @@ ${Object.entries(kpi.members)
                           総実収支
                         </div>
                         <div className="text-4xl font-black italic">
-                          {stats.totalProfit.toLocaleString()}
+                          {Math.round(stats.totalProfit).toLocaleString()}
                           <span className="text-sm ml-2">円</span>
                         </div>
                       </div>
@@ -2379,7 +2379,7 @@ ${Object.entries(kpi.members)
                           総期待値
                         </div>
                         <div className="text-4xl font-black italic text-[#0076FF]">
-                          {stats.totalEv.toLocaleString()}
+                          {Math.round(stats.totalEv).toLocaleString()}
                           <span className="text-sm ml-2">円</span>
                         </div>
                       </div>
@@ -2419,12 +2419,12 @@ ${Object.entries(kpi.members)
                                   >
                                     <td className="p-4">{n}</td>
                                     <td className="p-4 text-right text-[#0076FF]">
-                                      {s.ev.toLocaleString()}
+                                      {Math.round(s.ev).toLocaleString()}
                                     </td>
                                     <td
                                       className={`p-4 text-right ${s.p < 0 ? "text-rose-500" : ""}`}
                                     >
-                                      {s.p.toLocaleString()}
+                                      {Math.round(s.p).toLocaleString()}
                                     </td>
                                   </tr>
                                 ))}
@@ -2469,7 +2469,7 @@ ${Object.entries(kpi.members)
                                     <td
                                       className={`p-4 text-right opacity-60 ${s.p < 0 ? "text-rose-500" : ""}`}
                                     >
-                                      {s.p.toLocaleString()}
+                                      {Math.round(s.p).toLocaleString()}
                                     </td>
                                   </tr>
                                 ))}
@@ -2547,7 +2547,7 @@ ${Object.entries(kpi.members)
                               総期待値
                             </div>
                             <div className="text-2xl font-black text-[#00E0FF]">
-                              {stats.totalEv.toLocaleString()}
+                              {Math.round(stats.totalEv).toLocaleString()}
                             </div>
                           </div>
                           <div className="bg-white/10 p-6 rounded-3xl border border-white/5">
@@ -2555,7 +2555,7 @@ ${Object.entries(kpi.members)
                               総実収支
                             </div>
                             <div className="text-2xl font-black text-[#00FF85]">
-                              {stats.totalProfit.toLocaleString()}
+                              {Math.round(stats.totalProfit).toLocaleString()}
                             </div>
                           </div>
                         </div>
@@ -2643,8 +2643,8 @@ ${Object.entries(kpi.members)
                                 {h.range}
                               </div>
                               <div className="text-[10px] font-bold text-slate-400">
-                                Profit: {h.summary.profit.toLocaleString()}円 /
-                                EV: {h.summary.ev.toLocaleString()}円
+                                Profit: {Math.round(h.summary.profit).toLocaleString()}円 /
+                                EV: {Math.round(h.summary.ev).toLocaleString()}円
                               </div>
                             </div>
                             <div className="flex gap-3">
