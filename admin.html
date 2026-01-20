@@ -1,6 +1,6 @@
 <!-- File: admin_app.html -->
 <!-- Syntax & Logic Check: PASSED -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
@@ -257,7 +257,7 @@
 
           // キーワードを正規表現用にエスケープして結合
           const escapedKeywords = keywords.map((kw) =>
-            kw.replace(/[.*+?^${}()|[\]\s\\]/g, "\\$&")
+            kw.replace(/[.*+?^${}()|[\]\s\\]/g, "\\$&"),
           );
           const regex = new RegExp(`(${escapedKeywords.join("|")})`, "gi");
 
@@ -276,7 +276,7 @@
                   </span>
                 ) : (
                   part
-                )
+                ),
               )}
             </span>
           );
@@ -321,7 +321,7 @@
                   (m) =>
                     m &&
                     m.machine &&
-                    (m.line === line || line.includes(m.machine))
+                    (m.line === line || line.includes(m.machine)),
                 );
 
                 // 2. フォールバック: 行インデックスでのマッチング (スプシ直接編集対応)
@@ -336,13 +336,17 @@
                   (m) =>
                     m &&
                     m.machine &&
-                    (m.line === line || line.includes(m.machine))
+                    (m.line === line || line.includes(m.machine)),
                 );
-                
-                if (!match && lineIndex !== undefined && meta.results[lineIndex]) {
+
+                if (
+                  !match &&
+                  lineIndex !== undefined &&
+                  meta.results[lineIndex]
+                ) {
                   match = meta.results[lineIndex];
                 }
-                
+
                 if (match) return { machine: match.machine, ev: match.ev };
               }
             } catch (e) {
@@ -414,7 +418,7 @@
                 .trim();
             const normTarget = normalize(targetName);
             const selected = Object.keys(master || {}).find(
-              (sh) => normalize(sh) === normTarget
+              (sh) => normalize(sh) === normTarget,
             );
             if (selected && master)
               ev = matchEvInRange(gCount, master[selected]);
@@ -531,7 +535,7 @@
                                 const analysis = analyzeLine(
                                   line,
                                   item.metadata,
-                                  lIdx // インデックスを渡す
+                                  lIdx, // インデックスを渡す
                                 );
                                 return (
                                   <div
@@ -586,7 +590,7 @@
                                     : "text-rose-500"
                                 }`}
                               >
-                                {(item.profit || 0).toLocaleString()}{" "}
+                                {Math.round(item.profit || 0).toLocaleString()}{" "}
                                 <span className="text-xs">円</span>
                               </div>
                             </div>
@@ -686,8 +690,8 @@
                       {t === "dict"
                         ? "機種辞書"
                         : t === "strategy"
-                        ? "攻略・狙い目"
-                        : "朝一台"}
+                          ? "攻略・狙い目"
+                          : "朝一台"}
                     </button>
                   ))}
                 </div>
@@ -722,7 +726,7 @@
                         ({ it }) =>
                           !search ||
                           it.機種名.includes(search) ||
-                          it.キーワード.includes(search)
+                          it.キーワード.includes(search),
                       )
                       .map(({ it, idx }) => (
                         <div
@@ -755,7 +759,7 @@
                                   const n = dictItems.map((item, i) =>
                                     i === idx
                                       ? { ...item, 色コード: e.target.value }
-                                      : item
+                                      : item,
                                   );
                                   setDictItems(n);
                                 }}
@@ -780,7 +784,7 @@
                                 const n = dictItems.map((item, i) =>
                                   i === idx
                                     ? { ...item, キーワード: e.target.value }
-                                    : item
+                                    : item,
                                 );
                                 setDictItems(n);
                               }}
@@ -794,11 +798,11 @@
                                 window.confirm(
                                   `${
                                     it.機種名 || "これ"
-                                  } を辞書から削除しますか？`
+                                  } を辞書から削除しますか？`,
                                 )
                               )
                                 setDictItems(
-                                  dictItems.filter((_, i) => i !== idx)
+                                  dictItems.filter((_, i) => i !== idx),
                                 );
                             }}
                             className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 font-black text-xl"
@@ -828,7 +832,7 @@
                         ({ it }) =>
                           !search ||
                           it.機種名.includes(search) ||
-                          it.狙い目.includes(search)
+                          it.狙い目.includes(search),
                       )
                       .map(({ it, idx }) => (
                         <div
@@ -842,7 +846,7 @@
                                 const n = stData.map((item, i) =>
                                   i === idx
                                     ? { ...item, 機種名: e.target.value }
-                                    : item
+                                    : item,
                                 );
                                 setStData(n);
                               }}
@@ -855,7 +859,7 @@
                                 const n = stData.map((item, i) =>
                                   i === idx
                                     ? { ...item, 狙い目: e.target.value }
-                                    : item
+                                    : item,
                                 );
                                 setStData(n);
                               }}
@@ -879,7 +883,7 @@
                                 window.confirm(
                                   `${
                                     it.機種名 || "これ"
-                                  } の攻略情報を削除しますか？`
+                                  } の攻略情報を削除しますか？`,
                                 )
                               )
                                 setStData(stData.filter((_, i) => i !== idx));
@@ -937,7 +941,7 @@
                                 const n = rsMaster.map((item, i) =>
                                   i === idx
                                     ? { ...item, 機種名: e.target.value }
-                                    : item
+                                    : item,
                                 );
                                 setRsMaster(n);
                               }}
@@ -959,7 +963,7 @@
                                         ...item,
                                         単価: parseInt(e.target.value) || 0,
                                       }
-                                    : item
+                                    : item,
                                 );
                                 setRsMaster(n);
                               }}
@@ -978,7 +982,7 @@
                               const n = rsMaster.map((item, i) =>
                                 i === idx
                                   ? { ...item, キーワード: e.target.value }
-                                  : item
+                                  : item,
                               );
                               setRsMaster(n);
                             }}
@@ -1015,8 +1019,8 @@
                         tab === "dict"
                           ? "機種辞書"
                           : tab === "strategy"
-                          ? "攻略情報"
-                          : "朝一台マスタ"
+                            ? "攻略情報"
+                            : "朝一台マスタ"
                       }を保存`}
                 </button>
               </div>
@@ -1099,7 +1103,7 @@
               body: JSON.stringify({ action: "saveMembers", data: members }),
             });
             alert(
-              "メンバーリストを更新しました。新規登録ロック有効時に適用されます。"
+              "メンバーリストを更新しました。新規登録ロック有効時に適用されます。",
             );
           } catch (e) {
             alert(e.message);
@@ -1110,13 +1114,13 @@
 
         const handleRename = async (oldName) => {
           const newName = prompt(
-            `「${oldName}」さんの新しい名前を入力してください:`
+            `「${oldName}」さんの新しい名前を入力してください:`,
           );
           if (!newName || newName === oldName) return;
 
           if (
             confirm(
-              `【重要】名前を「${newName}」に変更します。スプレッドシート全域のログが置換され、ワーカー側のアプリも自動的に同期されます。実行しますか？`
+              `【重要】名前を「${newName}」に変更します。スプレッドシート全域のログが置換され、ワーカー側のアプリも自動的に同期されます。実行しますか？`,
             )
           ) {
             setLoading(true);
@@ -1142,7 +1146,7 @@
         const handleDeleteMember = async (targetName) => {
           if (
             confirm(
-              `【警告】「${targetName}」さんをメンバーリストから完全に抹消しますか？\n（アクセス履歴から削除され、以降管理画面に表示されなくなります。過去の稼動ログはそのまま残ります）`
+              `【警告】「${targetName}」さんをメンバーリストから完全に抹消しますか？\n（アクセス履歴から削除され、以降管理画面に表示されなくなります。過去の稼動ログはそのまま残ります）`,
             )
           ) {
             setLoading(true);
@@ -1276,8 +1280,8 @@
                               L.行動?.includes("承認")
                                 ? "bg-emerald-500 text-white"
                                 : L.行動?.includes("送信")
-                                ? "bg-indigo-500 text-white"
-                                : "bg-slate-100 text-slate-600"
+                                  ? "bg-indigo-500 text-white"
+                                  : "bg-slate-100 text-slate-600"
                             }`}
                           >
                             {L.行動}
@@ -1316,7 +1320,7 @@
                                   confirm(`${name} さんの出禁を解除しますか？`)
                                 )
                                   setBlacklist(
-                                    blacklist.filter((n) => n !== name)
+                                    blacklist.filter((n) => n !== name),
                                   );
                               }}
                               className="text-[10px] font-black text-rose-300 hover:text-rose-600 uppercase tracking-widest transition-colors"
@@ -1683,7 +1687,7 @@
                                   onClick={() => {
                                     const newName = prompt(
                                       `「${name}」さんの新しい名前を入力してください:`,
-                                      name
+                                      name,
                                     );
                                     if (newName && newName !== name) {
                                       handleRename(name); // Call the existing rename function
@@ -1783,7 +1787,7 @@
 2. 背景事情（台パス・特定日・曜日要因）を網羅的に考慮。
 3. LINEレポートを生成。
 
-これで分析を開始してください。`
+これで分析を開始してください。`,
         );
         const [activeTab, setActiveTab] = React.useState("stats"); // stats, report, prompt, history
         const [reportResult, setReportResult] = React.useState({
@@ -1793,7 +1797,7 @@
         const [history, setHistory] = React.useState(() => {
           try {
             return JSON.parse(
-              localStorage.getItem("kpi_report_history") || "[]"
+              localStorage.getItem("kpi_report_history") || "[]",
             );
           } catch (e) {
             return [];
@@ -1846,7 +1850,7 @@
 
           // 店舗換金率情報の取得 (店舗マスタから)
           const storeMaster = JSON.parse(
-            localStorage.getItem("kpi_store_master") || "[]"
+            localStorage.getItem("kpi_store_master") || "[]",
           );
 
           window._kpi_seen_ids = new Set();
@@ -1882,18 +1886,18 @@
                 }
               };
               const sameMember = (data || []).filter(
-                (l) => l && (l.名前 || l.報告者) === name
+                (l) => l && (l.名前 || l.報告者) === name,
               );
               const sortedSameStore = sameMember
                 .filter((l) => l && l.店舗名 === storeName)
                 .sort(
                   (a, b) =>
                     parseDt(a.日付) - parseDt(b.日付) ||
-                    String(a.ID || "").localeCompare(String(b.ID || ""))
+                    String(a.ID || "").localeCompare(String(b.ID || "")),
                 );
 
               const currentStoreIdx = sortedSameStore.findIndex(
-                (l) => l.ID === item.ID
+                (l) => l.ID === item.ID,
               );
               const prevStoreItem =
                 currentStoreIdx > 0
@@ -1904,7 +1908,7 @@
               const sortedAll = sameMember.sort(
                 (a, b) =>
                   parseDt(a.日付) - parseDt(b.日付) ||
-                  String(a.ID).localeCompare(String(b.ID))
+                  String(a.ID).localeCompare(String(b.ID)),
               );
               const myIdx = sortedAll.findIndex((l) => l.ID === item.ID);
               const prevWalletItem = sortedAll
@@ -1912,7 +1916,7 @@
                 .reverse()
                 .find(
                   (l) =>
-                    l.ID !== item.ID && String(l.残投資金 || "").trim() !== ""
+                    l.ID !== item.ID && String(l.残投資金 || "").trim() !== "",
                 );
 
               const salary =
@@ -2049,7 +2053,7 @@
           const bestDay = dayStats.sort((a, b) => b.rate - a.rate)[0];
 
           const topStore = Object.entries(kpi.stores).sort(
-            (a, b) => b[1].p / (b[1].h || 1) - a[1].p / (a[1].h || 1)
+            (a, b) => b[1].p / (b[1].h || 1) - a[1].p / (a[1].h || 1),
           )[0];
 
           // --- 戦略的インサイト生成 (高精度化) ---
@@ -2061,11 +2065,16 @@
               const gap = h_real - h_ev;
               const vol = s.ev;
 
-              if (s.h < 5) return `・${n}: 【稼働不足】データが不十分です。この店舗のポテンシャルを測るため、より厚い稼働を推奨します。`;
-              if (vol > 30000 && gap > 5000) return `・${n}: 【最高品質】高い期待値に対し実収支も大幅に上振れ。軍団の生命線として最優先で攻め落とすべきです。`;
-              if (vol > 20000 && gap < -8000) return `・${n}: 【乖離注意】期待値獲得は良好ですが、欠損が深刻。ヤメ時や交換率の見直し、現場での挙動を注視してください。`;
-              if (vol < 5000 && s.p > 20000) return `・${n}: 【幸運】期待値は低いですが結果が出ています。深追いせず、質の高い台への移動を検討してください。`;
-              if (gap > -2000 && gap < 2000) return `・${n}: 【安定】期待値通りの確かな稼働です。ベースとなる店舗として維持してください。`;
+              if (s.h < 5)
+                return `・${n}: 【稼働不足】データが不十分です。この店舗のポテンシャルを測るため、より厚い稼働を推奨します。`;
+              if (vol > 30000 && gap > 5000)
+                return `・${n}: 【最高品質】高い期待値に対し実収支も大幅に上振れ。軍団の生命線として最優先で攻め落とすべきです。`;
+              if (vol > 20000 && gap < -8000)
+                return `・${n}: 【乖離注意】期待値獲得は良好ですが、欠損が深刻。ヤメ時や交換率の見直し、現場での挙動を注視してください。`;
+              if (vol < 5000 && s.p > 20000)
+                return `・${n}: 【幸運】期待値は低いですが結果が出ています。深追いせず、質の高い台への移動を検討してください。`;
+              if (gap > -2000 && gap < 2000)
+                return `・${n}: 【安定】期待値通りの確かな稼働です。ベースとなる店舗として維持してください。`;
               return `・${n}: 時給乖離(${Math.round(gap).toLocaleString()}円)に注意。台の見極め精度を上げる必要があります。`;
             })
             .slice(0, 4)
@@ -2076,8 +2085,8 @@
             .map(
               ([n, s], i) =>
                 `${i + 1}位 ${n} (${Math.round(
-                  s.ev / (s.h || 1)
-                ).toLocaleString()}円/h)`
+                  s.ev / (s.h || 1),
+                ).toLocaleString()}円/h)`,
             )
             .slice(0, 3)
             .join(" > ");
@@ -2109,31 +2118,31 @@ ${Object.entries(kpi.members)
     } / ${s.h}h / ${hourly.toLocaleString()}円/h)`;
   })
   .join(
-    "\n"
+    "\n",
   )}\n\n※管理者は「台パス」により期待値時給が低く出る傾向があります。\n\n📍 店舗別時給分析\n${Object.entries(
-            kpi.stores
+            kpi.stores,
           )
             .sort((a, b) => b[1].p / (b[1].h || 1) - a[1].p / (a[1].h || 1))
             .map(
               ([n, s]) =>
-                `・${n}: ${Math.round(s.p / (s.h || 1)).toLocaleString()}円/h`
+                `・${n}: ${Math.round(s.p / (s.h || 1)).toLocaleString()}円/h`,
             )
             .join(
-              "\n"
+              "\n",
             )}\n特に「野川」は日曜基準のおすすめ週間の影響を注視する必要があります。\n\n📅 トレンド分析 (理論 vs 現実)\n・最高時給曜日: ${
             bestDay?.d || "-"
           }曜日 (実:${(
             bestDay?.rate || 0
-          ).toLocaleString()}円 / 期:${Math.round((kpi.days[dayJP.indexOf(bestDay?.d)]?.ev / kpi.days[dayJP.indexOf(bestDay?.d)]?.h) || 0).toLocaleString()}円)\n・平日時給(実/期): ${Math.round(
-            kpi.types.weekday.p / (kpi.types.weekday.h || 1)
+          ).toLocaleString()}円 / 期:${Math.round(kpi.days[dayJP.indexOf(bestDay?.d)]?.ev / kpi.days[dayJP.indexOf(bestDay?.d)]?.h || 0).toLocaleString()}円)\n・平日時給(実/期): ${Math.round(
+            kpi.types.weekday.p / (kpi.types.weekday.h || 1),
           ).toLocaleString()} / ${Math.round(kpi.types.weekday.ev / (kpi.types.weekday.h || 1)).toLocaleString()}円\n・土日時給(実/期): ${Math.round(
-            kpi.types.weekend.p / (kpi.types.weekend.h || 1)
+            kpi.types.weekend.p / (kpi.types.weekend.h || 1),
           ).toLocaleString()} / ${Math.round(kpi.types.weekend.ev / (kpi.types.weekend.h || 1)).toLocaleString()}円\n\n👹 北斗重要分析\n・期待値累計: ${(
             kpi.machines["スマスロ北斗の拳"]?.ev || 0
           ).toLocaleString()}円\n・稼働貢献: ${
             kpi.machines["スマスロ北斗の拳"]
               ? Math.round(
-                  (kpi.machines["スマスロ北斗の拳"].ev / kpi.total.ev) * 100
+                  (kpi.machines["スマスロ北斗の拳"].ev / kpi.total.ev) * 100,
                 )
               : 0
           }%\n\n💡 戦略的提言 (インサイト)\n【店舗戦略】\n${storeStrategy}\n\n【期待値獲得効率ランキング】\n${memberEfficiency}\n\n📍店舗「${
@@ -2211,13 +2220,13 @@ ${Object.entries(kpi.members)
           }\n\n■全体合計\n実収支: ${stats.totalProfit.toLocaleString()}円\n期待値: ${stats.totalEv.toLocaleString()}円\n稼動時間: ${
             stats.totalHours
           }h\n時給: ${Math.round(
-            stats.totalProfit / (stats.totalHours || 1)
+            stats.totalProfit / (stats.totalHours || 1),
           )}円\n\n■個人別実収支\n${Object.entries(stats.person)
             .map(
               ([name, s]) =>
                 `${name}: ${s.p.toLocaleString()}円 (${s.h}h/時給${Math.round(
-                  s.p / (s.h || 1)
-                )}円)`
+                  s.p / (s.h || 1),
+                )}円)`,
             )
             .join("\n")}`;
           navigator.clipboard.writeText(text);
@@ -2344,10 +2353,10 @@ ${Object.entries(kpi.members)
                     {t === "stats"
                       ? "ダッシュボード 📊"
                       : t === "report"
-                      ? "レポート出力 📝"
-                      : t === "history"
-                      ? "分析履歴 ⌛"
-                      : "プロンプト設定 ⚙️"}
+                        ? "レポート出力 📝"
+                        : t === "history"
+                          ? "分析履歴 ⌛"
+                          : "プロンプト設定 ⚙️"}
                   </button>
                 ))}
               </div>
@@ -2380,7 +2389,7 @@ ${Object.entries(kpi.members)
                         </div>
                         <div className="text-4xl font-black italic text-emerald-600">
                           {Math.round(
-                            stats.totalProfit / (stats.totalHours || 1)
+                            stats.totalProfit / (stats.totalHours || 1),
                           ).toLocaleString()}
                           <span className="text-sm ml-2">円</span>
                         </div>
@@ -2412,7 +2421,9 @@ ${Object.entries(kpi.members)
                                     <td className="p-4 text-right text-[#0076FF]">
                                       {s.ev.toLocaleString()}
                                     </td>
-                                    <td className={`p-4 text-right ${s.p < 0 ? 'text-rose-500' : ''}`}>
+                                    <td
+                                      className={`p-4 text-right ${s.p < 0 ? "text-rose-500" : ""}`}
+                                    >
                                       {s.p.toLocaleString()}
                                     </td>
                                   </tr>
@@ -2439,7 +2450,7 @@ ${Object.entries(kpi.members)
                                 .sort(
                                   (a, b) =>
                                     b[1].p / (b[1].h || 1) -
-                                    a[1].p / (a[1].h || 1)
+                                    a[1].p / (a[1].h || 1),
                                 )
                                 .map(([n, s]) => (
                                   <tr
@@ -2447,13 +2458,17 @@ ${Object.entries(kpi.members)
                                     className="border-t border-slate-200"
                                   >
                                     <td className="p-4">{n}</td>
-                                    <td className={`p-4 text-right ${s.h > 0 && s.p / s.h < 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
+                                    <td
+                                      className={`p-4 text-right ${s.h > 0 && s.p / s.h < 0 ? "text-rose-500" : "text-emerald-600"}`}
+                                    >
                                       {Math.round(
-                                        s.p / (s.h || 1)
+                                        s.p / (s.h || 1),
                                       ).toLocaleString()}
                                       /h
                                     </td>
-                                    <td className={`p-4 text-right opacity-60 ${s.p < 0 ? 'text-rose-500' : ''}`}>
+                                    <td
+                                      className={`p-4 text-right opacity-60 ${s.p < 0 ? "text-rose-500" : ""}`}
+                                    >
                                       {s.p.toLocaleString()}
                                     </td>
                                   </tr>
@@ -2500,7 +2515,7 @@ ${Object.entries(kpi.members)
                                 raw_data: filtered,
                               };
                               navigator.clipboard.writeText(
-                                JSON.stringify(payload, null, 2)
+                                JSON.stringify(payload, null, 2),
                               );
                               alert("AI解析用データをJSON形式でコピーしました");
                             }}
@@ -2556,7 +2571,7 @@ ${Object.entries(kpi.members)
                               .sort(
                                 (a, b) =>
                                   b[1].p / (b[1].h || 1) -
-                                  a[1].p / (a[1].h || 1)
+                                  a[1].p / (a[1].h || 1),
                               )
                               .slice(0, 3)
                               .map(([n, s], i) => (
@@ -2572,7 +2587,7 @@ ${Object.entries(kpi.members)
                                   </div>
                                   <span className="font-black text-[#00FF85]">
                                     {Math.round(
-                                      s.p / (s.h || 1)
+                                      s.p / (s.h || 1),
                                     ).toLocaleString()}{" "}
                                     円/h
                                   </span>
@@ -2646,7 +2661,7 @@ ${Object.entries(kpi.members)
                                 onClick={() => {
                                   if (confirm("この履歴を削除しますか？")) {
                                     setHistory((prev) =>
-                                      prev.filter((i) => i.id !== h.id)
+                                      prev.filter((i) => i.id !== h.id),
                                     );
                                   }
                                 }}
@@ -2734,7 +2749,7 @@ ${Object.entries(kpi.members)
           if (!dateStr) return "";
           // すでに yyyy-MM-dd か yyyy/MM/dd の形式なら、標準化して返す（タイムゾーン変換を避ける）
           const match = String(dateStr).match(
-            /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/
+            /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/,
           );
           if (match) {
             const y = match[1];
@@ -2770,7 +2785,7 @@ ${Object.entries(kpi.members)
             url,
             options = {},
             retries = 3,
-            backoff = 1000
+            backoff = 1000,
           ) => {
             try {
               const res = await fetch(url, options);
@@ -2791,7 +2806,7 @@ ${Object.entries(kpi.members)
           try {
             setSyncInfo("📦 データを一括取得中...");
             const result = await fetchWithRetry(
-              `${GAS_URL}?action=getAdminInitialData`
+              `${GAS_URL}?action=getAdminInitialData`,
             );
 
             if (!result || typeof result !== "object") {
@@ -2804,7 +2819,7 @@ ${Object.entries(kpi.members)
             const grouped = (pending || []).reduce((acc, curr) => {
               if (!curr) return acc;
               const id = String(
-                curr.ID || curr.id || "unknown-" + Math.random()
+                curr.ID || curr.id || "unknown-" + Math.random(),
               );
               if (!acc[id]) {
                 acc[id] = {
@@ -2836,12 +2851,12 @@ ${Object.entries(kpi.members)
             };
 
             const masterCount = Object.keys(
-              (hokuto?.data || {})["設定１相当"] || {}
+              (hokuto?.data || {})["設定１相当"] || {},
             ).length;
             setSyncInfo(
               `✅ 同期完了: 報告${
                 (groupedArray || []).length
-              }件 / マスタ${masterCount}枚`
+              }件 / マスタ${masterCount}枚`,
             );
           } catch (e) {
             setSyncInfo("❌ 同期失敗: " + e.message);
@@ -2849,7 +2864,7 @@ ${Object.entries(kpi.members)
             // 致命的なエラー時はよしきさんに通知するためのアラート
             alert(
               "同期に失敗しました。ページを再読み込みしてください。\nエラー: " +
-                e.message
+                e.message,
             );
           } finally {
             setLoading(false);
@@ -2861,7 +2876,7 @@ ${Object.entries(kpi.members)
           const allKeys = Object.keys(obj);
           for (let k of keys) {
             const foundKey = allKeys.find(
-              (ak) => ak.trim() === String(k).trim()
+              (ak) => ak.trim() === String(k).trim(),
             );
             if (foundKey) {
               const val = obj[foundKey];
@@ -2898,12 +2913,12 @@ ${Object.entries(kpi.members)
 
           // タグ形式 [...] からの抽出を強化 (全角半角、ロの有無に対応)
           const m20 = memo.match(
-            /\[(?:20スロ?|メダル|枚|20slot)[:：]\s*([+-]?\d+)/i
+            /\[(?:20スロ?|メダル|枚|20slot)[:：]\s*([+-]?\d+)/i,
           );
           const m5 = memo.match(/\[(?:5スロ?|5slot)[:：]\s*([+-]?\d+)/i);
           const p4 = memo.match(/\[(?:4パチ?|4円|4pachi)[:：]\s*([+-]?\d+)/i);
           const cMatch = memo.match(
-            /\[(?:本日投資|投資|投資額|cash)[:：]\s*([+-]?\d+)/i
+            /\[(?:本日投資|投資|投資額|cash)[:：]\s*([+-]?\d+)/i,
           );
           const sMatch = memo.match(/\[(?:本日給料|給料)[:：]\s*([+-]?\d+)/i);
           const rMatch = memo.match(/\[(?:残投資金|残高)[:：]\s*([+-]?\d+)/i);
@@ -2918,13 +2933,13 @@ ${Object.entries(kpi.members)
           // フォールバック: タグ形式以外（旧形式や手入力）
           if (!m20) {
             const fallbackM20 = memo.match(
-              /(?:20スロ?|メダル|枚)[:：]?\s*([+-]?\d+)/i
+              /(?:20スロ?|メダル|枚)[:：]?\s*([+-]?\d+)/i,
             );
             if (fallbackM20) result.medal20 = parseInt(fallbackM20[1]) || 0;
           }
           if (!cMatch) {
             const fallbackC = memo.match(
-              /(?:本日投資|投資|現金|投資額|円)[:：]?\s*([+-]?\d+)/i
+              /(?:本日投資|投資|現金|投資額|円)[:：]?\s*([+-]?\d+)/i,
             );
             if (fallbackC) result.cash = parseInt(fallbackC[1]) || 0;
           }
@@ -2986,7 +3001,7 @@ ${Object.entries(kpi.members)
             .replace(/[枚円個玉]/g, "")
             .replace(/[，,]/g, "")
             .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (m) =>
-              String.fromCharCode(m.charCodeAt(0) - 0xfee0)
+              String.fromCharCode(m.charCodeAt(0) - 0xfee0),
             )
             .trim();
           return parseFloat(s) || 0;
@@ -3039,10 +3054,10 @@ ${Object.entries(kpi.members)
                     const sMatch = normLine.match(/([+-]?\d+)\s*[枚枚]/);
                     const signedMatch = normLine.match(/([+-]\d+)/);
                     const allNums = (normLine.match(/-?\d+/g) || []).map(
-                      Number
+                      Number,
                     );
                     const isReset = /リセ|リセット|設定変更|変更後/.test(
-                      normLine
+                      normLine,
                     );
                     let gCount = 0,
                       diff = NaN;
@@ -3063,7 +3078,7 @@ ${Object.entries(kpi.members)
                       let selected = "";
                       if (isReset) {
                         selected = sheets.find(
-                          (s) => s.includes("変更") || s.includes("リセ")
+                          (s) => s.includes("変更") || s.includes("リセ"),
                         );
                       } else {
                         const getRangeName = (d) => {
@@ -3097,11 +3112,11 @@ ${Object.entries(kpi.members)
                             sh
                               .replace(/[±枚（）()\[\]\s　]/g, "")
                               .replace(/[〜〜~]/g, "～")
-                              .trim() === normTarget
+                              .trim() === normTarget,
                         );
                         if (!selected && diff >= 0 && diff <= 99)
                           selected = sheets.find(
-                            (sh) => sh.includes("通常") || sh.includes("基本")
+                            (sh) => sh.includes("通常") || sh.includes("基本"),
                           );
                       }
                       if (selected) {
@@ -3119,14 +3134,14 @@ ${Object.entries(kpi.members)
                         (h) =>
                           h &&
                           (String(h.details || "").includes(match.machine) ||
-                            h.machine === match.machine)
+                            h.machine === match.machine),
                       );
                       const best =
                         history.find(
                           (h) =>
                             h &&
                             (h.details === line ||
-                              String(h.details || "").includes(line))
+                              String(h.details || "").includes(line)),
                         ) || history[0];
                       if (best && best.ev)
                         match.prediction = {
@@ -3160,14 +3175,15 @@ ${Object.entries(kpi.members)
                 report.items = report.items.map((it) => ({
                   ...it,
                   results: performAnalysis(
-                    it.details || getField(it, ["内容", "稼動内容", "稼働内容"])
+                    it.details ||
+                      getField(it, ["内容", "稼動内容", "稼働内容"]),
                   ),
                 }));
               }
               const firstItem = (report.items && report.items[0]) || report;
               const fin = parseFinance(firstItem);
               const content = String(
-                getField(report, ["details", "稼動内容", "稼働内容", "内容"])
+                getField(report, ["details", "稼動内容", "稼働内容", "内容"]),
               );
               const results = firstItem.results || performAnalysis(content);
 
@@ -3212,7 +3228,7 @@ ${Object.entries(kpi.members)
             } else {
               // 再解析時: 現在の店舗のdetailsを基にperformAnalysisを実行
               const target = String(
-                getField(report, ["details", "内容", "稼動内容", "稼働内容"])
+                getField(report, ["details", "内容", "稼動内容", "稼働内容"]),
               );
               const results = performAnalysis(target);
               setLogs(results);
@@ -3231,8 +3247,8 @@ ${Object.entries(kpi.members)
           try {
             const res = await fetch(
               `${GAS_URL}?action=getAISuggestion&details=${encodeURIComponent(
-                details
-              )}`
+                details,
+              )}`,
             );
             const data = await res.json();
             if (data && !data.error) {
@@ -3295,8 +3311,8 @@ ${Object.entries(kpi.members)
                       isWalletRow: idx === 0,
                     },
                   }),
-                })
-              )
+                }),
+              ),
             );
 
             setReports(
@@ -3309,8 +3325,8 @@ ${Object.entries(kpi.members)
                       日付: editData.日付,
                       名前: editData.報告者,
                     }
-                  : r
-              )
+                  : r,
+              ),
             );
             alert("全ての店舗の変更を保存しました");
           } catch (e) {
@@ -3391,7 +3407,7 @@ ${Object.entries(kpi.members)
                     },
                   }),
                 });
-              })
+              }),
             );
             setReports(reports.filter((r) => r.ID !== selectedId));
             setSelectedId(null);
@@ -3562,7 +3578,7 @@ ${Object.entries(kpi.members)
                             setCheckedIds((prev) =>
                               prev.includes(r.ID)
                                 ? prev.filter((x) => x !== r.ID)
-                                : [...prev, r.ID]
+                                : [...prev, r.ID],
                             );
                           }}
                           className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${
@@ -3769,7 +3785,7 @@ ${Object.entries(kpi.members)
                             key={idx}
                             onClick={() => {
                               const currentReport = reports.find(
-                                (r) => r.ID === selectedId
+                                (r) => r.ID === selectedId,
                               );
                               // 現在の編集内容を退避 (results込で保存)
                               currentReport.items[storeIdx] = {
@@ -4203,7 +4219,7 @@ ${Object.entries(kpi.members)
                                         // 1. 朝一リセ即時確定 (タグ優先判定)
                                         // 特定済みの機種名 (machine) と一致するマスタのみを検索対象にする
                                         const rm = resetMaster.find(
-                                          (m) => m.機種名 === machine
+                                          (m) => m.機種名 === machine,
                                         );
 
                                         if (rm) {
@@ -4232,18 +4248,18 @@ ${Object.entries(kpi.members)
 
                                           const isResetContext =
                                             allResetWords.some((k) =>
-                                              line.includes(k)
+                                              line.includes(k),
                                             );
                                           if (!isResetContext) return null; // リセット文脈でなければサジェストスキップ
                                           const unitPrice =
                                             parseInt(rm.単価) || 0;
                                           // 倍数抽出: "×3", "*2", "5個" などに対応
                                           const multMatch = line.match(
-                                            /[×*]\s*(\d+)|(\d+)\s*個/
+                                            /[×*]\s*(\d+)|(\d+)\s*個/,
                                           );
                                           const count = multMatch
                                             ? parseInt(
-                                                multMatch[1] || multMatch[2]
+                                                multMatch[1] || multMatch[2],
                                               )
                                             : 1;
                                           const resetEv = unitPrice * count;
@@ -4262,7 +4278,7 @@ ${Object.entries(kpi.members)
                                               )
                                                 return false;
                                               const hGMatch = String(
-                                                h.details || ""
+                                                h.details || "",
                                               )
                                                 .toLowerCase()
                                                 .match(/(\d+)\s*[gG]/);
@@ -4270,7 +4286,7 @@ ${Object.entries(kpi.members)
                                                 hGMatch &&
                                                 Math.abs(
                                                   parseInt(hGMatch[1]) -
-                                                    parseInt(gMatch[1])
+                                                    parseInt(gMatch[1]),
                                                 ) <= 10
                                               );
                                             });
@@ -4310,7 +4326,7 @@ ${Object.entries(kpi.members)
                                               )
                                                 return false;
                                               const hGMatch = String(
-                                                h.details || ""
+                                                h.details || "",
                                               )
                                                 .toLowerCase()
                                                 .match(/(\d+)\s*[gG]/);
@@ -4319,7 +4335,7 @@ ${Object.entries(kpi.members)
                                               return (
                                                 Math.abs(hG - currentG) <= 10
                                               );
-                                            }
+                                            },
                                           );
 
                                           if (matches.length >= 10) {
@@ -4333,14 +4349,14 @@ ${Object.entries(kpi.members)
                                                       ? JSON.parse(h.metadata)
                                                       : h.metadata;
                                                   const row = Array.isArray(
-                                                    meta
+                                                    meta,
                                                   )
                                                     ? meta.find((m) =>
                                                         String(m.line || m.text)
                                                           .toLowerCase()
                                                           .includes(
-                                                            machine.toLowerCase()
-                                                          )
+                                                            machine.toLowerCase(),
+                                                          ),
                                                       )
                                                     : null;
                                                   return row ? row.ev : null;
@@ -4353,7 +4369,7 @@ ${Object.entries(kpi.members)
                                             if (evs.length >= 10) {
                                               const avgEv = Math.round(
                                                 evs.reduce((a, b) => a + b, 0) /
-                                                  evs.length
+                                                  evs.length,
                                               );
                                               if (log.ev !== avgEv) {
                                                 return (
@@ -4382,7 +4398,7 @@ ${Object.entries(kpi.members)
                                   <button
                                     onClick={() =>
                                       setLogs(
-                                        logs.filter((_, idx) => idx !== i)
+                                        logs.filter((_, idx) => idx !== i),
                                       )
                                     }
                                     className="p-4 text-slate-200 hover:text-rose-500 transition-colors"
@@ -4415,7 +4431,7 @@ ${Object.entries(kpi.members)
                               key={idx}
                               onClick={() => {
                                 const currentReport = reports.find(
-                                  (r) => r.ID === selectedId
+                                  (r) => r.ID === selectedId,
                                 );
                                 currentReport.items[storeIdx] = {
                                   ...currentReport.items[storeIdx],
@@ -4486,7 +4502,7 @@ ${Object.entries(kpi.members)
                     {/* 合計期待値リザルト (全店舗統合) */}
                     {(() => {
                       const currentReport = reports.find(
-                        (r) => r.ID === selectedId
+                        (r) => r.ID === selectedId,
                       );
                       const breakdown = (
                         currentReport?.items || [editData]
@@ -4497,7 +4513,7 @@ ${Object.entries(kpi.members)
                       });
                       const totalEv = breakdown.reduce(
                         (sum, val) => sum + val,
-                        0
+                        0,
                       );
 
                       return (
