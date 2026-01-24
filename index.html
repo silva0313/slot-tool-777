@@ -1,486 +1,600 @@
 <!-- File: worker_app.html -->
 <!-- Syntax & Logic Check: PASSED -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="robots" content="noindex,nofollow">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="robots" content="noindex,nofollow" />
     <title>稼働報告 | v7.7.2 SECURED</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        body {
-            font-family: 'Inter', "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            -webkit-tap-highlight-color: transparent;
-            overflow-x: hidden;
+      body {
+        font-family:
+          "Inter", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo,
+          sans-serif;
+        background-color: #0f172a;
+        color: #f8fafc;
+        -webkit-tap-highlight-color: transparent;
+        overflow-x: hidden;
+      }
+
+      .card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 1rem;
+      }
+
+      .input-dark {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 0.75rem;
+        color: #fff;
+        padding: 0.75rem;
+        width: 100%;
+        font-size: 14px;
+      }
+
+      .input-dark:focus {
+        border-color: #6366f1;
+        outline: none;
+      }
+
+      .tab-btn {
+        flex: 1;
+        padding: 0.85rem 0.5rem;
+        text-align: center;
+        font-size: 0.7rem;
+        font-weight: 900;
+        transition: all 0.3s;
+        position: relative;
+        color: #64748b;
+      }
+
+      .tab-btn.active {
+        color: #6366f1;
+      }
+
+      .tab-btn.active::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 20%;
+        right: 20%;
+        height: 3px;
+        background: #6366f1;
+        border-radius: 10px;
+      }
+
+      .btn-premium {
+        background: linear-gradient(135deg, #6366f1, #4338ca);
+        color: #fff;
+        padding: 1rem;
+        border-radius: 1rem;
+        font-weight: 900;
+        font-size: 15px;
+        width: 100%;
+        transition: opacity 0.2s;
+      }
+
+      .btn-premium:active {
+        opacity: 0.8;
+        transform: scale(0.98);
+      }
+
+      .log-item {
+        border-left: 3px solid #6366f1;
+        background: #1e293b;
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .animate-fadeIn {
+        animation: fadeIn 0.2s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
         }
 
-        .card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 1rem;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-
-        .input-dark {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 0.75rem;
-            color: #fff;
-            padding: 0.75rem;
-            width: 100%;
-            font-size: 14px;
-        }
-
-        .input-dark:focus {
-            border-color: #6366f1;
-            outline: none;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 0.85rem 0.5rem;
-            text-align: center;
-            font-size: 0.7rem;
-            font-weight: 900;
-            transition: all 0.3s;
-            position: relative;
-            color: #64748b;
-        }
-
-        .tab-btn.active {
-            color: #6366f1;
-        }
-
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 20%;
-            right: 20%;
-            height: 3px;
-            background: #6366f1;
-            border-radius: 10px;
-        }
-
-        .btn-premium {
-            background: linear-gradient(135deg, #6366f1, #4338ca);
-            color: #fff;
-            padding: 1rem;
-            border-radius: 1rem;
-            font-weight: 900;
-            font-size: 15px;
-            width: 100%;
-            transition: opacity 0.2s;
-        }
-
-        .btn-premium:active {
-            opacity: 0.8;
-            transform: scale(0.98);
-        }
-
-        .log-item {
-            border-left: 3px solid #6366f1;
-            background: #1e293b;
-            border-radius: 0.75rem;
-            padding: 0.75rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .animate-fadeIn {
-            animation: fadeIn 0.2s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
-        // グローバルエラーの捕捉
-        window.onerror = function (msg, url, lineNo, columnNo, error) {
-            console.error('Global Error: ', msg, url, lineNo, columnNo, error);
+      const { useState, useEffect } = React;
+      // グローバルエラーの捕捉
+      window.onerror = function (msg, url, lineNo, columnNo, error) {
+        console.error("Global Error: ", msg, url, lineNo, columnNo, error);
 
-            return false;
+        return false;
+      };
+      const GAS_URL =
+        "https://script.google.com/macros/s/AKfycbzPIDjd4AXjH5FLFltk_cwNJM7NMG5WLDsS4Q3LgCSkL_gXX7s0NA3jm7UckOGdzQeQlQ/exec";
+      // ↑【注意】デプロイ時に新しいURLが発行された場合は、必ずここに貼り替えてください。
+      const APP_PASS = "nogawa";
+      const APP_VERSION_FRONTEND = "7.7.4";
+
+      function App() {
+        const [isLocked, setIsLocked] = useState(true);
+        const [passInput, setPassInput] = useState("");
+        const [user, setUser] = useState(null);
+        const [tempName, setTempName] = useState("");
+        const [activeTab, setActiveTab] = useState("log");
+        const [logs, setLogs] = useState([]); // 自由入力ログ（最終的には各店舗へ紐付け or 共通ログとして扱う）
+        const [strategies, setStrategies] = useState([]); // 攻略データ
+        const [search, setSearch] = useState(""); // 検索ワード
+        const [logInput, setLogInput] = useState({ machine: "", detail: "" });
+
+        // 店舗ごとの入力項目
+        const initialStore = {
+          id: Date.now(),
+          store: "",
+          medal20: "",
+          medal5: "",
+          pachi4: "",
+          cash: "",
+          exchange: "",
+          memo: "",
+          logs: [], // その店舗に紐付いたログ
         };
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzPIDjd4AXjH5FLFltk_cwNJM7NMG5WLDsS4Q3LgCSkL_gXX7s0NA3jm7UckOGdzQeQlQ/exec";
-        // ↑【注意】デプロイ時に新しいURLが発行された場合は、必ずここに貼り替えてください。
-        const APP_PASS = "nogawa";
-        const APP_VERSION_FRONTEND = "7.7.4";
 
-        function App() {
-            const [isLocked, setIsLocked] = useState(true);
-            const [passInput, setPassInput] = useState("");
-            const [user, setUser] = useState(null);
-            const [tempName, setTempName] = useState("");
-            const [activeTab, setActiveTab] = useState("log");
-                        const [logs, setLogs] = useState([]); // 自由入力ログ（最終的には各店舗へ紐付け or 共通ログとして扱う）
-            const [strategies, setStrategies] = useState([]); // 攻略データ
-            const [search, setSearch] = useState(""); // 検索ワード
-            const [logInput, setLogInput] = useState({ machine: "", detail: "" });
+        const [stores, setStores] = useState([initialStore]);
 
-            // 店舗ごとの入力項目
-            const initialStore = {
-                id: Date.now(),
-                store: "",
-                medal20: "",
-                medal5: "",
-                pachi4: "",
-                cash: "",
-                exchange: "",
-                memo: "",
-                logs: [] // その店舗に紐付いたログ
-            };
+        // 1日の共通項目
+        const [reportInput, setReportInput] = useState({
+          date: new Date().toISOString().split("T")[0],
+          hours: "",
+          salary: "",
+          handover: "",
+          parentReceived: "",
+          remainingCash: "",
+        });
+        const [status, setStatus] = useState("");
+        const [submitting, setSubmitting] = useState(false);
+        const [strategyLoading, setStrategyLoading] = useState(false);
+        const [myShifts, setMyShifts] = useState([]); // 自分のシフト
+        const [selectedDates, setSelectedDates] = useState([]); // 選択中の日付
+        const [isRegistrationLocked, setIsRegistrationLocked] = useState(false);
+        const [members, setMembers] = useState([]); // 【新設】ホワイトリスト
+        const [shiftLoading, setShiftLoading] = useState(false);
+        const [modal, setModal] = useState({
+          show: false,
+          title: "",
+          message: "",
+          type: "alert",
+          onConfirm: null,
+        });
+        const [backendVersion, setBackendVersion] = useState("Checking...");
 
-            const [stores, setStores] = useState([initialStore]);
+        const showConfirm = (title, message, onConfirm) => {
+          setModal({ show: true, title, message, type: "confirm", onConfirm });
+        };
 
-            // 1日の共通項目
-            const [reportInput, setReportInput] = useState({
-                date: new Date().toISOString().split('T')[0],
-                hours: "",
-                salary: "",
-                handover: "",
-                parentReceived: "",
-                remainingCash: ""
+        const showAlert = (title, message) => {
+          setModal({
+            show: true,
+            title,
+            message,
+            type: "alert",
+            onConfirm: null,
+          });
+        };
+
+        useEffect(() => {
+          try {
+            const passVerified = localStorage.getItem("p_v7") === APP_PASS;
+            if (passVerified) setIsLocked(false);
+
+            const saved = localStorage.getItem("u_v7");
+            if (saved) setUser(JSON.parse(saved));
+            const savedLogs = localStorage.getItem("l_v7");
+            if (savedLogs) setLogs(JSON.parse(savedLogs));
+
+            // 複数店舗対応の読み込み
+            const savedStores = localStorage.getItem("s_v8");
+            if (savedStores) {
+              setStores(JSON.parse(savedStores));
+            } else {
+              // 移行期間：古い単一店舗形式があれば移行
+              const savedRep = localStorage.getItem("r_v7");
+              if (savedRep) {
+                const parsed = JSON.parse(savedRep);
+                if (parsed.store) {
+                  setStores([
+                    {
+                      ...initialStore,
+                      store: parsed.store,
+                      medal20: parsed.medal20,
+                      medal5: parsed.medal5,
+                      pachi4: parsed.pachi4,
+                      cash: parsed.cash,
+                      exchange: parsed.exchange,
+                      handover: parsed.handover,
+                      memo: parsed.memo,
+                    },
+                  ]);
+                }
+              }
+            }
+
+            const savedRep = localStorage.getItem("r_v7");
+            if (savedRep) {
+              const parsed = JSON.parse(savedRep);
+              setReportInput((prev) => ({
+                ...prev,
+                date: parsed.date || prev.date,
+                hours: parsed.hours || "",
+                salary: parsed.salary || "",
+                handover: parsed.handover || "",
+                parentReceived: parsed.parentReceived || "",
+                remainingCash: parsed.remainingCash || "",
+              }));
+            }
+          } catch (e) {
+            console.error("Storage load error:", e);
+          }
+
+          // リモートロック状態の取得
+          const checkLock = async () => {
+            try {
+              const res = await fetch(`${GAS_URL}?action=getSettings`);
+              const settings = await res.json();
+              setIsRegistrationLocked(settings.registrationLocked);
+              setBackendVersion(settings.version || "Unknown (< v8.1.5)");
+
+              // メンバーリストの取得 (ホワイトリスト)
+              const mRes = await fetch(`${GAS_URL}?action=getMembers`);
+              const mData = await mRes.json();
+              setMembers(mData);
+
+              // アプリ起動ログの記録
+              const savedUser = JSON.parse(
+                localStorage.getItem("u_v7") || "{}",
+              );
+              if (savedUser.displayName) {
+                fetch(
+                  `${GAS_URL}?action=logAccess&name=${encodeURIComponent(savedUser.displayName)}&type=アプリ起動`,
+                ).catch(() => {});
+              }
+
+              // 管理者による名前修正の同期チェック
+              if (
+                savedUser.displayName &&
+                settings.nameMap &&
+                settings.nameMap[savedUser.displayName]
+              ) {
+                const newName = settings.nameMap[savedUser.displayName];
+                const updatedUser = { ...savedUser, displayName: newName };
+                setUser(updatedUser);
+                localStorage.setItem("u_v7", JSON.stringify(updatedUser));
+                showAlert(
+                  "システム通知",
+                  `管理者の指示により、登録名が「${newName}」に更新されました。`,
+                );
+              }
+            } catch (e) {
+              console.error("Setting sync fail:", e);
+            }
+          };
+          checkLock();
+        }, []);
+
+        useEffect(() => {
+          localStorage.setItem("l_v7", JSON.stringify(logs));
+          localStorage.setItem("s_v8", JSON.stringify(stores));
+          localStorage.setItem("r_v7", JSON.stringify(reportInput));
+        }, [logs, stores, reportInput]);
+
+        const verifyPass = (e) => {
+          e.preventDefault();
+          if (passInput === APP_PASS) {
+            setIsLocked(false);
+            localStorage.setItem("p_v7", APP_PASS);
+          } else {
+            showAlert("認証エラー", "合言葉が正しくありません。");
+          }
+        };
+
+        const handleLogin = (e) => {
+          if (e) e.preventDefault();
+          const cleanName = tempName.trim();
+          if (!cleanName)
+            return showAlert("入力エラー", "名前を入力してください");
+
+          if (isRegistrationLocked) {
+            // ホワイトリスト照合
+            if (!members.includes(cleanName)) {
+              return showAlert(
+                "登録制限中",
+                "入力された名前は名簿に登録されていません。管理者に名前の登録を依頼してください。",
+              );
+            }
+          }
+
+          showConfirm(
+            "ログイン名の確定",
+            `名前を「${cleanName}」で確定します。よろしいですか？`,
+            () => {
+              const u = { displayName: cleanName };
+              setUser(u);
+              localStorage.setItem("u_v7", JSON.stringify(u));
+            },
+          );
+        };
+
+        const logout = () => {
+          showAlert(
+            "システム通知",
+            "セキュリティ保護のため、ログイン名の変更は許可されていません。",
+          );
+        };
+
+        const fetchStrategy = async () => {
+          if (strategies.length > 0) return; // 取得済みならスキップ
+          setStrategyLoading(true);
+          try {
+            const res = await fetch(
+              `${GAS_URL}?action=getStrategyData&name=${encodeURIComponent(user.displayName)}`,
+            );
+            const data = await res.json();
+            if (data.status === "blocked") {
+              showAlert(
+                "アクセス制限",
+                "現在、お客様のアカウントには閲覧権限が付与されておりません。",
+              );
+              setActiveTab("log");
+            } else {
+              setStrategies(data);
+            }
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setStrategyLoading(false);
+          }
+        };
+
+        const fetchShifts = async () => {
+          setShiftLoading(true);
+          try {
+            const res = await fetch(
+              `${GAS_URL}?action=getShifts&name=${encodeURIComponent(user.displayName)}`,
+            );
+            const data = await res.json();
+            setMyShifts(data);
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setShiftLoading(false);
+          }
+        };
+
+        const handleShiftSubmit = async () => {
+          if (selectedDates.length === 0)
+            return showAlert("申請エラー", "日付が選択されていません。");
+          setSubmitting(true);
+          try {
+            const res = await fetch(GAS_URL, {
+              method: "POST",
+              body: JSON.stringify({
+                action: "submitShift",
+                data: { name: user.displayName, dates: selectedDates },
+              }),
             });
-            const [status, setStatus] = useState("");
-            const [submitting, setSubmitting] = useState(false);
-            const [strategyLoading, setStrategyLoading] = useState(false);
-            const [myShifts, setMyShifts] = useState([]); // 自分のシフト
-            const [selectedDates, setSelectedDates] = useState([]); // 選択中の日付
-            const [isRegistrationLocked, setIsRegistrationLocked] = useState(false);
-            const [members, setMembers] = useState([]); // 【新設】ホワイトリスト
-            const [shiftLoading, setShiftLoading] = useState(false);
-            const [modal, setModal] = useState({ show: false, title: "", message: "", type: "alert", onConfirm: null });
-            const [backendVersion, setBackendVersion] = useState("Checking...");
 
-            const showConfirm = (title, message, onConfirm) => {
-                setModal({ show: true, title, message, type: "confirm", onConfirm });
-            };
+            if (!res.ok) {
+              throw new Error(`HTTP Error: ${res.status}`);
+            }
 
-            const showAlert = (title, message) => {
-                setModal({ show: true, title, message, type: "alert", onConfirm: null });
-            };
+            const result = await res.json();
+            if (result.status === "error") {
+              throw new Error(result.message);
+            }
 
-            useEffect(() => {
-                try {
-                    const passVerified = localStorage.getItem("p_v7") === APP_PASS;
-                    if (passVerified) setIsLocked(false);
+            setSelectedDates([]);
+            showAlert(
+              "申請完了",
+              "シフトの申請を完了し、カレンダーへ反映しました。",
+            );
+            fetchShifts();
+          } catch (e) {
+            console.error("Shift Submit Error:", e);
+            showAlert(
+              "送信エラー",
+              `不具合が発生しました: ${e.message}\n(GASの「実行数」ログを確認してください)`,
+            );
+          } finally {
+            setSubmitting(false);
+          }
+        };
 
-                    const saved = localStorage.getItem("u_v7");
-                    if (saved) setUser(JSON.parse(saved));
-                                        const savedLogs = localStorage.getItem("l_v7");
-                    if (savedLogs) setLogs(JSON.parse(savedLogs));
+        const toggleDate = (dateStr) => {
+          setSelectedDates((prev) =>
+            prev.includes(dateStr)
+              ? prev.filter((d) => d !== dateStr)
+              : [...prev, dateStr],
+          );
+        };
 
-                    // 複数店舗対応の読み込み
-                    const savedStores = localStorage.getItem("s_v8");
-                    if (savedStores) {
-                        setStores(JSON.parse(savedStores));
-                    } else {
-                        // 移行期間：古い単一店舗形式があれば移行
-                        const savedRep = localStorage.getItem("r_v7");
-                        if (savedRep) {
-                            const parsed = JSON.parse(savedRep);
-                            if (parsed.store) {
-                                setStores([{
-                                    ...initialStore,
-                                    store: parsed.store,
-                                    medal20: parsed.medal20,
-                                    medal5: parsed.medal5,
-                                    pachi4: parsed.pachi4,
-                                    cash: parsed.cash,
-                                    exchange: parsed.exchange,
-                                    handover: parsed.handover,
-                                    memo: parsed.memo
-                                }]);
-                            }
-                        }
-                    }
+        const parseHours = (raw) => {
+          if (!raw) return 0;
+          let s = String(raw)
+            .replace(/[：:時]/g, ":")
+            .replace(/[~～〜－—―ー-]/g, "~")
+            .replace(/[間ｈＨhH時間]/g, "")
+            .replace(/[、，]/g, ".")
+            .trim();
 
-                    const savedRep = localStorage.getItem("r_v7");
-                    if (savedRep) {
-                        const parsed = JSON.parse(savedRep);
-                        setReportInput(prev => ({
-                            ...prev,
-                            date: parsed.date || prev.date,
-                            hours: parsed.hours || "",
-                            salary: parsed.salary || "",
-                            handover: parsed.handover || "",
-                            parentReceived: parsed.parentReceived || "",
-                            remainingCash: parsed.remainingCash || ""
-                        }));
-                    }
-                } catch (e) {
-                    console.error("Storage load error:", e);
-                }
+          const toMin = (str) => {
+            const t = str.trim();
+            if (!t) return 0;
+            if (t.includes(":")) {
+              const parts = t.split(":");
+              const h = parseInt(parts[0]) || 0;
+              const m = parseInt(parts[1]) || 0;
+              return h * 60 + m;
+            }
+            return (parseFloat(t) || 0) * 60;
+          };
 
-                // リモートロック状態の取得
-                const checkLock = async () => {
-                    try {
-                        const res = await fetch(`${GAS_URL}?action=getSettings`);
-                        const settings = await res.json();
-                        setIsRegistrationLocked(settings.registrationLocked);
-                        setBackendVersion(settings.version || "Unknown (< v8.1.5)");
+          if (s.includes("~")) {
+            const parts = s.split("~");
+            if (parts.length === 2 && parts[0] && parts[1]) {
+              const start = toMin(parts[0]);
+              let end = toMin(parts[1]);
+              // 13:00 ~ 21:00 のような形式に対応。endがstartより小さい場合は翌日とみなす
+              if (end < start) end += 24 * 60;
+              const diffH = (end - start) / 60;
+              return Math.round(diffH * 4) / 4; // 15分(0.25h)単位で四捨五入
+            }
+          }
+          return Math.round((parseFloat(s) || 0) * 4) / 4;
+        };
 
-                        // メンバーリストの取得 (ホワイトリスト)
-                        const mRes = await fetch(`${GAS_URL}?action=getMembers`);
-                        const mData = await mRes.json();
-                        setMembers(mData);
+        const parseFinance = (raw) => {
+          if (!raw) return 0;
+          let s = String(raw)
+            .replace(/[枚円個玉]/g, "")
+            .replace(/[，,]/g, "")
+            .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (m) =>
+              String.fromCharCode(m.charCodeAt(0) - 0xfee0),
+            ) // 全角→半角
+            .trim();
+          return parseFloat(s) || 0;
+        };
 
-                        // アプリ起動ログの記録
-                        const savedUser = JSON.parse(localStorage.getItem("u_v7") || "{}");
-                        if (savedUser.displayName) {
-                            fetch(`${GAS_URL}?action=logAccess&name=${encodeURIComponent(savedUser.displayName)}&type=アプリ起動`).catch(() => { });
-                        }
+        const addLog = (storeId = null) => {
+          if (!logInput.machine || !logInput.detail) return;
+          const newLog = { ...logInput, id: Date.now() };
+          if (storeId) {
+            setStores((prev) =>
+              prev.map((s) =>
+                s.id === storeId
+                  ? { ...s, logs: [...(s.logs || []), newLog] }
+                  : s,
+              ),
+            );
+          } else {
+            // 全体ログ（後で店舗に振り分ける用）
+            setLogs([...logs, newLog]);
+          }
+          setLogInput({ machine: "", detail: "" });
+        };
 
-                        // 管理者による名前修正の同期チェック
-                        if (savedUser.displayName && settings.nameMap && settings.nameMap[savedUser.displayName]) {
-                            const newName = settings.nameMap[savedUser.displayName];
-                            const updatedUser = { ...savedUser, displayName: newName };
-                            setUser(updatedUser);
-                            localStorage.setItem("u_v7", JSON.stringify(updatedUser));
-                            showAlert("システム通知", `管理者の指示により、登録名が「${newName}」に更新されました。`);
-                        }
-                    } catch (e) { console.error("Setting sync fail:", e); }
-                };
-                checkLock();
-            }, []);
+        const removeLog = (id, storeId = null) => {
+          if (storeId) {
+            setStores((prev) =>
+              prev.map((s) =>
+                s.id === storeId
+                  ? { ...s, logs: s.logs.filter((l) => l.id !== id) }
+                  : s,
+              ),
+            );
+          } else {
+            setLogs(logs.filter((l) => l.id !== id));
+          }
+        };
 
-                        useEffect(() => {
-                localStorage.setItem("l_v7", JSON.stringify(logs));
-                localStorage.setItem("s_v8", JSON.stringify(stores));
-                localStorage.setItem("r_v7", JSON.stringify(reportInput));
-            }, [logs, stores, reportInput]);
+        const moveLogToStore = (log, fromStoreId, toStoreId) => {
+          if (fromStoreId === toStoreId) return;
 
-            const verifyPass = (e) => {
-                e.preventDefault();
-                if (passInput === APP_PASS) {
-                    setIsLocked(false);
-                    localStorage.setItem("p_v7", APP_PASS);
-                } else {
-                    showAlert("認証エラー", "合言葉が正しくありません。");
-                }
-            };
+          if (fromStoreId === "common") {
+            setLogs((prev) => prev.filter((l) => l.id !== log.id));
+          } else {
+            setStores((prev) =>
+              prev.map((s) =>
+                s.id === fromStoreId
+                  ? { ...s, logs: s.logs.filter((l) => l.id !== log.id) }
+                  : s,
+              ),
+            );
+          }
 
-            const handleLogin = (e) => {
-                if (e) e.preventDefault();
-                const cleanName = tempName.trim();
-                if (!cleanName) return showAlert("入力エラー", "名前を入力してください");
+          setStores((prev) =>
+            prev.map((s) =>
+              s.id === toStoreId ? { ...s, logs: [...(s.logs || []), log] } : s,
+            ),
+          );
+        };
 
-                if (isRegistrationLocked) {
-                    // ホワイトリスト照合
-                    if (!members.includes(cleanName)) {
-                        return showAlert("登録制限中", "入力された名前は名簿に登録されていません。管理者に名前の登録を依頼してください。");
-                    }
-                }
+        const addStore = () => {
+          setStores([...stores, { ...initialStore, id: Date.now() }]);
+        };
 
-                showConfirm("ログイン名の確定", `名前を「${cleanName}」で確定します。よろしいですか？`, () => {
-                    const u = { displayName: cleanName };
-                    setUser(u);
-                    localStorage.setItem("u_v7", JSON.stringify(u));
-                });
-            };
+        const removeStore = (id) => {
+          if (stores.length <= 1) return;
+          showConfirm(
+            "店舗の削除",
+            "この店舗の入力内容がすべて削除されます。よろしいですか？",
+            () => {
+              setStores((prev) => prev.filter((s) => s.id !== id));
+            },
+          );
+        };
 
-            const logout = () => {
-                showAlert("システム通知", "セキュリティ保護のため、ログイン名の変更は許可されていません。");
-            };
+        const updateStoreField = (id, field, value) => {
+          setStores((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
+          );
+        };
 
-            const fetchStrategy = async () => {
-                if (strategies.length > 0) return; // 取得済みならスキップ
-                setStrategyLoading(true);
-                try {
-                    const res = await fetch(`${GAS_URL}?action=getStrategyData&name=${encodeURIComponent(user.displayName)}`);
-                    const data = await res.json();
-                    if (data.status === "blocked") {
-                        showAlert("アクセス制限", "現在、お客様のアカウントには閲覧権限が付与されておりません。");
-                        setActiveTab("log");
-                    } else {
-                        setStrategies(data);
-                    }
-                } catch (e) { console.error(e); }
-                finally { setStrategyLoading(false); }
-            };
+        // 画像機能削除済み (handleFileSelect & compressImage)
 
-            const fetchShifts = async () => {
-                setShiftLoading(true);
-                try {
-                    const res = await fetch(`${GAS_URL}?action=getShifts&name=${encodeURIComponent(user.displayName)}`);
-                    const data = await res.json();
-                    setMyShifts(data);
-                } catch (e) { console.error(e); }
-                finally { setShiftLoading(false); }
-            };
+        const submit = async () => {
+          // バリデーション
+          const invalidStore = stores.find((s) => !s.store);
+          if (invalidStore)
+            return showAlert(
+              "不備があります",
+              "店舗名が入力されていないカードがあります。",
+            );
 
-            const handleShiftSubmit = async () => {
-                if (selectedDates.length === 0) return showAlert("申請エラー", "日付が選択されていません。");
-                setSubmitting(true);
-                try {
-                    const res = await fetch(GAS_URL, {
-                        method: "POST",
-                        body: JSON.stringify({ action: "submitShift", data: { name: user.displayName, dates: selectedDates } })
-                    });
+          const totalLogs =
+            stores.reduce((sum, s) => sum + (s.logs ? s.logs.length : 0), 0) +
+            logs.length;
+          if (totalLogs === 0)
+            return showAlert("不備があります", "ログ履歴が1件もありません。");
 
-                    if (!res.ok) {
-                        throw new Error(`HTTP Error: ${res.status}`);
-                    }
+          const calculatedHours = parseHours(reportInput.hours);
+          const salary = parseFinance(reportInput.salary);
+          const handover = parseFinance(reportInput.handover);
+          const parentReceived = parseFinance(reportInput.parentReceived);
+          const remainingCash = parseFinance(reportInput.remainingCash);
 
-                    const result = await res.json();
-                    if (result.status === "error") {
-                        throw new Error(result.message);
-                    }
+          // 全店舗の集計
+          const summary = stores.reduce(
+            (acc, s) => {
+              acc.medal20 += parseFinance(s.medal20);
+              acc.medal5 += parseFinance(s.medal5);
+              acc.pachi4 += parseFinance(s.pachi4);
+              acc.investment += parseFinance(s.cash);
+              acc.exchange += parseFinance(s.exchange);
+              return acc;
+            },
+            { medal20: 0, medal5: 0, pachi4: 0, investment: 0, exchange: 0 },
+          );
 
-                    setSelectedDates([]);
-                    showAlert("申請完了", "シフトの申請を完了し、カレンダーへ反映しました。");
-                    fetchShifts();
-                } catch (e) {
-                    console.error("Shift Submit Error:", e);
-                    showAlert("送信エラー", `不具合が発生しました: ${e.message}\n(GASの「実行数」ログを確認してください)`);
-                }
-                finally { setSubmitting(false); }
-            };
-
-            const toggleDate = (dateStr) => {
-                setSelectedDates(prev => prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr]);
-            };
-
-            const parseHours = (raw) => {
-                if (!raw) return 0;
-                let s = String(raw)
-                    .replace(/[：:時]/g, ":")
-                    .replace(/[~～〜－—―ー-]/g, "~")
-                    .replace(/[間ｈＨhH時間]/g, "")
-                    .replace(/[、，]/g, ".")
-                    .trim();
-
-                const toMin = (str) => {
-                    const t = str.trim();
-                    if (!t) return 0;
-                    if (t.includes(":")) {
-                        const parts = t.split(":");
-                        const h = parseInt(parts[0]) || 0;
-                        const m = parseInt(parts[1]) || 0;
-                        return h * 60 + m;
-                    }
-                    return (parseFloat(t) || 0) * 60;
-                };
-
-                if (s.includes("~")) {
-                    const parts = s.split("~");
-                    if (parts.length === 2 && parts[0] && parts[1]) {
-                        const start = toMin(parts[0]);
-                        let end = toMin(parts[1]);
-                        // 13:00 ~ 21:00 のような形式に対応。endがstartより小さい場合は翌日とみなす
-                        if (end < start) end += 24 * 60;
-                        const diffH = (end - start) / 60;
-                        return Math.round(diffH * 4) / 4; // 15分(0.25h)単位で四捨五入
-                    }
-                }
-                return Math.round((parseFloat(s) || 0) * 4) / 4;
-            };
-
-            const parseFinance = (raw) => {
-                if (!raw) return 0;
-                let s = String(raw)
-                    .replace(/[枚円個玉]/g, "")
-                    .replace(/[，,]/g, "")
-                    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0xFEE0)) // 全角→半角
-                    .trim();
-                return parseFloat(s) || 0;
-            };
-
-                        const addLog = (storeId = null) => {
-                if (!logInput.machine || !logInput.detail) return;
-                const newLog = { ...logInput, id: Date.now() };
-                if (storeId) {
-                    setStores(prev => prev.map(s => s.id === storeId ? { ...s, logs: [...(s.logs || []), newLog] } : s));
-                } else {
-                    // 全体ログ（後で店舗に振り分ける用）
-                    setLogs([...logs, newLog]);
-                }
-                setLogInput({ machine: "", detail: "" });
-            };
-
-            const removeLog = (id, storeId = null) => {
-                if (storeId) {
-                    setStores(prev => prev.map(s => s.id === storeId ? { ...s, logs: s.logs.filter(l => l.id !== id) } : s));
-                } else {
-                    setLogs(logs.filter(l => l.id !== id));
-                }
-            };
-
-            const moveLogToStore = (log, fromStoreId, toStoreId) => {
-                if (fromStoreId === toStoreId) return;
-
-                if (fromStoreId === "common") {
-                    setLogs(prev => prev.filter(l => l.id !== log.id));
-                } else {
-                    setStores(prev => prev.map(s => s.id === fromStoreId ? { ...s, logs: s.logs.filter(l => l.id !== log.id) } : s));
-                }
-
-                setStores(prev => prev.map(s => s.id === toStoreId ? { ...s, logs: [...(s.logs || []), log] } : s));
-            };
-
-            const addStore = () => {
-                setStores([...stores, { ...initialStore, id: Date.now() }]);
-            };
-
-            const removeStore = (id) => {
-                if (stores.length <= 1) return;
-                showConfirm("店舗の削除", "この店舗の入力内容がすべて削除されます。よろしいですか？", () => {
-                    setStores(prev => prev.filter(s => s.id !== id));
-                });
-            };
-
-            const updateStoreField = (id, field, value) => {
-                setStores(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
-            };
-
-            // 画像機能削除済み (handleFileSelect & compressImage)
-
-            const submit = async () => {
-                // バリデーション
-                const invalidStore = stores.find(s => !s.store);
-                if (invalidStore) return showAlert("不備があります", "店舗名が入力されていないカードがあります。");
-
-                const totalLogs = stores.reduce((sum, s) => sum + (s.logs ? s.logs.length : 0), 0) + logs.length;
-                if (totalLogs === 0) return showAlert("不備があります", "ログ履歴が1件もありません。");
-
-                const calculatedHours = parseHours(reportInput.hours);
-                const salary = parseFinance(reportInput.salary);
-                const handover = parseFinance(reportInput.handover);
-                const parentReceived = parseFinance(reportInput.parentReceived);
-                const remainingCash = parseFinance(reportInput.remainingCash);
-
-                // 全店舗の集計
-                const summary = stores.reduce((acc, s) => {
-                    acc.medal20 += parseFinance(s.medal20);
-                    acc.medal5 += parseFinance(s.medal5);
-                    acc.pachi4 += parseFinance(s.pachi4);
-                    acc.investment += parseFinance(s.cash);
-                    acc.exchange += parseFinance(s.exchange);
-                    return acc;
-                }, { medal20: 0, medal5: 0, pachi4: 0, investment: 0, exchange: 0 });
-
-                const checkMsg = `
+          const checkMsg = `
 【送信内容の最終確認】
 稼働日: ${reportInput.date}
 店舗数: ${stores.length}店舗
@@ -501,544 +615,1106 @@
 この内容で一括送信します。よろしいですか？
 `.trim();
 
-                showConfirm("報告送信の最終点検", checkMsg, async () => {
-                    setSubmitting(true);
-                    
-                    try {
-                        // 店舗データの整形
-                        const storePayloads = stores.map(s => ({
-                            store: s.store,
-                            details: (s.logs || []).map(l => `${l.machine} ${l.detail}`).join("\n"),
-                            medal20: parseFinance(s.medal20),
-                            medal5: parseFinance(s.medal5),
-                            pachi4: parseFinance(s.pachi4),
-                            cash: parseFinance(s.cash),
-                            exchange: parseFinance(s.exchange),
-                            memo: s.memo
-                        }));
+          showConfirm("報告送信の最終点検", checkMsg, async () => {
+            setSubmitting(true);
 
-                        // 共通ログ（未接続）があれば最初の店舗に混ぜるか、別途処理（今回は最初の店舗へ）
-                        if (logs.length > 0 && storePayloads.length > 0) {
-                            const unlinkedLogText = logs.map(l => `${l.machine} ${l.detail}`).join("\n");
-                            storePayloads[0].details = unlinkedLogText + (storePayloads[0].details ? "\n" + storePayloads[0].details : "");
+            try {
+              // 店舗データの整形
+              const storePayloads = stores.map((s) => ({
+                store: s.store,
+                details: (s.logs || [])
+                  .map((l) => `${l.machine} ${l.detail}`)
+                  .join("\n"),
+                medal20: parseFinance(s.medal20),
+                medal5: parseFinance(s.medal5),
+                pachi4: parseFinance(s.pachi4),
+                cash: parseFinance(s.cash),
+                exchange: parseFinance(s.exchange),
+                memo: s.memo,
+              }));
+
+              // 共通ログ（未接続）があれば最初の店舗に混ぜるか、別途処理（今回は最初の店舗へ）
+              if (logs.length > 0 && storePayloads.length > 0) {
+                const unlinkedLogText = logs
+                  .map((l) => `${l.machine} ${l.detail}`)
+                  .join("\n");
+                storePayloads[0].details =
+                  unlinkedLogText +
+                  (storePayloads[0].details
+                    ? "\n" + storePayloads[0].details
+                    : "");
+              }
+
+              const payload = {
+                date: reportInput.date,
+                name: user.displayName,
+                hours: calculatedHours,
+                rawHours: reportInput.hours,
+                salary: salary,
+                handover: handover,
+                parentReceived: parentReceived,
+                remaining: remainingCash,
+                stores: storePayloads, // 複数店舗データを配列で送る
+              };
+
+              const bodyData = JSON.stringify({
+                action: "submitReport",
+                data: payload,
+              });
+
+              const res = await fetch(`${GAS_URL}`, {
+                method: "POST",
+                body: bodyData,
+              });
+
+              if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+
+              const result = await res.json();
+              if (result.status !== "success") {
+                throw new Error(result.message || "Server Error");
+              }
+
+              setStatus("正常に送信されました。本日もお疲れ様でした。");
+
+              // ステートリセット
+              setLogs([]);
+              setStores([initialStore]);
+              setReportInput({
+                date: new Date().toISOString().split("T")[0],
+                hours: "",
+                salary: "",
+                handover: "",
+                parentReceived: "",
+                remainingCash: "",
+              });
+
+              localStorage.removeItem("l_v7");
+              localStorage.removeItem("s_v8");
+              localStorage.removeItem("r_v7");
+              setActiveTab("log");
+              window.scrollTo(0, 0);
+              setTimeout(() => setStatus(""), 5000);
+            } catch (e) {
+              console.error("Submit error:", e);
+              showAlert(
+                "送信エラー",
+                `報告が届いていない可能性があります。\n原因: ${e.message}`,
+              );
+            } finally {
+              setSubmitting(false);
+            }
+          });
+        };
+
+        return (
+          <>
+            {isLocked ? (
+              <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-950">
+                <div className="w-full max-w-xs space-y-6 animate-fadeIn">
+                  <div className="text-center">
+                    <h1 className="text-2xl font-black mb-1 italic text-indigo-500">
+                      PRIVATE SYSTEM
+                    </h1>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                      Entry Key Required
+                    </p>
+                  </div>
+                  <form
+                    onSubmit={verifyPass}
+                    className="card p-6 space-y-4 shadow-xl"
+                  >
+                    <input
+                      type="password"
+                      value={passInput}
+                      onChange={(e) => setPassInput(e.target.value)}
+                      className="input-dark text-center font-bold tracking-widest"
+                      placeholder="合言葉を入力"
+                      autoFocus
+                    />
+                    <button type="submit" className="btn-premium">
+                      UNLOCK
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : !user ? (
+              <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-900">
+                <div className="w-full max-w-xs space-y-6 animate-fadeIn">
+                  <div className="text-center">
+                    <h1 className="text-3xl font-black mb-1 italic tracking-tighter">
+                      WORKER APP<span className="text-indigo-600">.</span>
+                    </h1>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                      初期登録 / 名前を入力してください
+                    </p>
+                  </div>
+                  {isRegistrationLocked ? (
+                    <div className="card p-8 space-y-6 shadow-xl border-rose-500/20 bg-rose-500/5 text-center">
+                      <div className="text-3xl">🔒</div>
+                      <div className="space-y-2">
+                        <h3 className="text-rose-400 font-black text-sm uppercase">
+                          Registration Locked
+                        </h3>
+                        <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
+                          現在、セキュリティ保護のため
+                          <br />
+                          <span className="text-white font-black underline">
+                            管理者による名簿登録がない方
+                          </span>
+                          の<br />
+                          新規利用を一時的に停止しています。
+                          <br />
+                          <span className="text-white">
+                            管理者へ直接名前の登録を依頼してください。
+                          </span>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => location.reload()}
+                        className="text-[10px] text-indigo-400 font-black border-b border-indigo-400/30 pb-0.5"
+                      >
+                        再試行する
+                      </button>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={handleLogin}
+                      className="card p-6 space-y-4 shadow-xl"
+                    >
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={tempName}
+                          onChange={(e) => setTempName(e.target.value)}
+                          className="input-dark font-bold text-lg"
+                          placeholder="例: 前野"
+                          required
+                        />
+                        <p className="text-[9px] text-slate-500 font-bold px-1 tracking-tighter">
+                          ※漢字・ひらがな・カタカナで入力可能です。
+                        </p>
+                      </div>
+                      <button type="submit" className="btn-premium">
+                        アプリを始める
+                      </button>
+                    </form>
+                  )}
+                  <div className="text-center">
+                    <button
+                      onClick={() => {
+                        if (confirm("設定を完全にリセットしますか？")) {
+                          localStorage.clear();
+                          location.reload();
                         }
+                      }}
+                      className="text-[10px] text-slate-600 font-bold uppercase tracking-widest border-b border-slate-700 pb-1"
+                    >
+                      ログインできない場合はこちら（リセット）
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900">
+                <div className="p-4 flex justify-between items-center border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-0 z-20">
+                  <div className="text-lg font-black italic tracking-tighter">
+                    稼働まとめ<span className="text-indigo-600">.</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => location.reload(true)}
+                      className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all"
+                    >
+                      最新に更新
+                    </button>
+                    <div className="text-[10px] font-black text-slate-400 bg-white/5 px-3 py-1.5 rounded-full truncate max-w-[100px]">
+                      {user.displayName}
+                    </div>
+                  </div>
+                </div>
 
-                        const payload = {
-                            date: reportInput.date,
-                            name: user.displayName,
-                            hours: calculatedHours,
-                            rawHours: reportInput.hours,
-                            salary: salary,
-                            handover: handover,
-                            parentReceived: parentReceived,
-                            remaining: remainingCash,
-                            stores: storePayloads // 複数店舗データを配列で送る
-                        };
+                <div className="flex border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-[57px] z-20 overflow-x-auto whitespace-nowrap">
+                  <button
+                    onClick={() => setActiveTab("log")}
+                    className={`tab-btn ${activeTab === "log" ? "active" : ""}`}
+                  >
+                    01 報告送信
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("strategy");
+                      fetchStrategy();
+                    }}
+                    className={`tab-btn ${activeTab === "strategy" ? "active" : ""}`}
+                  >
+                    02 狙い目
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("shift");
+                      fetchShifts();
+                    }}
+                    className={`tab-btn ${activeTab === "shift" ? "active" : ""}`}
+                  >
+                    03 シフト
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("help")}
+                    className={`tab-btn ${activeTab === "help" ? "active" : ""}`}
+                  >
+                    04 HELP
+                  </button>
+                </div>
 
-                        const bodyData = JSON.stringify({ action: "submitReport", data: payload });
+                <div className="p-4 flex-1 space-y-5 pb-10">
+                  {status && (
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs font-bold animate-pulse">
+                      {status}
+                    </div>
+                  )}
 
-                        const res = await fetch(`${GAS_URL}`, {
-                            method: "POST",
-                            body: bodyData
-                        });
-
-                        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-
-                        const result = await res.json();
-                        if (result.status !== "success") {
-                            throw new Error(result.message || "Server Error");
-                        }
-
-                        setStatus("正常に送信されました。本日もお疲れ様でした。");
-                        
-                        // ステートリセット
-                        setLogs([]);
-                        setStores([initialStore]);
-                        setReportInput({
-                            date: new Date().toISOString().split('T')[0],
-                            hours: "",
-                            salary: "",
-                            handover: "",
-                            parentReceived: "",
-                            remainingCash: ""
-                        });
-                        
-                        localStorage.removeItem("l_v7");
-                        localStorage.removeItem("s_v8");
-                        localStorage.removeItem("r_v7");
-                        setActiveTab("log");
-                        window.scrollTo(0, 0);
-                        setTimeout(() => setStatus(""), 5000);
-
-                    } catch (e) {
-                        console.error("Submit error:", e);
-                        showAlert("送信エラー", `報告が届いていない可能性があります。\n原因: ${e.message}`);
-                    } finally {
-                        setSubmitting(false);
-                    }
-                });
-            };
-
-            return (
-                <>
-                    {isLocked ? (
-                        <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-950">
-                            <div className="w-full max-w-xs space-y-6 animate-fadeIn">
-                                <div className="text-center">
-                                    <h1 className="text-2xl font-black mb-1 italic text-indigo-500">PRIVATE SYSTEM</h1>
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Entry Key Required</p>
+                  {activeTab === "log" && (
+                    <div className="space-y-6 animate-fadeIn">
+                      {/* 1. 店舗ごとの入力カード（最上部に移動） */}
+                      <div className="space-y-8">
+                        {stores.map((store, index) => (
+                          <div
+                            key={store.id}
+                            className="space-y-4 animate-fadeIn"
+                          >
+                            <div className="flex justify-between items-end px-1">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${index === 0 ? "bg-indigo-600" : "bg-slate-700"} text-white`}
+                                >
+                                  {index + 1}
                                 </div>
-                                <form onSubmit={verifyPass} className="card p-6 space-y-4 shadow-xl">
+                                <div className="text-xs font-black text-slate-300 uppercase tracking-widest">
+                                  {"店舗" + (index + 1)}
+                                </div>
+                              </div>
+                              {stores.length > 1 && (
+                                <button
+                                  onClick={() => removeStore(store.id)}
+                                  className="text-[10px] font-black text-rose-500 bg-rose-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all"
+                                >
+                                  この店舗を削除
+                                </button>
+                              )}
+                            </div>
+
+                            <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10 transition-all focus-within:border-indigo-500/40">
+                              <div>
+                                <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">
+                                  店舗名
+                                </label>
+                                <input
+                                  value={store.store}
+                                  onChange={(e) =>
+                                    updateStoreField(
+                                      store.id,
+                                      "store",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="input-dark font-black text-base"
+                                  placeholder="例: マルハン〇〇店"
+                                />
+                              </div>
+
+                              {/* 店舗内ログ入力 */}
+                              <div className="bg-slate-900/60 p-4 rounded-xl space-y-3 border border-indigo-500/5">
+                                <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest px-1">
+                                  稼動ログ（
+                                  {store.store || `店舗${index + 1}`}）
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                  <div className="flex-1 space-y-2">
                                     <input
-                                        type="password"
-                                        value={passInput}
-                                        onChange={e => setPassInput(e.target.value)}
-                                        className="input-dark text-center font-bold tracking-widest"
-                                        placeholder="合言葉を入力"
-                                        autoFocus
+                                      value={logInput.machine}
+                                      onChange={(e) =>
+                                        setLogInput({
+                                          ...logInput,
+                                          machine: e.target.value,
+                                        })
+                                      }
+                                      className="input-dark bg-slate-950/50 py-3 text-sm font-bold"
+                                      placeholder="機種 (北斗など)"
                                     />
-                                    <button type="submit" className="btn-premium">UNLOCK</button>
-                                </form>
-                            </div>
-                        </div>
-                    ) : !user ? (
-                        <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-slate-900">
-                            <div className="w-full max-w-xs space-y-6 animate-fadeIn">
-                                <div className="text-center">
-                                    <h1 className="text-3xl font-black mb-1 italic tracking-tighter">WORKER APP<span className="text-indigo-600">.</span></h1>
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">初期登録 / 名前を入力してください</p>
+                                    <input
+                                      value={logInput.detail}
+                                      onChange={(e) =>
+                                        setLogInput({
+                                          ...logInput,
+                                          detail: e.target.value,
+                                        })
+                                      }
+                                      className="input-dark bg-slate-950/50 py-3 text-sm"
+                                      placeholder="内容（リセ200など）"
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => addLog(store.id)}
+                                    className="bg-indigo-600 w-16 h-16 rounded-2xl font-black text-3xl flex items-center justify-center shadow-lg active:scale-90 transition-all shrink-0"
+                                  >
+                                    +
+                                  </button>
                                 </div>
-                                {isRegistrationLocked ? (
-                                    <div className="card p-8 space-y-6 shadow-xl border-rose-500/20 bg-rose-500/5 text-center">
-                                        <div className="text-3xl">🔒</div>
-                                        <div className="space-y-2">
-                                            <h3 className="text-rose-400 font-black text-sm uppercase">Registration Locked</h3>
-                                            <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
-                                                現在、セキュリティ保護のため<br />
-                                                <span className="text-white font-black underline">管理者による名簿登録がない方</span>の<br />
-                                                新規利用を一時的に停止しています。<br />
-                                                <span className="text-white">管理者へ直接名前の登録を依頼してください。</span>
-                                            </p>
+
+                                <div className="space-y-2 mt-2">
+                                  {(store.logs || []).map((l) => (
+                                    <div
+                                      key={l.id}
+                                      className="log-item flex justify-between items-center border-l-4 border-indigo-500 bg-slate-900/40 py-2 pr-2 animate-fadeIn"
+                                    >
+                                      <div className="min-w-0 flex-1 pl-1">
+                                        <div className="font-black text-sm text-indigo-100">
+                                          {l.machine}
                                         </div>
-                                        <button onClick={() => location.reload()} className="text-[10px] text-indigo-400 font-black border-b border-indigo-400/30 pb-0.5">再試行する</button>
-                                    </div>
-                                ) : (
-                                    <form onSubmit={handleLogin} className="card p-6 space-y-4 shadow-xl">
-                                        <div className="space-y-2">
-                                            <input
-                                                type="text"
-                                                value={tempName}
-                                                onChange={e => setTempName(e.target.value)}
-                                                className="input-dark font-bold text-lg"
-                                                placeholder="例: 前野"
-                                                required
-                                            />
-                                            <p className="text-[9px] text-slate-500 font-bold px-1 tracking-tighter">※漢字・ひらがな・カタカナで入力可能です。</p>
+                                        <div className="text-[11px] text-slate-400 font-bold leading-tight mt-1">
+                                          {l.detail}
                                         </div>
-                                        <button type="submit" className="btn-premium">アプリを始める</button>
-                                    </form>
-                                )}
-                                <div className="text-center">
-                                    <button onClick={() => { if (confirm("設定を完全にリセットしますか？")) { localStorage.clear(); location.reload(); } }} className="text-[10px] text-slate-600 font-bold uppercase tracking-widest border-b border-slate-700 pb-1">ログインできない場合はこちら（リセット）</button>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-900">
-                            <div className="p-4 flex justify-between items-center border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-0 z-20">
-                                <div className="text-lg font-black italic tracking-tighter">稼働まとめ<span className="text-indigo-600">.</span></div>
-                                <div className="flex items-center gap-3">
-                                    <button onClick={() => location.reload(true)} className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all">最新に更新</button>
-                                    <div className="text-[10px] font-black text-slate-400 bg-white/5 px-3 py-1.5 rounded-full truncate max-w-[100px]">
-                                        {user.displayName}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-[57px] z-20 overflow-x-auto whitespace-nowrap">
-                                <button onClick={() => setActiveTab("log")} className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}>01 報告送信</button>
-                                <button onClick={() => { setActiveTab("strategy"); fetchStrategy(); }} className={`tab-btn ${activeTab === 'strategy' ? 'active' : ''}`}>02 狙い目</button>
-                                <button onClick={() => { setActiveTab("shift"); fetchShifts(); }} className={`tab-btn ${activeTab === 'shift' ? 'active' : ''}`}>03 シフト</button>
-                                <button onClick={() => setActiveTab("help")} className={`tab-btn ${activeTab === 'help' ? 'active' : ''}`}>04 HELP</button>
-                            </div>
-
-                            <div className="p-4 flex-1 space-y-5 pb-10">
-                                {status && (
-                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs font-bold animate-pulse">
-                                        {status}
-                                    </div>
-                                )}
-
-                                                                        {activeTab === 'log' && (
-                                    <div className="space-y-6 animate-fadeIn">
-                                        {/* 1. 店舗ごとの入力カード（最上部に移動） */}
-                                        <div className="space-y-8">
-                                            {stores.map((store, index) => (
-                                                <div key={store.id} className="space-y-4 animate-fadeIn">
-                                                    <div className="flex justify-between items-end px-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${index === 0 ? 'bg-indigo-600' : 'bg-slate-700'} text-white`}>{index + 1}</div>
-                                                            <div className="text-xs font-black text-slate-300 uppercase tracking-widest">{index === 0 ? 'メイン店舗' : `追加店舗 ${index}`}</div>
-                                                        </div>
-                                                        {stores.length > 1 && (
-                                                            <button onClick={() => removeStore(store.id)} className="text-[10px] font-black text-rose-500 bg-rose-500/10 px-3 py-1.5 rounded-full active:scale-95 transition-all">この店舗を削除</button>
-                                                        )}
-                                                    </div>
-
-                                                    <section className="card p-5 space-y-5 shadow-xl border-indigo-500/10 transition-all focus-within:border-indigo-500/40">
-                                                        <div>
-                                                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block mb-1.5 px-1">店舗名</label>
-                                                            <input value={store.store} onChange={e => updateStoreField(store.id, "store", e.target.value)} className="input-dark font-black text-base" placeholder="例: マルハン〇〇店" />
-                                                        </div>
-
-                                                        {/* 店舗内ログ入力 */}
-                                                        <div className="bg-slate-900/60 p-4 rounded-xl space-y-3 border border-indigo-500/5">
-                                                            <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest px-1">台移動ログ（{store.store || `店舗${index + 1}`}）</div>
-                                                            <div className="flex gap-2">
-                                                                <input value={logInput.machine} onChange={e => setLogInput({ ...logInput, machine: e.target.value })} className="input-dark bg-slate-950/50 py-2 text-xs" placeholder="機種 (北斗など)" />
-                                                                <input value={logInput.detail} onChange={e => setLogInput({ ...logInput, detail: e.target.value })} className="input-dark bg-slate-950/50 py-2 text-xs" placeholder="内容（リセ200など）" />
-                                                                <button onClick={() => addLog(store.id)} className="bg-indigo-600 w-10 h-10 rounded-lg font-black text-xl flex items-center justify-center shadow-lg active:scale-90 transition-all">+</button>
-                                                            </div>
-
-                                                            <div className="space-y-2 mt-2">
-                                                                {(store.logs || []).map(l => (
-                                                                    <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-indigo-500 bg-slate-900/40 py-2 pr-2 animate-fadeIn">
-                                                                        <div className="min-w-0 flex-1 pl-1 truncate">
-                                                                            <span className="font-black text-xs text-indigo-100">{l.machine}</span>
-                                                                            <span className="text-[10px] text-slate-400 ml-2">{l.detail}</span>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-1">
-                                                                            {stores.length > 1 && (
-                                                                                <button
-                                                                                    onClick={() => moveLogToStore(l, store.id, stores[index === 0 ? 1 : 0].id)}
-                                                                                    title="他店舗へ移動"
-                                                                                    className="text-indigo-400 hover:text-indigo-300 w-8 h-8 flex items-center justify-center text-sm"
-                                                                                >⇄</button>
-                                                                            )}
-                                                                            <button onClick={() => removeLog(l.id, store.id)} className="text-slate-600 hover:text-rose-500 w-8 h-8 flex items-center justify-center text-xl">×</button>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 数値入力エリア */}
-                                                        <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5 space-y-4 shadow-inner">
-                                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">最終枚数 / 球数</div>
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                <div className="relative">
-                                                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-rose-500 z-10 uppercase">20s</div>
-                                                                    <input type="text" inputmode="numeric" value={store.medal20} onChange={e => updateStoreField(store.id, "medal20", e.target.value)} className="input-dark py-2 text-center text-xs border-rose-500/20" placeholder="枚数" />
-                                                                </div>
-                                                                <div className="relative">
-                                                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-indigo-500 z-10 uppercase">5s</div>
-                                                                    <input type="text" inputmode="numeric" value={store.medal5} onChange={e => updateStoreField(store.id, "medal5", e.target.value)} className="input-dark py-2 text-center text-xs border-indigo-500/20" placeholder="枚数" />
-                                                                </div>
-                                                                <div className="relative">
-                                                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-emerald-500 z-10 uppercase">4p</div>
-                                                                    <input type="text" inputmode="numeric" value={store.pachi4} onChange={e => updateStoreField(store.id, "pachi4", e.target.value)} className="input-dark py-2 text-center text-xs border-emerald-500/20" placeholder="玉数" />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="grid grid-cols-2 gap-3">
-                                                                <div>
-                                                                    <label className="text-[9px] font-black text-rose-400 uppercase tracking-widest block mb-1.5 px-1">本日投資 (円)</label>
-                                                                    <input type="text" inputmode="numeric" value={store.cash} onChange={e => updateStoreField(store.id, "cash", e.target.value)} className="input-dark font-bold py-2 text-xs" placeholder="0" />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-1.5 px-1">換金額 (円)</label>
-                                                                    <input type="text" inputmode="numeric" value={store.exchange} onChange={e => updateStoreField(store.id, "exchange", e.target.value)} className="input-dark font-bold py-2 text-xs placeholder:opacity-30" placeholder="0" />
-                                                                </div>
-                                                            </div>
-
-                                                            <div>
-                                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 px-1">店別メモ</label>
-                                                                <textarea value={store.memo} onChange={e => updateStoreField(store.id, "memo", e.target.value)} className="input-dark h-16 text-[11px] bg-slate-950/30" placeholder="店ごとの環境など..."></textarea>
-                                                            </div>
-                                                        </div>
-                                                    </section>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* 2. 未接続のログ */}
-                                        {logs.length > 0 && (
-                                            <section className="space-y-3">
-                                                <div className="flex justify-between items-center px-1">
-                                                    <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest">未接続のログ / {logs.length}件</div>
-                                                    <button onClick={() => setLogs([])} className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase">クリア</button>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {logs.map(l => (
-                                                        <div key={l.id} className="log-item flex justify-between items-center border-l-4 border-rose-500 shadow-sm animate-fadeIn bg-rose-500/5">
-                                                            <div className="min-w-0 flex-1 pr-2">
-                                                                <div className="font-black text-sm text-rose-100 truncate">{l.machine}</div>
-                                                                <div className="text-xs text-slate-400 font-bold truncate mt-0.5">{l.detail}</div>
-                                                            </div>
-                                                            <div className="flex items-center gap-1">
-                                                                <select
-                                                                    onChange={(e) => moveLogToStore(l, "common", Number(e.target.value))}
-                                                                    className="bg-slate-800 text-[9px] text-white p-1 rounded border border-white/10"
-                                                                >
-                                                                    <option value="">店舗へ振分</option>
-                                                                    {stores.map((s, idx) => (
-                                                                        <option key={s.id} value={s.id}>店舗{idx + 1}: {s.store || "(未入力)"}</option>
-                                                                    ))}
-                                                                </select>
-                                                                <button onClick={() => removeLog(l.id)} className="text-slate-600 hover:text-rose-500 w-8 h-8 flex items-center justify-center text-xl">×</button>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </section>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {stores.length > 1 && (
+                                          <button
+                                            onClick={() =>
+                                              moveLogToStore(
+                                                l,
+                                                store.id,
+                                                stores[index === 0 ? 1 : 0].id,
+                                              )
+                                            }
+                                            title="他店舗へ移動"
+                                            className="text-indigo-400 hover:text-indigo-300 w-8 h-8 flex items-center justify-center text-sm"
+                                          >
+                                            ⇄
+                                          </button>
                                         )}
-
-                                        {/* 店舗追加ボタン */}
-                                        <button onClick={addStore} className="w-full py-4 border-2 border-dashed border-indigo-500/30 rounded-2xl flex items-center justify-center gap-2 text-indigo-400 hover:bg-indigo-500/5 transition-all group">
-                                            <span className="text-2xl group-active:scale-125 transition-transform">+</span>
-                                            <span className="text-xs font-black uppercase tracking-widest">店舗をもう一つ追加する</span>
+                                        <button
+                                          onClick={() =>
+                                            removeLog(l.id, store.id)
+                                          }
+                                          className="text-slate-600 hover:text-rose-500 w-8 h-8 flex items-center justify-center text-xl"
+                                        >
+                                          ×
                                         </button>
-
-                                        {/* 4. まとめ・精算（基本情報を統合） */}
-                                        <section className="card p-5 space-y-6 shadow-xl border-indigo-500/10">
-                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">1日のまとめ・精算</div>
-                                            
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block px-1">稼働日</label>
-                                                    <input type="date" value={reportInput.date} onChange={e => setReportInput({ ...reportInput, date: e.target.value })} className="input-dark py-3 font-bold text-xs" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block px-1">稼働時間</label>
-                                                    <input value={reportInput.hours} onChange={e => setReportInput({ ...reportInput, hours: e.target.value })} className="input-dark py-3" placeholder="8:40~21:10" />
-                                                    <div className="text-[8px] text-slate-600 mt-1 font-bold italic">計算結果: {parseHours(reportInput.hours)}h</div>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block px-1">親から受取 (円)</label>
-                                                    <input type="text" inputmode="numeric" value={reportInput.parentReceived} onChange={e => setReportInput({ ...reportInput, parentReceived: e.target.value })} className="input-dark font-bold text-sm border-indigo-500/20 py-2" placeholder="0" />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[9px] font-black text-amber-400 uppercase tracking-widest block px-1">親へ手渡し (円)</label>
-                                                    <input type="text" inputmode="numeric" value={reportInput.handover} onChange={e => setReportInput({ ...reportInput, handover: e.target.value })} className="input-dark font-bold text-sm border-amber-500/20 py-2" placeholder="0" />
-                                                </div>
-                                                <div className="col-span-2 space-y-1.5">
-                                                    <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block px-1">本日の給料 (円)</label>
-                                                    <input type="text" inputmode="numeric" value={reportInput.salary} onChange={e => setReportInput({ ...reportInput, salary: e.target.value })} className="input-dark font-black text-sm border-slate-700/30 py-2 text-center" placeholder="0" />
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
-                                                <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-1.5 px-1 text-center">最終的な財布の残投資金</label>
-                                                <input type="text" inputmode="numeric" value={reportInput.remainingCash} onChange={e => setReportInput({ ...reportInput, remainingCash: e.target.value })} className="input-dark font-black text-xl border-indigo-500/30 py-2 text-center" placeholder="0" />
-                                            </div>
-
-                                            <button onClick={submit} disabled={submitting} className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg mt-4 ${submitting ? 'opacity-50' : ''}`}>
-                                                {submitting ? '送信中...' : '全店舗の報告をまとめて送信'}
-                                            </button>
-                                            <p className="text-[10px] text-slate-600 text-center font-bold">※送信すると入力内容はリセットされます</p>
-                                        </section>
+                                      </div>
                                     </div>
-                                )}
-
-                                {activeTab === 'strategy' && (
-                                    <div className="space-y-6 animate-fadeIn pb-10">
-                                        <div className="card p-4 sticky top-[108px] z-10 bg-slate-800 shadow-xl border-indigo-500/20">
-                                            <input
-                                                type="text"
-                                                value={search}
-                                                onChange={e => setSearch(e.target.value)}
-                                                className="input-dark bg-slate-950 font-bold"
-                                                placeholder="機種名で検索..."
-                                            />
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            {strategyLoading ? (
-                                                <div className="py-20 text-center text-indigo-400 font-black animate-pulse uppercase tracking-[0.2em] text-xs">Loading Strategy...</div>
-                                            ) : strategies.filter(s => {
-                                                const term = search.toLowerCase();
-                                                const nameMatch = s.機種名.toLowerCase().includes(term);
-                                                const keywordMatch = (s.keywords || "").toLowerCase().split(/[,，、]/).some(k => k.trim().includes(term));
-                                                return nameMatch || keywordMatch;
-                                            }).length > 0 ? (
-                                                strategies.filter(s => {
-                                                    const term = search.toLowerCase();
-                                                    const nameMatch = s.機種名.toLowerCase().includes(term);
-                                                    const keywordMatch = (s.keywords || "").toLowerCase().split(/[,，、]/).some(k => k.trim().includes(term));
-                                                    return nameMatch || keywordMatch;
-                                                }).map((s, i) => (
-                                                    <div key={i} className="card p-5 space-y-3 bg-slate-800/50 border-white/5 hover:border-indigo-500/20 transition-all">
-                                                        <div className="text-sm font-black text-indigo-100 flex justify-between items-center">
-                                                            {s.機種名}
-                                                            {s.URL && (
-                                                                <a href={s.URL} target="_blank" className="text-[9px] font-black bg-indigo-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">解析サイト</a>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap">{s.狙い目}</p>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="py-20 text-center">
-                                                    <div className="text-4xl mb-4 opacity-20">🔍</div>
-                                                    <p className="text-slate-500 font-black italic uppercase text-xs tracking-widest">No matching results</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeTab === 'shift' && (
-                                    <div className="space-y-6 animate-fadeIn pb-10">
-                                        <section className="card p-5 space-y-4">
-                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">シフト申請（今後2週間分）</div>
-                                            <div className="grid grid-cols-4 gap-2">
-                                                {[...Array(14)].map((_, i) => {
-                                                    const d = new Date();
-                                                    d.setDate(d.getDate() + i);
-                                                    const dStr = d.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
-                                                    // タイムゾーンを考慮した YYYY-MM-DD 生成
-                                                    const y = d.getFullYear();
-                                                    const m = String(d.getMonth() + 1).padStart(2, '0');
-                                                    const day = String(d.getDate()).padStart(2, '0');
-                                                    const iso = `${y}-${m}-${day}`;
-
-                                                    const isSelected = selectedDates.includes(iso);
-                                                    return (
-                                                        <div key={i} onClick={() => toggleDate(iso)} className={`p-2 rounded-xl text-center cursor-pointer transition-all border ${isSelected ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-800 border-white/5 text-slate-400'}`}>
-                                                            <div className="text-[8px] font-bold opacity-60 leading-none mb-1">{dStr.split(' ')[1]}</div>
-                                                            <div className="text-xs font-black leading-none">{dStr.split('(')[0]}</div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            <button onClick={handleShiftSubmit} disabled={submitting || selectedDates.length === 0} className={`btn-premium py-3 text-xs ${submitting || selectedDates.length === 0 ? 'opacity-30' : ''}`}>
-                                                {submitting ? 'SENDING...' : '選択した日付を申請'}
-                                            </button>
-                                        </section>
-
-                                        <section className="space-y-3">
-                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">確定済みシフト</div>
-                                            <div className="card p-4 space-y-2">
-                                                {shiftLoading ? <div className="text-center py-4 text-[10px] text-indigo-400 animate-pulse">読み込み中...</div> :
-                                                    myShifts.length === 0 ? <div className="text-center py-8 text-slate-600 text-[10px] font-bold italic uppercase opacity-40">No confirmed shifts</div> :
-                                                        myShifts.sort((a, b) => new Date(a.date) - new Date(b.date)).map((s, i) => (
-                                                            <div key={i} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                                                                <div className="text-xs font-black text-white">{new Date(s.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'long' })}</div>
-                                                                <div className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md uppercase tracking-tighter">Confirmed</div>
-                                                            </div>
-                                                        ))}
-                                            </div>
-                                        </section>
-                                        <p className="text-[10px] text-slate-500 italic text-center px-4 leading-relaxed">※入力したシフトは管理者のカレンダーに反映されます。<br />※一度申請した内容の変更は管理者に連絡してください。</p>
-                                    </div>
-                                )}
-
-                                {activeTab === 'help' && (
-                                    <div className="space-y-6 animate-fadeIn text-slate-400 text-xs leading-relaxed pb-10">
-                                        <div className="card p-6 lg:p-10 space-y-10">
-                                            <h3 className="text-indigo-400 font-extrabold flex items-center gap-3 uppercase tracking-[0.2em] text-[15px] border-b border-white/5 pb-2">
-                                                <span className="text-2xl text-white">SYSTEM INFO</span>
-                                            </h3>
-                                            <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest pb-6 opacity-60">
-                                                <div>Front: <span className="text-emerald-400">{APP_VERSION_FRONTEND}</span></div>
-                                                <div>Back: <span className="text-emerald-400">{backendVersion}</span></div>
-                                            </div>
-
-                                            <div className="space-y-12">
-                                                <section className="space-y-4">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">01</div>
-                                                        <div className="space-y-2">
-                                                            <h4 className="font-black text-white text-base">リアルタイムでの稼働記録・店舗管理</h4>
-                                                            <p className="opacity-80 text-[12px] leading-6">
-                                                                正確な分析のため、台移動直後の入力を推奨します。「報告送信」タブでは、店舗ごとにタブを切り替えて管理できます。
-                                                            </p>
-                                                            <div className="space-y-3 pt-2">
-                                                                <div className="flex gap-2 text-[11px] text-slate-300">
-                                                                    <span className="text-indigo-400">●</span>
-                                                                    <span><strong>店舗タブの追加:</strong> 画面上部の「店舗追加」から、複数店舗の同時報告が可能です。</span>
-                                                                </div>
-                                                                <div className="flex gap-2 text-[11px] text-slate-300">
-                                                                    <span className="text-indigo-400">●</span>
-                                                                    <span><strong>ログの店舗間移動:</strong> 送信タブ上のログにある「矢印ボタン」を押すことで、別の店舗タブへ移動させることができます。</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </section>
-
-                                                <section className="space-y-4">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">02</div>
-                                                        <div className="space-y-2">
-                                                            <h4 className="font-black text-white text-base">業務終了時の詳細報告</h4>
-                                                            <p className="opacity-80 text-[12px] leading-6">
-                                                                一日の業務（稼働）が全て終了した際、詳細情報の入力欄を正しく記入してください。
-                                                            </p>
-                                                            <ul className="text-[11px] space-y-2 pt-2 text-slate-300">
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">最終枚数/球数:</strong> 稼働終了後の会員カード内の貯メダル・貯玉数。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日投資:</strong> 現金投資した際の、その日に使った現金の総額。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">換金額:</strong> 換金した場合の換金額。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">親から受取:</strong> 親から受け取った場合の現金額。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">親への手渡し:</strong> 親へ手渡した場合の現金額。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">本日の給料:</strong> 今日受け取った給料。</span></li>
-                                                                <li className="flex gap-2"><span>・</span><span><strong className="text-white">最終的な残投資金:</strong> 全て完了後、現在残っている現金額。</span></li>
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                </section>
-
-                                                <section className="bg-rose-500/5 p-6 rounded-3xl space-y-4 border border-rose-500/20">
-                                                    <p className="font-bold text-rose-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-widest">
-                                                        <span className="text-sm">●</span> 注意事項
-                                                    </p>
-                                                    <div className="text-[11px] space-y-4 opacity-90 leading-relaxed">
-                                                        <p>
-                                                            送信ボタンは、すべての内容に誤りがないことを確認した上で実行してください。送信完了と同時に、ログ履歴は自動的に初期化されます。
-                                                        </p>
-                                                        <p className="text-rose-300/80">
-                                                            ※本アプリは機密情報を含みます。第三者への開示、SNS投稿等は厳禁です。
-                                                        </p>
-                                                    </div>
-                                                </section>
-                                            </div>
-                                        </div>
-
-                                        <div className="text-center opacity-30 font-black text-[9px] uppercase tracking-[0.3em] pt-4">Internal System Worker Security Level: AA+ | v7.13.0</div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {modal.show && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-                            <div className="bg-slate-900 border border-white/10 rounded-[2rem] w-full max-w-xs shadow-2xl overflow-hidden">
-                                <div className="p-8 space-y-4">
-                                    <div className="text-center space-y-2">
-                                        <h3 className="text-indigo-400 font-black uppercase text-[10px] tracking-widest">{modal.title}</h3>
-                                        <p className="text-sm text-slate-200 font-bold leading-relaxed whitespace-pre-wrap">{modal.message}</p>
-                                    </div>
+                                  ))}
                                 </div>
-                                <div className="flex border-t border-white/5">
-                                    {modal.type === 'confirm' && (
-                                        <button onClick={() => setModal({ ...modal, show: false })} className="flex-1 py-5 text-xs font-black text-slate-500 hover:bg-white/5 transition-all">CANCEL</button>
+                              </div>
+
+                              {/* 数値入力エリア */}
+                              <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5 space-y-4 shadow-inner">
+                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">
+                                  最終枚数 / 球数
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div className="relative">
+                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-rose-500 z-10 uppercase">
+                                      20s
+                                    </div>
+                                    <input
+                                      type="text"
+                                      inputmode="numeric"
+                                      value={store.medal20}
+                                      onChange={(e) =>
+                                        updateStoreField(
+                                          store.id,
+                                          "medal20",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="input-dark py-2 text-center text-xs border-rose-500/20"
+                                      placeholder="枚数"
+                                    />
+                                  </div>
+                                  <div className="relative">
+                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-indigo-500 z-10 uppercase">
+                                      5s
+                                    </div>
+                                    <input
+                                      type="text"
+                                      inputmode="numeric"
+                                      value={store.medal5}
+                                      onChange={(e) =>
+                                        updateStoreField(
+                                          store.id,
+                                          "medal5",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="input-dark py-2 text-center text-xs border-indigo-500/20"
+                                      placeholder="枚数"
+                                    />
+                                  </div>
+                                  <div className="relative">
+                                    <div className="absolute -top-2 left-2 bg-slate-800 px-1 text-[7px] font-black text-emerald-500 z-10 uppercase">
+                                      4p
+                                    </div>
+                                    <input
+                                      type="text"
+                                      inputmode="numeric"
+                                      value={store.pachi4}
+                                      onChange={(e) =>
+                                        updateStoreField(
+                                          store.id,
+                                          "pachi4",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="input-dark py-2 text-center text-xs border-emerald-500/20"
+                                      placeholder="玉数"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-[9px] font-black text-rose-400 uppercase tracking-widest block mb-1.5 px-1">
+                                      本日投資 (円)
+                                    </label>
+                                    <input
+                                      type="text"
+                                      inputmode="numeric"
+                                      value={store.cash}
+                                      onChange={(e) =>
+                                        updateStoreField(
+                                          store.id,
+                                          "cash",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="input-dark font-bold py-2 text-xs"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-1.5 px-1">
+                                      換金額 (円)
+                                    </label>
+                                    <input
+                                      type="text"
+                                      inputmode="numeric"
+                                      value={store.exchange}
+                                      onChange={(e) =>
+                                        updateStoreField(
+                                          store.id,
+                                          "exchange",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="input-dark font-bold py-2 text-xs placeholder:opacity-30"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5 px-1">
+                                    店別メモ
+                                  </label>
+                                  <textarea
+                                    value={store.memo}
+                                    onChange={(e) =>
+                                      updateStoreField(
+                                        store.id,
+                                        "memo",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="input-dark h-16 text-[11px] bg-slate-950/30"
+                                    placeholder="店ごとの環境など..."
+                                  ></textarea>
+                                </div>
+                              </div>
+                            </section>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* 2. 未接続のログ */}
+                      {logs.length > 0 && (
+                        <section className="space-y-3">
+                          <div className="flex justify-between items-center px-1">
+                            <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest">
+                              未接続のログ / {logs.length}件
+                            </div>
+                            <button
+                              onClick={() => setLogs([])}
+                              className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full uppercase"
+                            >
+                              クリア
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            {logs.map((l) => (
+                              <div
+                                key={l.id}
+                                className="log-item flex justify-between items-center border-l-4 border-rose-500 shadow-sm animate-fadeIn bg-rose-500/5"
+                              >
+                                <div className="min-w-0 flex-1 pr-2">
+                                  <div className="font-black text-sm text-rose-100 truncate">
+                                    {l.machine}
+                                  </div>
+                                  <div className="text-xs text-slate-400 font-bold truncate mt-0.5">
+                                    {l.detail}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <select
+                                    onChange={(e) =>
+                                      moveLogToStore(
+                                        l,
+                                        "common",
+                                        Number(e.target.value),
+                                      )
+                                    }
+                                    className="bg-slate-800 text-[9px] text-white p-1 rounded border border-white/10"
+                                  >
+                                    <option value="">店舗へ振分</option>
+                                    {stores.map((s, idx) => (
+                                      <option key={s.id} value={s.id}>
+                                        店舗{idx + 1}: {s.store || "(未入力)"}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => removeLog(l.id)}
+                                    className="text-slate-600 hover:text-rose-500 w-8 h-8 flex items-center justify-center text-xl"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      {/* 店舗追加ボタン */}
+                      <button
+                        onClick={addStore}
+                        className="w-full py-4 border-2 border-dashed border-indigo-500/30 rounded-2xl flex items-center justify-center gap-2 text-indigo-400 hover:bg-indigo-500/5 transition-all group"
+                      >
+                        <span className="text-2xl group-active:scale-125 transition-transform">
+                          +
+                        </span>
+                        <span className="text-xs font-black uppercase tracking-widest">
+                          店舗をもう一つ追加する
+                        </span>
+                      </button>
+
+                      {/* 4. まとめ・精算（基本情報を統合） */}
+                      <section className="card p-5 space-y-6 shadow-xl border-indigo-500/10">
+                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">
+                          1日のまとめ・精算
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block px-1">
+                              稼働日
+                            </label>
+                            <input
+                              type="date"
+                              value={reportInput.date}
+                              onChange={(e) =>
+                                setReportInput({
+                                  ...reportInput,
+                                  date: e.target.value,
+                                })
+                              }
+                              className="input-dark py-3 font-bold text-xs"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block px-1">
+                              稼働時間
+                            </label>
+                            <input
+                              value={reportInput.hours}
+                              onChange={(e) =>
+                                setReportInput({
+                                  ...reportInput,
+                                  hours: e.target.value,
+                                })
+                              }
+                              className="input-dark py-3"
+                              placeholder="8:40~21:10"
+                            />
+                            <div className="text-[8px] text-slate-600 mt-1 font-bold italic">
+                              計算結果: {parseHours(reportInput.hours)}h
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest block px-1">
+                              親から受取 (円)
+                            </label>
+                            <input
+                              type="text"
+                              inputmode="numeric"
+                              value={reportInput.parentReceived}
+                              onChange={(e) =>
+                                setReportInput({
+                                  ...reportInput,
+                                  parentReceived: e.target.value,
+                                })
+                              }
+                              className="input-dark font-bold text-sm border-indigo-500/20 py-2"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[9px] font-black text-amber-400 uppercase tracking-widest block px-1">
+                              親へ手渡し (円)
+                            </label>
+                            <input
+                              type="text"
+                              inputmode="numeric"
+                              value={reportInput.handover}
+                              onChange={(e) =>
+                                setReportInput({
+                                  ...reportInput,
+                                  handover: e.target.value,
+                                })
+                              }
+                              className="input-dark font-bold text-sm border-amber-500/20 py-2"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div className="col-span-2 space-y-1.5">
+                            <label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block px-1">
+                              本日の給料 (円)
+                            </label>
+                            <input
+                              type="text"
+                              inputmode="numeric"
+                              value={reportInput.salary}
+                              onChange={(e) =>
+                                setReportInput({
+                                  ...reportInput,
+                                  salary: e.target.value,
+                                })
+                              }
+                              className="input-dark font-black text-sm border-slate-700/30 py-2 text-center"
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
+                          <label className="text-[9px] font-black text-indigo-300 uppercase tracking-widest block mb-1.5 px-1 text-center">
+                            最終的な財布の残投資金
+                          </label>
+                          <input
+                            type="text"
+                            inputmode="numeric"
+                            value={reportInput.remainingCash}
+                            onChange={(e) =>
+                              setReportInput({
+                                ...reportInput,
+                                remainingCash: e.target.value,
+                              })
+                            }
+                            className="input-dark font-black text-xl border-indigo-500/30 py-2 text-center"
+                            placeholder="0"
+                          />
+                        </div>
+
+                        <button
+                          onClick={submit}
+                          disabled={submitting}
+                          className={`btn-premium shadow-lg shadow-indigo-500/20 py-5 text-lg mt-4 ${submitting ? "opacity-50" : ""}`}
+                        >
+                          {submitting
+                            ? "送信中..."
+                            : "全店舗の報告をまとめて送信"}
+                        </button>
+                        <p className="text-[10px] text-slate-600 text-center font-bold">
+                          ※送信すると入力内容はリセットされます
+                        </p>
+                      </section>
+                    </div>
+                  )}
+
+                  {activeTab === "strategy" && (
+                    <div className="space-y-6 animate-fadeIn pb-10">
+                      <div className="card p-4 sticky top-[108px] z-10 bg-slate-800 shadow-xl border-indigo-500/20">
+                        <input
+                          type="text"
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          className="input-dark bg-slate-950 font-bold"
+                          placeholder="機種名で検索..."
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        {strategyLoading ? (
+                          <div className="py-20 text-center text-indigo-400 font-black animate-pulse uppercase tracking-[0.2em] text-xs">
+                            Loading Strategy...
+                          </div>
+                        ) : strategies.filter((s) => {
+                            const term = search.toLowerCase();
+                            const nameMatch = s.機種名
+                              .toLowerCase()
+                              .includes(term);
+                            const keywordMatch = (s.keywords || "")
+                              .toLowerCase()
+                              .split(/[,，、]/)
+                              .some((k) => k.trim().includes(term));
+                            return nameMatch || keywordMatch;
+                          }).length > 0 ? (
+                          strategies
+                            .filter((s) => {
+                              const term = search.toLowerCase();
+                              const nameMatch = s.機種名
+                                .toLowerCase()
+                                .includes(term);
+                              const keywordMatch = (s.keywords || "")
+                                .toLowerCase()
+                                .split(/[,，、]/)
+                                .some((k) => k.trim().includes(term));
+                              return nameMatch || keywordMatch;
+                            })
+                            .map((s, i) => (
+                              <div
+                                key={i}
+                                className="card p-5 space-y-3 bg-slate-800/50 border-white/5 hover:border-indigo-500/20 transition-all"
+                              >
+                                <div className="text-sm font-black text-indigo-100 flex justify-between items-center">
+                                  {s.機種名}
+                                  {s.URL && (
+                                    <a
+                                      href={s.URL}
+                                      target="_blank"
+                                      className="text-[9px] font-black bg-indigo-600 text-white px-3 py-1.5 rounded-full uppercase tracking-widest"
+                                    >
+                                      解析サイト
+                                    </a>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap">
+                                  {s.狙い目}
+                                </p>
+                              </div>
+                            ))
+                        ) : (
+                          <div className="py-20 text-center">
+                            <div className="text-4xl mb-4 opacity-20">🔍</div>
+                            <p className="text-slate-500 font-black italic uppercase text-xs tracking-widest">
+                              No matching results
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === "shift" && (
+                    <div className="space-y-6 animate-fadeIn pb-10">
+                      <section className="card p-5 space-y-4">
+                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-1">
+                          シフト申請（今後2週間分）
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[...Array(14)].map((_, i) => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + i);
+                            const dStr = d.toLocaleDateString("ja-JP", {
+                              month: "numeric",
+                              day: "numeric",
+                              weekday: "short",
+                            });
+                            // タイムゾーンを考慮した YYYY-MM-DD 生成
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, "0");
+                            const day = String(d.getDate()).padStart(2, "0");
+                            const iso = `${y}-${m}-${day}`;
+
+                            const isSelected = selectedDates.includes(iso);
+                            return (
+                              <div
+                                key={i}
+                                onClick={() => toggleDate(iso)}
+                                className={`p-2 rounded-xl text-center cursor-pointer transition-all border ${isSelected ? "bg-indigo-600 border-indigo-400 text-white" : "bg-slate-800 border-white/5 text-slate-400"}`}
+                              >
+                                <div className="text-[8px] font-bold opacity-60 leading-none mb-1">
+                                  {dStr.split(" ")[1]}
+                                </div>
+                                <div className="text-xs font-black leading-none">
+                                  {dStr.split("(")[0]}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button
+                          onClick={handleShiftSubmit}
+                          disabled={submitting || selectedDates.length === 0}
+                          className={`btn-premium py-3 text-xs ${submitting || selectedDates.length === 0 ? "opacity-30" : ""}`}
+                        >
+                          {submitting ? "SENDING..." : "選択した日付を申請"}
+                        </button>
+                      </section>
+
+                      <section className="space-y-3">
+                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">
+                          確定済みシフト
+                        </div>
+                        <div className="card p-4 space-y-2">
+                          {shiftLoading ? (
+                            <div className="text-center py-4 text-[10px] text-indigo-400 animate-pulse">
+                              読み込み中...
+                            </div>
+                          ) : myShifts.length === 0 ? (
+                            <div className="text-center py-8 text-slate-600 text-[10px] font-bold italic uppercase opacity-40">
+                              No confirmed shifts
+                            </div>
+                          ) : (
+                            myShifts
+                              .sort(
+                                (a, b) => new Date(a.date) - new Date(b.date),
+                              )
+                              .map((s, i) => (
+                                <div
+                                  key={i}
+                                  className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"
+                                >
+                                  <div className="text-xs font-black text-white">
+                                    {new Date(s.date).toLocaleDateString(
+                                      "ja-JP",
+                                      {
+                                        month: "numeric",
+                                        day: "numeric",
+                                        weekday: "long",
+                                      },
                                     )}
-                                    <button onClick={() => { setModal({ ...modal, show: false }); if (modal.onConfirm) modal.onConfirm(); }} className="flex-1 py-5 text-xs font-black text-indigo-400 hover:bg-white/5 transition-all outline-none">OK</button>
+                                  </div>
+                                  <div className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md uppercase tracking-tighter">
+                                    Confirmed
+                                  </div>
                                 </div>
-                            </div>
+                              ))
+                          )}
                         </div>
+                      </section>
+                      <p className="text-[10px] text-slate-500 italic text-center px-4 leading-relaxed">
+                        ※入力したシフトは管理者のカレンダーに反映されます。
+                        <br />
+                        ※一度申請した内容の変更は管理者に連絡してください。
+                      </p>
+                    </div>
+                  )}
+
+                  {activeTab === "help" && (
+                    <div className="space-y-6 animate-fadeIn text-slate-400 text-xs leading-relaxed pb-10">
+                      <div className="card p-6 lg:p-10 space-y-10">
+                        <h3 className="text-indigo-400 font-extrabold flex items-center gap-3 uppercase tracking-[0.2em] text-[15px] border-b border-white/5 pb-2">
+                          <span className="text-2xl text-white">
+                            SYSTEM INFO
+                          </span>
+                        </h3>
+                        <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest pb-6 opacity-60">
+                          <div>
+                            Front:{" "}
+                            <span className="text-emerald-400">
+                              {APP_VERSION_FRONTEND}
+                            </span>
+                          </div>
+                          <div>
+                            Back:{" "}
+                            <span className="text-emerald-400">
+                              {backendVersion}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-12">
+                          <section className="space-y-4">
+                            <div className="flex items-start gap-4">
+                              <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">
+                                01
+                              </div>
+                              <div className="space-y-2">
+                                <h4 className="font-black text-white text-base">
+                                  リアルタイムでの稼働記録・店舗管理
+                                </h4>
+                                <p className="opacity-80 text-[12px] leading-6">
+                                  正確な分析のため、稼動直後の入力を推奨します。「報告送信」タブでは、店舗ごとにタブを切り替えて管理できます。
+                                </p>
+                                <div className="space-y-3 pt-2">
+                                  <div className="flex gap-2 text-[11px] text-slate-300">
+                                    <span className="text-indigo-400">●</span>
+                                    <span>
+                                      <strong>店舗タブの追加:</strong>{" "}
+                                      画面上部の「店舗追加」から、複数店舗の同時報告が可能です。
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-2 text-[11px] text-slate-300">
+                                    <span className="text-indigo-400">●</span>
+                                    <span>
+                                      <strong>稼動ログの店舗間移動:</strong>{" "}
+                                      報告タブ上の稼動ログにある「矢印ボタン」を押すことで、別の店舗タブへ移動させることができます。
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </section>
+
+                          <section className="space-y-4">
+                            <div className="flex items-start gap-4">
+                              <div className="bg-indigo-600/20 text-indigo-400 w-8 h-8 rounded-full flex items-center justify-center font-black shrink-0 border border-indigo-500/30">
+                                02
+                              </div>
+                              <div className="space-y-2">
+                                <h4 className="font-black text-white text-base">
+                                  業務終了時の詳細報告
+                                </h4>
+                                <p className="opacity-80 text-[12px] leading-6">
+                                  一日の業務（稼働）が全て終了した際、詳細情報の入力欄を正しく記入してください。
+                                </p>
+                                <ul className="text-[11px] space-y-2 pt-2 text-slate-300">
+                                  <li className="flex gap-2">
+                                    <span>・</span>
+                                    <span>
+                                      <strong className="text-white">
+                                        最終枚数/球数:
+                                      </strong>{" "}
+                                      稼働終了後の会員カード内の貯メダル・貯玉数。
+                                    </span>
+                                  </li>
+                                  <li className="flex gap-2">
+                                    <span>・</span>
+                                    <span>
+                                      <strong className="text-white">
+                                        本日投資:
+                                      </strong>{" "}
+                                      現金投資した際の、その日に使った現金の総額。
+                                    </span>
+                                  </li>
+                                  <li className="flex gap-2">
+                                    <span>・</span>
+                                    <span>
+                                      <strong className="text-white">
+                                        換金額:
+                                      </strong>{" "}
+                                      換金した場合の換金額。
+                                    </span>
+                                  </li>
+                                  <li className="flex gap-2">
+                                    <span>・</span>
+                                    <span>
+                                      <strong className="text-white">
+                                        親から受取:
+                                      </strong>{" "}
+                                      親から受け取った場合の現金額。
+                                    </span>
+                                  </li>
+                                  <li className="flex gap-2">
+                                    <span>・</span>
+                                    <span>
+                                      <strong className="text-white">
+                                        親への手渡し:
+                                      </strong>{" "}
+                                      親へ手渡した場合の現金額。
+                                    </span>
+                                  </li>
+                                  <li className="flex gap-2">
+                                    <span>・</span>
+                                    <span>
+                                      <strong className="text-white">
+                                        本日の給料:
+                                      </strong>{" "}
+                                      今日受け取った給料。
+                                    </span>
+                                  </li>
+                                  <li className="flex gap-2">
+                                    <span>・</span>
+                                    <span>
+                                      <strong className="text-white">
+                                        最終的な残投資金:
+                                      </strong>{" "}
+                                      全て完了後、現在残っている現金額。
+                                    </span>
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
+                          </section>
+
+                          <section className="bg-rose-500/5 p-6 rounded-3xl space-y-4 border border-rose-500/20">
+                            <p className="font-bold text-rose-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-widest">
+                              <span className="text-sm">●</span> 注意事項
+                            </p>
+                            <div className="text-[11px] space-y-4 opacity-90 leading-relaxed">
+                              <p>
+                                送信ボタンは、すべての内容に誤りがないことを確認した上で実行してください。送信完了と同時に、ログ履歴は自動的に初期化されます。
+                              </p>
+                              <p className="text-rose-300/80">
+                                ※本アプリは機密情報を含みます。第三者への開示、SNS投稿等は厳禁です。
+                              </p>
+                            </div>
+                          </section>
+                        </div>
+                      </div>
+
+                      <div className="text-center opacity-30 font-black text-[9px] uppercase tracking-[0.3em] pt-4">
+                        Internal System Worker Security Level: AA+ | v7.13.0
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {modal.show && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+                <div className="bg-slate-900 border border-white/10 rounded-[2rem] w-full max-w-xs shadow-2xl overflow-hidden">
+                  <div className="p-8 space-y-4">
+                    <div className="text-center space-y-2">
+                      <h3 className="text-indigo-400 font-black uppercase text-[10px] tracking-widest">
+                        {modal.title}
+                      </h3>
+                      <p className="text-sm text-slate-200 font-bold leading-relaxed whitespace-pre-wrap">
+                        {modal.message}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex border-t border-white/5">
+                    {modal.type === "confirm" && (
+                      <button
+                        onClick={() => setModal({ ...modal, show: false })}
+                        className="flex-1 py-5 text-xs font-black text-slate-500 hover:bg-white/5 transition-all"
+                      >
+                        CANCEL
+                      </button>
                     )}
-                </>
-            );
-        }
+                    <button
+                      onClick={() => {
+                        setModal({ ...modal, show: false });
+                        if (modal.onConfirm) modal.onConfirm();
+                      }}
+                      className="flex-1 py-5 text-xs font-black text-indigo-400 hover:bg-white/5 transition-all outline-none"
+                    >
+                      OK
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
     </script>
-</body>
-
+  </body>
 </html>
